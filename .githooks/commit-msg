@@ -1,0 +1,15 @@
+#!/bin/sh
+# Checks the commit subject against the repo's convention (AGENTS.md, «Commit subjects»): a plain imperative sentence
+# of at most 72 characters, starting in upper case, with no type prefix and no final period. Installed by `pnpm setup`.
+subject=$(git stripspace --strip-comments < "$1" | head -n 1)
+fail() {
+    echo "commit-msg: $1: $subject" >&2
+    exit 1
+}
+[ -n "$subject" ] || fail "empty subject"
+[ "$(printf %s "$subject" | wc -m)" -le 72 ] || fail "subject over 72 characters"
+case "$subject" in
+    [![:upper:]]*) fail "subject must start with an upper-case letter (no type prefix)" ;;
+    *.) fail "subject ends with a period" ;;
+    WIP*|Wip*) fail "work in progress is not a commit" ;;
+esac

@@ -1,0 +1,44 @@
+{
+  "name": "discord-mod",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "setup": "git config core.hooksPath .githooks && pnpm install --frozen-lockfile && pnpm build",
+    "build": "node mod/build.mjs",
+    "typecheck": "tsc -p .",
+    "lint": "eslint --max-warnings=0 .",
+    "fix": "eslint --fix . && pnpm check",
+    "secrets": "node scripts/secrets.mjs",
+    "knip": "knip",
+    "check": "pnpm lint && pnpm typecheck && pnpm knip && pnpm secrets && pnpm test",
+    "test": "vitest run --coverage",
+    "mutation": "stryker run",
+    "audit": "pnpm audit",
+    "smoke": "node --test test/smoke.mjs",
+    "check-discord": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/discord-code.mjs",
+    "inject": "node scripts/inject.mjs install",
+    "uninject": "node scripts/inject.mjs uninstall",
+    "links": "ln -sfn \"$PWD/skills/discord-mod\" ~/.claude/skills/discord-mod && ln -sfn \"$PWD/scripts/discord-mod.mjs\" ~/.local/bin/discord-mod"
+  },
+  "devDependencies": {
+    "@stryker-mutator/api": "10.0.0",
+    "@stryker-mutator/core": "10.0.0",
+    "@stryker-mutator/typescript-checker": "10.0.0",
+    "@stryker-mutator/vitest-runner": "10.0.0",
+    "@stylistic/eslint-plugin": "5.10.0",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@vitest/coverage-v8": "5.0.5",
+    "esbuild": "0.28.2",
+    "eslint": "10.13.0",
+    "eslint-plugin-simple-import-sort": "14.0.0",
+    "eslint-plugin-unused-imports": "4.4.1",
+    "knip": "6.42.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  }
+}

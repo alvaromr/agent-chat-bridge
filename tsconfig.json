@@ -1,0 +1,12 @@
+{
+    // Type-checks the whole repo with mod/'s rules: mod/ and plugins/, and the plain JS files (scripts, tests, build and
+    // tool configs) through JSDoc. eslint.config.mjs stays out: its plugins ship without types.
+    "extends": "./mod/tsconfig.json",
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "types": ["node"]
+    },
+    "include": ["mod/src/**/*", "plugins/**/*", "scripts/*.mjs", "test/*.mjs", "mod/build.mjs", "*.config.mjs"],
+    "exclude": ["eslint.config.mjs"]
+}

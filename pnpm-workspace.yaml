@@ -1,0 +1,10 @@
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade
+verifyDepsBeforeRun: error
+# No install scripts. esbuild's only checks its platform binary, which pnpm already installs as an optional dependency.
+allowBuilds:
+  esbuild: false
+# Stryker's typed-rest-client pins qs 6.15.1, which has 4 moderate advisories (pnpm audit); 6.16.1 fixes them. Drop it
+# once typed-rest-client moves past them.
+overrides:
+  qs: 6.16.1

@@ -1,0 +1,12 @@
+{
+    "$schema": "https://unpkg.com/knip@6/schema.json",
+    "entry": [
+        "mod/src/main.ts",
+        "mod/src/preload.ts",
+        "mod/src/renderer/index.ts",
+        "mod/src/plugin-api/jsx.ts",
+        "scripts/*.mjs"
+    ],
+    "ignoreDependencies": ["electron"],
+    "ignoreBinaries": ["pgrep", "gitleaks"]
+}

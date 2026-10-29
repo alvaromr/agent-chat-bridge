@@ -1,0 +1,29 @@
+{
+    // Also used by mod/build.mjs for every file, plugins/ included, so `@plugin-api/…` resolves to mod/src/plugin-api.
+    "compilerOptions": {
+        "strict": true,
+        "noImplicitAny": false,
+        "noImplicitOverride": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noUncheckedIndexedAccess": true,
+        "exactOptionalPropertyTypes": true,
+        "verbatimModuleSyntax": true,
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "jsx": "preserve",
+        "lib": ["DOM", "DOM.Iterable", "ESNext"],
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "types": ["node"],
+        "paths": {
+            "@plugin-api/*": ["./src/plugin-api/*"]
+        }
+    },
+    "include": ["src/**/*", "../plugins/**/*"]
+}
