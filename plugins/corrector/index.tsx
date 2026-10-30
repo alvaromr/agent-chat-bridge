@@ -43,7 +43,8 @@ const TEXT = {
     tooMuch: "La corrección cambiaba demasiado el mensaje; descartada",
     changedWhileFixing: "El texto cambió mientras se corregía; no lo toco",
     changedBeforeSending: "El texto cambió mientras se corregía; no lo envío",
-    fixed: "Mensaje corregido"
+    fixed: "Mensaje corregido",
+    editUnconfirmed: "Discord no confirmó la corrección; revisa el mensaje"
 } as const;
 
 /** Model answers per correction: a second one when the first rewrote the message ("s epodria" → "Es posible"). */
@@ -97,7 +98,10 @@ async function correctSentMessage(message: Message) {
     const fixed = await correct(message.content);
     if (fixed == null) return;
     await MessageActions.editMessage(message.channel_id, message.id, { content: fixed });
-    showToast({ text: TEXT.fixed, variant: "success" });
+    // Discord queues the edit and doesn't wait for it; the store has the new text once the server accepts it.
+    const edited = () => MessageStore.getMessage(message.channel_id, message.id)?.content === fixed;
+    await waitFor(edited, 8000);
+    showToast(edited() ? { text: TEXT.fixed, variant: "success" } : { text: TEXT.editUnconfirmed, variant: "critical" });
 }
 
 /** Corrects the last own message. Triggered by Enter on an empty box, which Discord ignores. */
