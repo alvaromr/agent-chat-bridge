@@ -16,7 +16,7 @@ Las fechas filtran por el último mensaje del chat.`;
 const FILTER_OPTIONS = { server: { type: "string" }, since: { type: "string" }, until: { type: "string" } };
 const filters = (kinds, o) => ({ ...(kinds.length ? { kinds } : {}), ...(o.server ? { server: o.server } : {}), ...range(o) });
 
-const COMMANDS = {
+export const COMMANDS = {
     draft: {
         summary: "deja un mensaje listo para enviar en un chat y lo abre",
         usage: "discord-mod draft <chat> [<texto>] [--id] [--reply <id>] [--attach <ruta>]... [--replace] [--background] [--dry-run]\n       discord-mod draft <chat> --clear [--id]",

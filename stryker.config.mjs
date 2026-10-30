@@ -9,6 +9,7 @@ export default {
     tsconfigFile: "tsconfig.json",
     mutate: [
         "mod/src/attachments.ts",
+        "mod/src/ipc.ts",
         "mod/src/settingsFile.ts",
         "mod/src/validate.ts",
         "mod/src/renderer/format.ts",

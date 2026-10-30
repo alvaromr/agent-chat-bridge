@@ -1,8 +1,8 @@
 // Checks every request that reaches the local socket (mod/src/compose.ts) before anything acts on it.
-// Only Node built-ins and types, so test/ can load it straight from Node.
+// Only Node built-ins and ipc.ts, so test/ can load it straight from Node.
 import { isAbsolute } from "path";
 
-import type { ComposeRequest } from "./ipc";
+import { type Command, commandOf, type ComposeRequest } from "./ipc";
 
 const KINDS = ["dm", "grupo", "canal", "hilo"];
 const MAX_ATTACHMENTS = 10;
@@ -14,32 +14,7 @@ const isServer = (v: unknown) => v === undefined || (typeof v === "string" && v.
 const isKinds = (v: unknown) => v === undefined || (Array.isArray(v) && v.every(k => KINDS.includes(k as string)));
 const isFlag = (v: unknown) => v === undefined || typeof v === "boolean";
 
-export function isValid(req: any): req is ComposeRequest {
-    if (typeof req !== "object" || req === null || !isTime(req.since) || !isTime(req.until) || !isServer(req.server)) return false;
-    if (req.list === true || req.unread === true) return isKinds(req.kinds);
-    if (req.read !== undefined)
-        return isId(req.read)
-            && (req.limit === undefined || (Number.isInteger(req.limit) && req.limit >= 1 && req.limit <= 100))
-            && isFlag(req.fetch) && isFlag(req.unreadOnly) && isFlag(req.more)
-            && (req.older === undefined || (!req.more && Number.isInteger(req.older) && req.older >= 1 && req.older <= 3));
-    if (req.react !== undefined) {
-        const r = req.react;
-        return isId(r?.chatId) && isId(r.messageId)
-            && typeof r.emoji === "string" && r.emoji.length > 0 && r.emoji.length <= 32 && !/[\s:<>]/.test(r.emoji)
-            && isFlag(r.remove);
-    }
-    if (req.edit !== undefined) {
-        const e = req.edit;
-        return isId(e?.chatId) && isId(e.messageId)
-            && typeof e.text === "string" && e.text.trim() !== "" && e.text.length <= 4000;
-    }
-    if (req.delete !== undefined) {
-        const d = req.delete;
-        return isId(d?.chatId) && isId(d.messageId);
-    }
-    if (req.send !== undefined)
-        return isId(req.send) && typeof req.expect === "string" && req.expect.length <= 4000 && isFlag(req.direct)
-            && (req.replyTo === undefined || (req.direct === true && isId(req.replyTo)));
+function isDraft(req: any) {
     if (req.files !== undefined) return false; // only the main process fills it in
     if (req.clear !== undefined)
         return req.clear === true && req.text === undefined && req.attach === undefined && req.replyTo === undefined
@@ -57,6 +32,30 @@ export function isValid(req: any): req is ComposeRequest {
         && (req.channelId === undefined || isId(req.channelId))
         && (req.query !== undefined || req.channelId !== undefined)
         && isFlag(req.replace) && isFlag(req.dryRun) && isFlag(req.background);
+}
+
+/** Each command's own checks; the compiler asks for one per command of ipc.ts. */
+const CHECKS: Record<Command, (req: any) => boolean> = {
+    list: req => req.list === true && isKinds(req.kinds),
+    unread: req => req.unread === true && isKinds(req.kinds),
+    read: req => isId(req.read)
+        && (req.limit === undefined || (Number.isInteger(req.limit) && req.limit >= 1 && req.limit <= 100))
+        && isFlag(req.fetch) && isFlag(req.unreadOnly) && isFlag(req.more)
+        && (req.older === undefined || (!req.more && Number.isInteger(req.older) && req.older >= 1 && req.older <= 3)),
+    send: req => isId(req.send) && typeof req.expect === "string" && req.expect.length <= 4000 && isFlag(req.direct)
+        && (req.replyTo === undefined || (req.direct === true && isId(req.replyTo))),
+    react: ({ react: r }) => isId(r?.chatId) && isId(r.messageId)
+        && typeof r.emoji === "string" && r.emoji.length > 0 && r.emoji.length <= 32 && !/[\s:<>]/.test(r.emoji)
+        && isFlag(r.remove),
+    edit: ({ edit: e }) => isId(e?.chatId) && isId(e.messageId)
+        && typeof e.text === "string" && e.text.trim() !== "" && e.text.length <= 4000,
+    delete: ({ delete: d }) => isId(d?.chatId) && isId(d.messageId),
+    draft: isDraft
+};
+
+export function isValid(req: any): req is ComposeRequest {
+    if (typeof req !== "object" || req === null || !isTime(req.since) || !isTime(req.until) || !isServer(req.server)) return false;
+    return CHECKS[commandOf(req)](req);
 }
 
 /** The chat ids of a valid watch request, or null if the line is any other request. */

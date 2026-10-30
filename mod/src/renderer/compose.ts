@@ -3,7 +3,7 @@
 // rule 3: `read --fetch` (one page, as opening a chat), `read --more` and `read --older` (up to 3 older pages), `send`,
 // `edit`, `delete` and `react`.
 import { chatEditor, getDraft, replaceChatInput } from "../../../plugins/shared";
-import type { ComposeCandidate, ComposeRequest, ComposeResult } from "../ipc";
+import { type Command, commandOf, type ComposeCandidate, type ComposeRequest, type ComposeResult, type RequestFor } from "../ipc";
 import {
     ActiveJoinedThreadsStore, addReaction, ChannelRouter, ChannelStore, ComponentDispatch, DraftActions, DraftType, FluxDispatcher, GuildMemberStore,
     GuildRoleStore, GuildStore,
@@ -238,15 +238,25 @@ async function readChat(req: ComposeRequest): Promise<ComposeResult> {
     };
 }
 
-export async function compose(req: ComposeRequest): Promise<ComposeResult> {
-    if (req.list) return { ok: true, chats: listChats(req) };
-    if (req.unread) return { ok: true, sinLeer: unreadChats(req) };
-    if (req.read) return readChat(req);
-    if (req.send) return send(req);
-    if (req.react) return react(req.react);
-    if (req.edit) return edit(req.edit);
-    if (req.delete) return remove(req.delete);
+/** Each command's handler; the compiler asks for one per command of ipc.ts. */
+const HANDLERS: { [C in Command]: (req: RequestFor<C>) => Promise<ComposeResult> } = {
+    list: async req => ({ ok: true, chats: listChats(req) }),
+    unread: async req => ({ ok: true, sinLeer: unreadChats(req) }),
+    read: readChat,
+    send,
+    react: req => react(req.react),
+    edit: req => edit(req.edit),
+    delete: req => remove(req.delete),
+    draft
+};
 
+export function compose(req: ComposeRequest): Promise<ComposeResult> {
+    // commandOf only names a command whose key the request has, which is what that handler's type asks for.
+    return (HANDLERS[commandOf(req)] as (req: ComposeRequest) => Promise<ComposeResult>)(req);
+}
+
+/** Leaves a draft in a chat (text, reply, attachments), or with `clear` empties its box. */
+async function draft(req: ComposeRequest): Promise<ComposeResult> {
     const { chat, candidates, searched } = resolve(req);
     if (!chat) {
         return candidates.length

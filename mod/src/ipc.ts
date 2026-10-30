@@ -13,6 +13,15 @@ export const IPC = {
     watchEvent: "discord-mod:watch-event"
 } as const;
 
+/** The keys that name a request's command, in the order they are told apart; a request with none is a draft. */
+const COMMANDS = ["list", "unread", "read", "send", "react", "edit", "delete"] as const;
+export type Command = typeof COMMANDS[number] | "draft";
+/** A request of that command: its key is there. */
+export type RequestFor<C extends Command> = C extends keyof ComposeRequest ? ComposeRequest & Required<Pick<ComposeRequest, C>> : ComposeRequest;
+
+/** Which command a request holds. validate.ts and the renderer both use it, so they tell commands apart the same way. */
+export const commandOf = (req: { [C in typeof COMMANDS[number]]?: unknown }): Command => COMMANDS.find(c => req[c] !== undefined) ?? "draft";
+
 /**
  * What scripts/discord-mod.mjs asks for: one of a draft (the default), `list`, `unread`, `read`, `send`, `edit`,
  * `delete` or `react`. Only the last four publish anything, and the CLI documents that they need the user's

@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 
 import { test } from "vitest";
 
+import { commandOf } from "../mod/src/ipc.ts";
 import { isValid, watchRequest } from "../mod/src/validate.ts";
+import { buildRequest, COMMANDS } from "../scripts/discord-mod.mjs";
 
 const ok = req => assert.equal(isValid(req), true, JSON.stringify(req));
 const no = req => assert.equal(isValid(req), false, JSON.stringify(req));
@@ -18,6 +20,8 @@ test("list and unread: known kinds only", () => {
     no({ list: true, kinds: ["servidor"] });
     no({ list: true, kinds: ["dm", "servidor"] });
     no({ unread: true, kinds: "dm" });
+    no({ list: "true" });
+    no({ unread: 1 });
 });
 
 test("shared filters: dates and server", () => {
@@ -126,6 +130,34 @@ test("draft: attachments by absolute path, 10 at most, and never files from outs
     no({ query: "nacho", attach: Array(11).fill("/tmp/a.png") });
     no({ query: "nacho", text: "hola", files: [] });
     no({ query: "nacho", attach: [] });
+});
+
+test("a request with several commands is checked as the one the renderer runs", () => {
+    const react = { chatId: "1", messageId: "2", emoji: "👍" };
+    // The renderer would send: the send must pass its own checks, even next to a valid react.
+    no({ send: "x", expect: "hola", react });
+    ok({ send: "1", expect: "hola", react });
+    no({ list: true, kinds: ["servidor"], read: "1" });
+    no({ list: 1, unread: true });
+    assert.deepEqual(
+        [{ list: true }, { unread: true }, { read: "1" }, { send: "1" }, { react }, { edit: {} }, { delete: {} }, { query: "x" },
+            { read: "1", send: "1", react, edit: {}, delete: {} }, { send: "1", react, edit: {}, delete: {} }, { react, edit: {} },
+            { edit: {}, delete: {} }].map(commandOf),
+        ["list", "unread", "read", "send", "react", "edit", "delete", "draft", "read", "send", "react", "edit"]
+    );
+});
+
+test("every CLI command but watch builds a request the socket accepts, of that command", () => {
+    const argv = {
+        draft: ["draft", "nacho", "hola"], send: ["send", "1", "hola"], edit: ["edit", "1", "2", "hola"],
+        delete: ["delete", "1", "2"], react: ["react", "1", "2", "👍"], list: ["list"], unread: ["unread"], read: ["read", "1"]
+    };
+    assert.deepEqual(Object.keys(argv).sort(), Object.keys(COMMANDS).filter(name => name !== "watch").sort());
+    for (const [name, args] of Object.entries(argv)) {
+        const { request } = buildRequest(args);
+        ok(request);
+        assert.equal(commandOf(request), name);
+    }
 });
 
 test("watch: 1 to 10 ids", () => {
