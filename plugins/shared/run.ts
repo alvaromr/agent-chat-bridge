@@ -10,6 +10,12 @@ const CLAUDE_BIN = join(homedir(), ".local/bin/claude");
 const MODEL_RE = /^claude-[a-z0-9-]+$/;
 const TIMEOUT_MS = 120_000;
 
+/** Why there is no answer, shown in the plugins' toast. */
+const TEXT = {
+    invalid: "Parámetros no válidos",
+    empty: "Respuesta vacía"
+} as const;
+
 export interface ClaudeResult {
     ok: boolean;
     text: string;
@@ -23,7 +29,7 @@ const ISOLATION_ARGS = [
 
 export async function runClaude(_: IpcMainInvokeEvent, systemPrompt: string, input: string, model: string): Promise<ClaudeResult> {
     if (typeof systemPrompt !== "string" || typeof input !== "string" || !MODEL_RE.test(model))
-        return { ok: false, text: "Parámetros no válidos" };
+        return { ok: false, text: TEXT.invalid };
 
     const cwd = await mkdtemp(join(tmpdir(), "discord-claude-"));
     try {
@@ -47,7 +53,7 @@ export async function runClaude(_: IpcMainInvokeEvent, systemPrompt: string, inp
             );
             child.stdin!.end(input);
         });
-        return text ? { ok: true, text } : { ok: false, text: "Respuesta vacía" };
+        return text ? { ok: true, text } : { ok: false, text: TEXT.empty };
     } catch (e) {
         return { ok: false, text: e instanceof Error ? e.message : String(e) };
     } finally {

@@ -18,7 +18,17 @@ const currentValues = (): Values => Object.fromEntries(configurable().map(({ nam
     Object.fromEntries(Object.entries(settings.def).map(([key, def]) => [key, settings.store[key] ?? def.default]))
 ]));
 
-const PATCH_STATUS = { ok: "✓", failed: "✗ falló" } as const;
+/** What the modal and its toasts say. */
+const TEXT = {
+    title: "Ajustes de discord-mod",
+    patches: (list: string) => `Parches: ${list}`,
+    patchStatus: { ok: "✓", failed: "✗ falló", pending: "pendiente" },
+    reset: "Restablecer",
+    cancel: "Cancelar",
+    save: "Guardar",
+    saved: "Ajustes guardados",
+    saveFailed: (err: unknown) => `No se pudieron guardar los ajustes: ${err}`
+} as const;
 
 function Field({ def, value, onChange }: { def: SettingDef; value: SettingDef["default"]; onChange(value: SettingDef["default"]): void; }) {
     switch (def.type) {
@@ -49,10 +59,10 @@ function SettingsModal({ rootProps }: { rootProps: RenderModalProps; }) {
         }
         try {
             await saveSettings();
-            showToast({ text: "Ajustes guardados", variant: "success" });
+            showToast({ text: TEXT.saved, variant: "success" });
             rootProps.onClose();
         } catch (err) {
-            showToast({ text: `No se pudieron guardar los ajustes: ${err}`, variant: "critical" });
+            showToast({ text: TEXT.saveFailed(err), variant: "critical" });
         }
     }
 
@@ -60,11 +70,11 @@ function SettingsModal({ rootProps }: { rootProps: RenderModalProps; }) {
         <Modal
             {...rootProps}
             size="lg"
-            title="Ajustes de discord-mod"
-            subtitle={`Parches: ${patches.map(p => `${p.name} ${p.status ? PATCH_STATUS[p.status] : "pendiente"}`).join(" · ")}`}
+            title={TEXT.title}
+            subtitle={TEXT.patches(patches.map(p => `${p.name} ${TEXT.patchStatus[p.status ?? "pending"]}`).join(" · "))}
             actions={[
-                { text: "Cancelar", variant: "secondary", onClick: rootProps.onClose },
-                { text: "Guardar", variant: "primary", onClick: save }
+                { text: TEXT.cancel, variant: "secondary", onClick: rootProps.onClose },
+                { text: TEXT.save, variant: "primary", onClick: save }
             ]}
         >
             <div className="dm-settings">
@@ -80,7 +90,7 @@ function SettingsModal({ rootProps }: { rootProps: RenderModalProps; }) {
                                     <Field def={def} value={valueOf(name, key, def)} onChange={value => set(name, key, value)} />
                                 </label>
                                 {valueOf(name, key, def) !== def.default && (
-                                    <button type="button" className="dm-reset" onClick={() => set(name, key, def.default)}>Restablecer</button>
+                                    <button type="button" className="dm-reset" onClick={() => set(name, key, def.default)}>{TEXT.reset}</button>
                                 )}
                             </div>
                         ))}

@@ -14,6 +14,13 @@ const SOCKET = join(app.getPath("appData"), "discord-mod", "compose.sock");
 const MAX_REQUEST_BYTES = 16 * 1024;
 const TIMEOUT_MS = 10_000;
 
+/** Why a request couldn't be done, as the CLI shows it to the user. */
+const TEXT = {
+    invalid: "Petición no válida",
+    noWindow: "Discord no tiene la ventana principal abierta",
+    noAnswer: "Discord no respondió"
+} as const;
+
 const pending = new Map<number, (result: ComposeResult) => void>();
 let nextId = 0;
 
@@ -51,12 +58,12 @@ async function handle(raw: string): Promise<ComposeResult> {
     try {
         req = JSON.parse(raw);
     } catch {
-        return { ok: false, error: "Petición no válida" };
+        return { ok: false, error: TEXT.invalid };
     }
-    if (!isValid(req)) return { ok: false, error: "Petición no válida" };
+    if (!isValid(req)) return { ok: false, error: TEXT.invalid };
 
     const win = mainWindow();
-    if (!win) return { ok: false, error: "Discord no tiene la ventana principal abierta" };
+    if (!win) return { ok: false, error: TEXT.noWindow };
 
     if (req.attach?.length) {
         const files = readAttachments(req.attach);
@@ -66,7 +73,7 @@ async function handle(raw: string): Promise<ComposeResult> {
 
     const id = nextId++;
     const result = await new Promise<ComposeResult>(resolve => {
-        const timer = setTimeout(() => resolve({ ok: false, error: "Discord no respondió" }), TIMEOUT_MS);
+        const timer = setTimeout(() => resolve({ ok: false, error: TEXT.noAnswer }), TIMEOUT_MS);
         pending.set(id, r => {
             clearTimeout(timer);
             resolve(r);

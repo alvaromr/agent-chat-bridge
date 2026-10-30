@@ -140,7 +140,8 @@ Deviations from the engineering baseline, with the value that is not at stake an
 - **No version, changelog or tags:** nothing is released or distributed; the reviewed commit is the version.
 - **User-facing text is in Spanish:** CLI help and errors, toasts, the settings modal, prompts and the skill's
   replies, because the user reads them in Spanish. Logs, internal errors and test names are in English.
-- **User-facing text lives in the code that shows it,** not in resource files: with one language and no plans to
-  translate, what resource files protect (adding languages without touching code) is not at stake.
+- **User-facing text is grouped per module:** in a `TEXT` object at the top of each module that shows text, or in the
+  definition it belongs to (a plugin's settings, a CLI command's entry in `COMMANDS`). No resource files while there
+  is one language and no plan to translate.
 - **Commit subjects** follow the repo's convention: plain imperative, no Conventional Commits prefix. The
   `.githooks/commit-msg` hook checks what a machine can: length, initial capital, no final period, no WIP.

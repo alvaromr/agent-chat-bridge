@@ -198,6 +198,16 @@ ${Object.entries(COMMANDS).map(([name, c]) => `  ${name.padEnd(7)} ${c.summary}`
 Ayuda de cada uno: discord-mod <comando> --help
 Responde en JSON; sale con 1 si "ok" es false y con 2 si los argumentos no son válidos.`;
 
+/** The CLI's own errors; each command's help and checks live in its entry of COMMANDS. */
+const TEXT = {
+    badDate: value => `Fecha no válida: ${value}`,
+    unknownCommand: name => `Comando desconocido: ${name}\n\n${MAIN_HELP}`,
+    usage: usage => `Uso: ${usage}`,
+    limitNotNumber: "--limit debe ser un número",
+    // Stryker disable next-line StringLiteral: only the socket side shows it, and test/smoke.mjs covers that side.
+    noSocket: "Discord no está abierto con el parche (falta el socket)"
+};
+
 export class UsageError extends Error { }
 
 /** Start of the given local day/week, or an exact local date-time; `end` moves a whole day to its end. */
@@ -211,7 +221,7 @@ export function parseDate(value, end) {
     // A date-time without an offset is local time; a bare date would be UTC, so it gets midnight added.
     const m = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.exec(value);
     const date = new Date(m?.[1] ? value : `${value}T00:00`);
-    if (!m || isNaN(date.getTime())) throw new UsageError(`Fecha no válida: ${value}`);
+    if (!m || isNaN(date.getTime())) throw new UsageError(TEXT.badDate(value));
     if (!m[1] && end) date.setDate(date.getDate() + 1);
     return date.getTime();
 }
@@ -227,7 +237,7 @@ export function buildRequest(argv) {
     const [name, ...rest] = argv;
     if (!name || name === "--help" || name === "-h") return { help: MAIN_HELP };
     const command = COMMANDS[name];
-    if (!command) throw new UsageError(`Comando desconocido: ${name}\n\n${MAIN_HELP}`);
+    if (!command) throw new UsageError(TEXT.unknownCommand(name));
 
     const parsed = parseArgs({
         args: rest, allowPositionals: true, options: { ...command.options, help: { type: "boolean", short: "h" } }
@@ -241,10 +251,10 @@ export function buildRequest(argv) {
     const bad = command.positionals === "kinds"
         ? positionals.some(k => !KINDS.includes(k))
         : positionals.length < min || positionals.length > max;
-    if (bad) throw new UsageError(`Uso: ${command.usage}`);
+    if (bad) throw new UsageError(TEXT.usage(command.usage));
     const invalid = command.validate?.(positionals, values);
-    if (invalid) throw new UsageError(`${invalid}\nUso: ${command.usage}`);
-    if (typeof values.limit === "string" && !/^\d+$/.test(values.limit)) throw new UsageError("--limit debe ser un número");
+    if (invalid) throw new UsageError(`${invalid}\n${TEXT.usage(command.usage)}`);
+    if (typeof values.limit === "string" && !/^\d+$/.test(values.limit)) throw new UsageError(TEXT.limitNotNumber);
     return { request: JSON.parse(JSON.stringify(command.request(positionals, values))) }; // drops undefined flags
 }
 
@@ -287,7 +297,7 @@ function main() {
     }
     conn.on("error", (/** @type {NodeJS.ErrnoException} */ err) => {
         console.error(err.code === "ENOENT" || err.code === "ECONNREFUSED"
-            ? "Discord no está abierto con el parche (falta el socket)"
+            ? TEXT.noSocket
             : err.message);
         process.exit(1);
     });

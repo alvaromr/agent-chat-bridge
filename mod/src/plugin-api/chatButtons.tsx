@@ -43,6 +43,11 @@ export function _injectButtons(buttons: ReactNode[], props: ChatBarProps) {
     buttons.unshift(<ChatBarButtons key="discord-mod-chat-buttons" {...props} />);
 }
 
+/** The tooltip of a button that opens the settings with a right click. */
+const TEXT = {
+    withSettings: (tooltip: string) => `${tooltip} · clic derecho: ajustes`
+};
+
 export interface ChatBarButtonProps {
     children: ReactNode;
     tooltip: string;
@@ -58,7 +63,7 @@ export function ChatBarButton({ children, tooltip, onClick, onContextMenu = open
         wrapper: findCssClasses("button", "buttonWrapper", "notificationDot"),
         textArea: findCssClasses("buttonContainer", "channelTextArea", "button")
     };
-    const text = onContextMenu === openSettingsModal ? `${tooltip} · clic derecho: ajustes` : tooltip;
+    const text = onContextMenu === openSettingsModal ? TEXT.withSettings(tooltip) : tooltip;
 
     return (
         <ErrorBoundary>

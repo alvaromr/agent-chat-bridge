@@ -36,6 +36,16 @@ const settings = definePluginSettings({
     }
 });
 
+/** The button's name and the toasts, as the user sees them. */
+const TEXT = {
+    action: "Corregir ortografía",
+    nothingToFix: "Sin faltas que corregir",
+    tooMuch: "La corrección cambiaba demasiado el mensaje; descartada",
+    changedWhileFixing: "El texto cambió mientras se corregía; no lo toco",
+    changedBeforeSending: "El texto cambió mientras se corregía; no lo envío",
+    fixed: "Mensaje corregido"
+} as const;
+
 /** Model answers per correction: a second one when the first rewrote the message ("s epodria" → "Es posible"). */
 const ATTEMPTS = 2;
 
@@ -49,12 +59,12 @@ async function correct(text: string) {
 
         const fixed = keepOriginalCase(text, raw.replace(/^<mensaje>\s*|\s*<\/mensaje>$/g, ""));
         if (fixed === text) {
-            showToast({ text: "Sin faltas que corregir", variant: "success" });
+            showToast({ text: TEXT.nothingToFix, variant: "success" });
             return null;
         }
         if (!rewritten(text, fixed)) return fixed;
     }
-    showToast({ text: "La corrección cambiaba demasiado el mensaje; descartada", variant: "critical" });
+    showToast({ text: TEXT.tooMuch, variant: "critical" });
     return null;
 }
 
@@ -68,14 +78,14 @@ const CorrectorChatBarButton: ChatBarButtonFactory = ({ isMainChat, channel }) =
         const fixed = await correct(draft);
         if (fixed == null) return;
         if (getDraft(channel.id) !== draft) {
-            showToast({ text: "El texto cambió mientras se corregía; no lo toco", variant: "critical" });
+            showToast({ text: TEXT.changedWhileFixing, variant: "critical" });
             return;
         }
         replaceChatInput(fixed);
     };
 
     return (
-        <ChatBarButton tooltip="Corregir ortografía" onClick={onClick}>
+        <ChatBarButton tooltip={TEXT.action} onClick={onClick}>
             <SpellcheckIcon />
         </ChatBarButton>
     );
@@ -86,7 +96,7 @@ async function correctSentMessage(message: Message) {
     const fixed = await correct(message.content);
     if (fixed == null) return;
     await MessageActions.editMessage(message.channel_id, message.id, { content: fixed });
-    showToast({ text: "Mensaje corregido", variant: "success" });
+    showToast({ text: TEXT.fixed, variant: "success" });
 }
 
 /** Corrects the last own message. Triggered by Enter on an empty box, which Discord ignores. */
@@ -109,7 +119,7 @@ async function waitFor(condition: () => boolean, timeoutMs: number) {
 async function correctAndSend(channelId: string, draft: string, editor: HTMLElement) {
     const fixed = await correct(draft);
     if (getDraft(channelId) !== draft) {
-        showToast({ text: "El texto cambió mientras se corregía; no lo envío", variant: "critical" });
+        showToast({ text: TEXT.changedBeforeSending, variant: "critical" });
         return;
     }
     if (fixed != null) {
@@ -170,7 +180,7 @@ export default definePlugin({
             if (!message.content || message.author.id !== UserStore.getCurrentUser()?.id) return null;
 
             return {
-                label: "Corregir ortografía",
+                label: TEXT.action,
                 icon: SpellcheckIcon,
                 onClick: () => correctSentMessage(message)
             };

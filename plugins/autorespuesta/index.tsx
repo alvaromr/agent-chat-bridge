@@ -43,6 +43,15 @@ const settings = definePluginSettings({
     }
 });
 
+/** The buttons' names and the toasts, as the user sees them. */
+const TEXT = {
+    action: "Generar respuesta",
+    fromHere: "Generar respuesta desde aquí",
+    notLoaded: "Ese mensaje no está cargado",
+    changedWhileWriting: "El texto cambió mientras se generaba; no lo toco",
+    pickMessage: "Haz clic en el mensaje desde el que empezar (Esc para cancelar)"
+} as const;
+
 /**
  * Uses only messages Discord already has loaded, from the chosen one to the latest. Whatever is in the chat box
  * guides the reply and is replaced by it; nothing is sent.
@@ -51,7 +60,7 @@ async function generateFrom(channelId: string, messageId: string) {
     const messages: Message[] = MessageStore.getMessages(channelId)._array;
     const start = messages.findIndex(m => m.id === messageId);
     if (start < 0) {
-        showToast({ text: "Ese mensaje no está cargado", variant: "critical" });
+        showToast({ text: TEXT.notLoaded, variant: "critical" });
         return;
     }
 
@@ -68,7 +77,7 @@ async function generateFrom(channelId: string, messageId: string) {
     const reply = await askClaude(systemPrompt, input, model);
     if (reply == null) return;
     if (getDraft(channelId) !== draft) {
-        showToast({ text: "El texto cambió mientras se generaba; no lo toco", variant: "critical" });
+        showToast({ text: TEXT.changedWhileWriting, variant: "critical" });
         return;
     }
     replaceChatInput(reply);
@@ -103,14 +112,14 @@ function toggleSelection(channelId: string) {
     document.addEventListener("keydown", onKeyDown, true);
     document.body.classList.add("dm-autoreply-selecting");
     stopSelection = stop;
-    showToast({ text: "Haz clic en el mensaje desde el que empezar (Esc para cancelar)" });
+    showToast({ text: TEXT.pickMessage });
 }
 
 const AutorespuestaChatBarButton: ChatBarButtonFactory = ({ isMainChat, channel }) => {
     if (!isMainChat) return null;
 
     return (
-        <ChatBarButton tooltip="Generar respuesta" onClick={() => toggleSelection(channel.id)}>
+        <ChatBarButton tooltip={TEXT.action} onClick={() => toggleSelection(channel.id)}>
             <SparklesIcon />
         </ChatBarButton>
     );
@@ -131,7 +140,7 @@ export default definePlugin({
         icon: SparklesIcon,
         render(message: Message) {
             return {
-                label: "Generar respuesta desde aquí",
+                label: TEXT.fromHere,
                 icon: SparklesIcon,
                 onClick: () => generateFrom(message.channel_id, message.id)
             };

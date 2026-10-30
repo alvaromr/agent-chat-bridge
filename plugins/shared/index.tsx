@@ -3,12 +3,18 @@ import { insertTextIntoChatInputBox } from "@plugin-api/chatInput";
 import { DraftStore, DraftType, showToast } from "@plugin-api/discord";
 import type { IconComponent } from "@plugin-api/plugin";
 
+/** The toasts the user sees while Claude answers. */
+const TEXT = {
+    asking: "Consultando a Claude…",
+    failed: (error: string) => `Claude: ${error}`
+};
+
 /** Resolves with Claude's text, or shows a toast and resolves with null. */
 export async function askClaude(systemPrompt: string, input: string, model: string) {
-    showToast({ text: "Consultando a Claude…" });
+    showToast({ text: TEXT.asking });
     const { ok, text } = await window.DiscordModNative.runClaude(systemPrompt, input, model);
     if (ok) return text;
-    showToast({ text: `Claude: ${text}`, variant: "critical" });
+    showToast({ text: TEXT.failed(text), variant: "critical" });
     return null;
 }
 

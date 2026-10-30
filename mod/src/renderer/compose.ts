@@ -14,6 +14,31 @@ import { embedTexts, type Names, reaction, readableMentions } from "./format";
 import { byRecency, type Candidate, fold, inRange, match, snowflakeTime } from "./match";
 import { rateLimiter } from "./rateLimit";
 
+/** Why a request couldn't be done, as the CLI shows it to the user. */
+const TEXT = {
+    noChat: "No encuentro ese chat",
+    noMatch: "Ningún chat encaja con ese nombre",
+    ambiguous: "No hay un chat claro: elige uno de los candidatos y repite con --id",
+    notOpen: "Ese chat no está abierto en Discord; deja antes el borrador con draft",
+    noEditor: "No encuentro la caja de texto del chat",
+    notFetched: "Discord no tiene cargados los mensajes de ese chat; repite con --fetch",
+    fetchFailed: "Discord no cargó los mensajes de ese chat",
+    messageNotLoaded: "Ese mensaje no está cargado en ese chat; cárgalo antes con read --fetch",
+    notMine: "Ese mensaje no es del usuario",
+    draftExists: "Ese chat ya tiene un borrador o adjuntos; repite con --replace para sustituirlo",
+    notCleared: "Discord no vació la caja de ese chat",
+    draftMismatch: "El borrador de la caja no es el texto confirmado; no envío nada",
+    nothingToSend: "No hay nada que enviar",
+    sendFailed: "Discord no pudo enviar el mensaje",
+    sendUnconfirmed: "Discord no confirmó el envío; revisa el chat",
+    sameText: "El mensaje ya tiene ese texto",
+    editUnconfirmed: "Discord no confirmó la edición; revisa el mensaje",
+    deleteUnconfirmed: "Discord no confirmó el borrado; revisa el chat",
+    notReacted: "El usuario no ha reaccionado con ese emoji a ese mensaje",
+    reactUnconfirmed: "Discord no confirmó la reacción; revisa el mensaje",
+    unreactUnconfirmed: "Discord no confirmó que se quitara la reacción; revisa el mensaje"
+} as const;
+
 const TEXT_CHANNEL_TYPES = new Set([0, 5]); // text and announcement
 const VIEW_CHANNEL = 1n << 10n;
 
@@ -164,17 +189,17 @@ function formatMessage(m: any, chat: Candidate) {
 
 async function readChat(req: ComposeRequest): Promise<ComposeResult> {
     const chat = allCandidates().find(c => c.id === req.read);
-    if (!chat) return { ok: false, error: "No encuentro ese chat" };
+    if (!chat) return { ok: false, error: TEXT.noChat };
 
     // Discord first fills the chat from its local cache (`cached`), then replaces it with the page from the network.
     const store = () => MessageStore.getMessages(chat.id);
     const fromNetwork = () => store()?.ready && !store().cached && !store().loadingMore;
     if (!fromNetwork()) {
-        if (!req.fetch) return { ok: false, error: "Discord no tiene cargados los mensajes de ese chat; repite con --fetch" };
+        if (!req.fetch) return { ok: false, error: TEXT.notFetched };
         // Exactly what Discord runs on opening a chat (rule 3): one request for its usual first page of messages.
         MessageManager.fetchMessages({ guildId: chat.guildId ?? null, channelId: chat.id });
         await waitFor(fromNetwork, 8000);
-        if (!fromNetwork()) return { ok: false, error: "Discord no cargó los mensajes de ese chat" };
+        if (!fromNetwork()) return { ok: false, error: TEXT.fetchFailed };
     }
 
     const unread = isUnread(chat.id);
@@ -223,8 +248,8 @@ export async function compose(req: ComposeRequest): Promise<ComposeResult> {
     const { chat, candidates, searched } = resolve(req);
     if (!chat) {
         return candidates.length
-            ? { ok: false, error: "No hay un chat claro: elige uno de los candidatos y repite con --id", candidatos: candidates.map(pick) }
-            : { ok: false, error: req.channelId ? "No encuentro ese chat" : "Ningún chat encaja con ese nombre", revisados: searched };
+            ? { ok: false, error: TEXT.ambiguous, candidatos: candidates.map(pick) }
+            : { ok: false, error: req.channelId ? TEXT.noChat : TEXT.noMatch, revisados: searched };
     }
     if (req.dryRun) return { ok: true, chat: pick(chat), abierto: false, borradorCargado: false };
     if (req.clear) {
@@ -233,16 +258,16 @@ export async function compose(req: ComposeRequest): Promise<ComposeResult> {
         else DraftActions.saveDraft(chat.id, "", DraftType.ChannelMessage);
         const empty = () => !getDraft(chat.id);
         await waitFor(empty, 3000);
-        return empty() ? { ok: true, chat: pick(chat), vaciado: true } : { ok: false, error: "Discord no vació la caja de ese chat" };
+        return empty() ? { ok: true, chat: pick(chat), vaciado: true } : { ok: false, error: TEXT.notCleared };
     }
     if ((getDraft(chat.id) || UploadAttachmentStore.getUploadCount(chat.id, DraftType.ChannelMessage)) && !req.replace)
-        return { ok: false, error: "Ese chat ya tiene un borrador o adjuntos; repite con --replace para sustituirlo", candidatos: [pick(chat)] };
+        return { ok: false, error: TEXT.draftExists, candidatos: [pick(chat)] };
 
     const channel = ChannelStore.getChannel(chat.id);
-    if (!channel) return { ok: false, error: "No encuentro ese chat" };
+    if (!channel) return { ok: false, error: TEXT.noChat };
     const replyTo = req.replyTo ? MessageStore.getMessage(chat.id, req.replyTo) : null;
     if (req.replyTo && !replyTo)
-        return { ok: false, error: "Ese mensaje no está cargado en ese chat; cárgalo antes con read --fetch" };
+        return { ok: false, error: TEXT.messageNotLoaded };
 
     const text = req.text ?? "";
     // The open chat's box is already mounted and ignores stored drafts; any other chat loads its draft when opened.
@@ -287,11 +312,11 @@ export async function compose(req: ComposeRequest): Promise<ComposeResult> {
 async function react(req: ComposeRequest): Promise<ComposeResult> {
     const { chatId, messageId, emoji, remove } = req.react!;
     const chat = allCandidates().find(c => c.id === chatId);
-    if (!chat) return { ok: false, error: "No encuentro ese chat" };
+    if (!chat) return { ok: false, error: TEXT.noChat };
     const message = () => MessageStore.getMessage(chat.id, messageId);
-    if (!message()) return { ok: false, error: "Ese mensaje no está cargado en ese chat; cárgalo antes con read --fetch" };
+    if (!message()) return { ok: false, error: TEXT.messageNotLoaded };
     const mine = () => !!message()?.reactions?.some((r: any) => r.emoji.name === emoji && r.emoji.id == null && r.me);
-    if (remove && !mine()) return { ok: false, error: "El usuario no ha reaccionado con ese emoji a ese mensaje" };
+    if (remove && !mine()) return { ok: false, error: TEXT.notReacted };
     const limited = rateLimit.limited(chat.id);
     if (limited) return { ok: false, error: limited };
     rateLimit.record(chat.id);
@@ -302,22 +327,22 @@ async function react(req: ComposeRequest): Promise<ComposeResult> {
         await waitFor(() => !mine(), 5000);
         return !mine()
             ? { ok: true, chat: pick(chat), reaccionQuitada: true }
-            : { ok: false, error: "Discord no confirmó que se quitara la reacción; revisa el mensaje" };
+            : { ok: false, error: TEXT.unreactUnconfirmed };
     }
     await addReaction(chat.id, messageId, unicode);
     await waitFor(mine, 5000);
     return mine()
         ? { ok: true, chat: pick(chat), reaccionado: true }
-        : { ok: false, error: "Discord no confirmó la reacción; revisa el mensaje" };
+        : { ok: false, error: TEXT.reactUnconfirmed };
 }
 
 /** One of the user's own messages that Discord has loaded, or why it can't be edited or deleted. */
 function ownMessage(chatId: string, messageId: string): { chat: Candidate; message: any; } | string {
     const chat = allCandidates().find(c => c.id === chatId);
-    if (!chat) return "No encuentro ese chat";
+    if (!chat) return TEXT.noChat;
     const message = MessageStore.getMessage(chat.id, messageId);
-    if (!message) return "Ese mensaje no está cargado en ese chat; cárgalo antes con read --fetch";
-    if (message.author.id !== UserStore.getCurrentUser().id) return "Ese mensaje no es del usuario";
+    if (!message) return TEXT.messageNotLoaded;
+    if (message.author.id !== UserStore.getCurrentUser().id) return TEXT.notMine;
     return { chat, message };
 }
 
@@ -326,7 +351,7 @@ async function edit(req: ComposeRequest): Promise<ComposeResult> {
     const { chatId, messageId, text } = req.edit!;
     const own = ownMessage(chatId, messageId);
     if (typeof own === "string") return { ok: false, error: own };
-    if (own.message.content === text) return { ok: false, error: "El mensaje ya tiene ese texto" };
+    if (own.message.content === text) return { ok: false, error: TEXT.sameText };
     const limited = rateLimit.limited(own.chat.id);
     if (limited) return { ok: false, error: limited };
     rateLimit.record(own.chat.id);
@@ -337,7 +362,7 @@ async function edit(req: ComposeRequest): Promise<ComposeResult> {
     await waitFor(edited, 8000);
     return edited()
         ? { ok: true, chat: pick(own.chat), editado: true }
-        : { ok: false, error: "Discord no confirmó la edición; revisa el mensaje" };
+        : { ok: false, error: TEXT.editUnconfirmed };
 }
 
 /** Deletes the user's own message for everyone, through Discord's delete action (rule 3: only confirmed). */
@@ -355,7 +380,7 @@ async function remove(req: ComposeRequest): Promise<ComposeResult> {
     await waitFor(deleted, 8000);
     return deleted()
         ? { ok: true, chat: pick(own.chat), borrado: true }
-        : { ok: false, error: "Discord no confirmó el borrado; revisa el chat" };
+        : { ok: false, error: TEXT.deleteUnconfirmed };
 }
 
 let watched = new Set<string>();
@@ -414,9 +439,9 @@ const rateLimit = rateLimiter();
  */
 async function sendDirect(chat: Candidate, req: ComposeRequest): Promise<ComposeResult> {
     const text = req.expect ?? "";
-    if (!text.trim()) return { ok: false, error: "No hay nada que enviar" };
+    if (!text.trim()) return { ok: false, error: TEXT.nothingToSend };
     const replyTo = req.replyTo ? MessageStore.getMessage(chat.id, req.replyTo) : null;
-    if (req.replyTo && !replyTo) return { ok: false, error: "Ese mensaje no está cargado en ese chat; cárgalo antes con read --fetch" };
+    if (req.replyTo && !replyTo) return { ok: false, error: TEXT.messageNotLoaded };
     const limited = rateLimit.limited(chat.id);
     if (limited) return { ok: false, error: limited };
     rateLimit.record(chat.id);
@@ -433,9 +458,9 @@ async function sendDirect(chat: Candidate, req: ComposeRequest): Promise<Compose
         const id = response?.body?.id;
         return id
             ? { ok: true, chat: pick(chat), enviado: true, id }
-            : { ok: false, error: "Discord no confirmó el envío; revisa el chat" };
+            : { ok: false, error: TEXT.sendUnconfirmed };
     } catch (err) {
-        return { ok: false, error: `Discord no pudo enviar el mensaje: ${err}` };
+        return { ok: false, error: `${TEXT.sendFailed}: ${err}` };
     }
 }
 
@@ -446,19 +471,19 @@ async function sendDirect(chat: Candidate, req: ComposeRequest): Promise<Compose
  */
 async function send(req: ComposeRequest): Promise<ComposeResult> {
     const chat = allCandidates().find(c => c.id === req.send);
-    if (!chat) return { ok: false, error: "No encuentro ese chat" };
+    if (!chat) return { ok: false, error: TEXT.noChat };
     if (req.direct) return sendDirect(chat, req);
     if (SelectedChannelStore.getChannelId() !== chat.id)
-        return { ok: false, error: "Ese chat no está abierto en Discord; deja antes el borrador con draft" };
+        return { ok: false, error: TEXT.notOpen };
 
     const text = getDraft(chat.id) ?? "";
     const uploads = UploadAttachmentStore.getUploadCount(chat.id, DraftType.ChannelMessage);
-    if (text !== req.expect) return { ok: false, error: "El borrador de la caja no es el texto confirmado; no envío nada" };
-    if (!text.trim() && !uploads) return { ok: false, error: "No hay nada que enviar" };
+    if (text !== req.expect) return { ok: false, error: TEXT.draftMismatch };
+    if (!text.trim() && !uploads) return { ok: false, error: TEXT.nothingToSend };
     const limited = rateLimit.limited(chat.id);
     if (limited) return { ok: false, error: limited };
     const editor = chatEditor();
-    if (!editor) return { ok: false, error: "No encuentro la caja de texto del chat" };
+    if (!editor) return { ok: false, error: TEXT.noEditor };
     rateLimit.record(chat.id);
 
     const before = MessageStore.getMessages(chat.id)?._array?.at(-1)?.id;
@@ -474,5 +499,5 @@ async function send(req: ComposeRequest): Promise<ComposeResult> {
     await waitFor(() => sentMessage()?.state === "SENT" || sentMessage()?.state === "SEND_FAILED", 8000);
     const sent = sentMessage();
     if (sent?.state === "SENT") return { ok: true, chat: pick(chat), enviado: true, id: sent.id };
-    return { ok: false, error: sent?.state === "SEND_FAILED" ? "Discord no pudo enviar el mensaje" : "Discord no confirmó el envío; revisa el chat" };
+    return { ok: false, error: sent?.state === "SEND_FAILED" ? TEXT.sendFailed : TEXT.sendUnconfirmed };
 }
