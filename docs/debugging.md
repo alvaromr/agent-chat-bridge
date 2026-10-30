@@ -42,3 +42,12 @@ Ask for permission first: while the port is open, any program on the machine can
 the JS files its HTTP cache already holds: `~/Library/Application Support/discord/Cache/Cache_Data/`. Use
 `grep -l -a "<text>"`, then extract the context with `python3 -I`; `grep -o` with a long context fails on these
 files. The cache also holds API responses with private messages: read only the script files.
+
+## 4. Accessibility
+`pnpm a11y` (`scripts/a11y.mjs`) checks what `mod/` adds, in both themes: the buttons' names, the keyboard paths to
+them and to the settings, the settings' field names, and contrast. Run it after a change to what `mod/` or the
+plugins show.
+1. Open the debugging port as method 2 says, with its permission.
+2. Open a chat whose box is empty, and leave Discord alone while the check runs: it presses keys in Discord.
+3. Run `pnpm a11y`. It prints only check names and measures, and exits with 1 if one fails.
+4. When done, close the port as method 2 says.

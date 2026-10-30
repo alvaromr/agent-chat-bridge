@@ -18,7 +18,8 @@
     "mutation": "stryker run",
     "audit": "pnpm audit",
     "smoke": "node --test test/smoke.mjs",
-    "check-discord": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/discord-code.mjs",
+    "a11y": "node scripts/a11y.mjs",
+    "check-discord":"node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/discord-code.mjs",
     "inject": "node scripts/inject.mjs install",
     "uninject": "node scripts/inject.mjs uninstall",
     "links": "ln -sfn \"$PWD/skills/discord-mod\" ~/.claude/skills/discord-mod && ln -sfn \"$PWD/scripts/discord-mod.mjs\" ~/.local/bin/discord-mod"

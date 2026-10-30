@@ -44,7 +44,7 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   content. `discord-code.mjs` finds the patches and the pieces of `mod/` in the Discord code of its HTTP cache, without
   running it or reading the API responses the cache also holds.
 - `docs/debugging.md`: how to verify a failure in the running Discord. Read it before diagnosing any failure of
-  `mod/` or the plugins. `scripts/cdp.mjs` is its tool.
+  `mod/` or the plugins. `scripts/cdp.mjs` and `scripts/a11y.mjs` are its tools, over `scripts/devtools.mjs`.
 
 ## Commands
 Defined in `package.json`.
@@ -63,6 +63,8 @@ Defined in `package.json`.
 - `pnpm audit`: known advisories in the dependencies; part of the review of any dependency change.
 - `pnpm smoke`: read-only checks with Discord open and patched.
 - `pnpm check-discord`: patches and pieces against the last Discord version the app loaded; Discord need not be open.
+- `pnpm a11y`: names, keyboard paths and contrast of what `mod/` adds, in both themes, through the debugging port
+  (`docs/debugging.md`, method 4). Run it after a change to what `mod/` or the plugins show.
 - `pnpm inject` / `pnpm uninject`: patch (or re-patch) Discord with `mod/`, or remove the patch. Discord closed.
   After `pnpm build`, restarting Discord is enough: the loader reads `mod/dist/` on every start.
 
@@ -133,7 +135,11 @@ Deviations from the engineering baseline, with the value that is not at stake an
   checks are `pnpm smoke`, `pnpm check-discord` and the methods of `docs/debugging.md`. The CLI's socket side is
   excluded in place, with that reason. The coverage counts only the files the tests load, so the scripts that are only
   I/O stay out of it and are checked by running them: `scripts/inject.mjs` (`pnpm inject`), `scripts/secrets.mjs`
-  (`pnpm check`), `scripts/cdp.mjs` (`docs/debugging.md`) and `mod/build.mjs` (`pnpm build`).
+  (`pnpm check`), `scripts/cdp.mjs`, `scripts/a11y.mjs` and `scripts/devtools.mjs` (`docs/debugging.md`) and
+  `mod/build.mjs` (`pnpm build`).
+- **The accessibility checks run outside the gate,** with `pnpm a11y`: they need the running Discord with the
+  debugging port, which needs the user's permission each time, since any program on the machine can read Discord
+  while it is open.
 - **Lint and types allow `any`** (`no-explicit-any` off, `noImplicitAny: false`), and the lint is not type-aware:
   Discord's internals are untyped, and `discordTypes.ts` types only the members the code uses.
 - **No separate formatter:** the lint's stylistic rules format the code.
