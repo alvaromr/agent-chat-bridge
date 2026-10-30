@@ -4,7 +4,7 @@ import type { Message } from "@plugin-api/discordTypes";
 import definePlugin, { OptionType } from "@plugin-api/plugin";
 import { definePluginSettings } from "@plugin-api/settings";
 
-import { askClaude, getDraft, replaceChatInput, reportFailure, SpellcheckIcon } from "../shared";
+import { askClaude, getDraft, pressEnter, replaceChatInput, reportFailure, SpellcheckIcon, waitFor } from "../shared";
 import { keepOriginalCase, rewritten } from "./text";
 
 const DEFAULT_PROMPT = `Eres un corrector ortográfico mínimo. Recibes un mensaje de chat entre <mensaje> y </mensaje> y lo devuelves casi literal.
@@ -111,12 +111,6 @@ async function correctLastMessage(channelId: string) {
     if (last) await correctSentMessage(last);
 }
 
-/** Resolves once the condition holds or the timeout passes, whichever comes first. */
-async function waitFor(condition: () => boolean, timeoutMs: number) {
-    for (const end = Date.now() + timeoutMs; !condition() && Date.now() < end;)
-        await new Promise(requestAnimationFrame);
-}
-
 /**
  * Ctrl+Enter: corrects the draft, then sends it through Discord's own Enter handling, so replies, mentions and
  * emoji parsing behave as usual. If the correction fails or is discarded, the original text is sent.
@@ -131,7 +125,7 @@ async function correctAndSend(channelId: string, draft: string, editor: HTMLElem
         await replaceChatInput(fixed);
         await waitFor(() => getDraft(channelId) === fixed, 500);
     }
-    editor.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true, cancelable: true }));
+    pressEnter(editor);
 }
 
 let busy = false;

@@ -31,6 +31,16 @@ export async function askClaude(systemPrompt: string, input: string, model: stri
 
 export const getDraft = (channelId: string) => DraftStore.getDraft(channelId, DraftType.ChannelMessage);
 
+/** Resolves once the condition holds or the timeout passes, whichever comes first. */
+export async function waitFor(condition: () => boolean, timeoutMs: number) {
+    for (const end = Date.now() + timeoutMs; !condition() && Date.now() < end;)
+        await new Promise(r => setTimeout(r, 50));
+}
+
+/** Presses Enter in the chat box as the user would, so Discord sends through its own path. */
+export const pressEnter = (editor: HTMLElement) =>
+    editor.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true, cancelable: true }));
+
 /** The open chat's own text box (not the edit box of a sent message). */
 export const chatEditor = () => document.querySelector<HTMLElement>('[class*="channelTextArea"] [data-slate-editor="true"]');
 

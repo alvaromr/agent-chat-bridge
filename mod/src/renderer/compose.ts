@@ -2,7 +2,7 @@
 // sends, edits, deletes or reacts. Requests to Discord's API beyond what the user's own actions make are limited by
 // rule 3: `read --fetch` (one page, as opening a chat), `read --more` and `read --older` (up to 3 older pages), `send`,
 // `edit`, `delete` and `react`.
-import { chatEditor, getDraft, replaceChatInput } from "../../../plugins/shared";
+import { chatEditor, getDraft, pressEnter, replaceChatInput, waitFor } from "../../../plugins/shared";
 import { type Command, commandOf, type ComposeCandidate, type ComposeRequest, type ComposeResult, type RequestFor } from "../ipc";
 import {
     ActiveJoinedThreadsStore, addReaction, ChannelRouter, ChannelStore, ComponentDispatch, DraftActions, DraftType, FluxDispatcher, GuildMemberStore,
@@ -106,11 +106,6 @@ function listChats(req: ComposeRequest): ComposeCandidate[] {
         .filter(c => wanted(c, req))
         .sort(byRecency)
         .map(pick);
-}
-
-async function waitFor(condition: () => boolean, timeoutMs: number) {
-    for (const end = Date.now() + timeoutMs; !condition() && Date.now() < end;)
-        await new Promise(r => setTimeout(r, 50));
 }
 
 /** Every chat with unread messages active in the range, muted ones included and flagged. */
@@ -497,7 +492,7 @@ async function send(req: ComposeRequest): Promise<ComposeResult> {
 
     const before = MessageStore.getMessages(chat.id)?._array?.at(-1)?.id;
     editor.focus();
-    editor.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true, cancelable: true }));
+    pressEnter(editor);
     const me = UserStore.getCurrentUser().id;
     // Discord first shows a local copy ("SENDING", with a temporary id) and swaps in the server's once accepted.
     const sentMessage = () => {
