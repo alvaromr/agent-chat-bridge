@@ -8,5 +8,5 @@
         "scripts/*.mjs"
     ],
     "ignoreDependencies": ["electron"],
-    "ignoreBinaries": ["pgrep", "gitleaks"]
+    "ignoreBinaries": ["pgrep", "brew"]
 }

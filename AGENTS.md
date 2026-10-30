@@ -137,6 +137,10 @@ Deviations from the engineering baseline, with the value that is not at stake an
   I/O stay out of it and are checked by running them: `scripts/inject.mjs` (`pnpm inject`), `scripts/secrets.mjs`
   (`pnpm check`), `scripts/cdp.mjs`, `scripts/a11y.mjs` and `scripts/devtools.mjs` (`docs/debugging.md`) and
   `mod/build.mjs` (`pnpm build`).
+- **gitleaks is pinned by version, not by a checksum in the repo:** it comes from Homebrew, which checks each download
+  against the checksum in its formula, so integrity rests on Homebrew as for any tool it installs.
+  `scripts/secrets.mjs` runs only that version's binary, by its path, so an upgrade never runs before its changelog
+  is read and the version bumped there.
 - **The accessibility checks run outside the gate,** with `pnpm a11y`: they need the running Discord with the
   debugging port, which needs the user's permission each time, since any program on the machine can read Discord
   while it is open.

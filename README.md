@@ -7,7 +7,8 @@ CLI to use Discord from Claude Code.
 ## Requirements
 - macOS with Discord (stable) in `/Applications`.
 - Node (version in `.node-version`) and pnpm (version in `package.json`).
-- `gitleaks` (version in `scripts/secrets.mjs`), for the secret scan of the gate (`brew install gitleaks`).
+- Homebrew's `gitleaks`, at the version in `scripts/secrets.mjs`, for the secret scan of the gate
+  (`brew install gitleaks`).
 - Claude Code installed as `~/.local/bin/claude`, for the plugins.
 
 ## Install
