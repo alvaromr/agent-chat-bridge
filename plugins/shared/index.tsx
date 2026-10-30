@@ -6,8 +6,19 @@ import type { IconComponent } from "@plugin-api/plugin";
 /** The toasts the user sees while Claude answers. */
 const TEXT = {
     asking: "Consultando a Claude…",
-    failed: (error: string) => `Claude: ${error}`
+    failed: (error: string) => `Claude: ${error}`,
+    actionFailed: (error: string) => `No se pudo terminar: ${error}`
 };
+
+/**
+ * Shows the user that an action they started failed, which would otherwise only reach the console. Logs the error's
+ * name and text only, never what it carries.
+ */
+export function reportFailure(err: unknown) {
+    const text = err instanceof Error ? err.message : String(err);
+    console.error(`[discord-mod] A plugin action failed: ${err instanceof Error ? err.name : typeof err}: ${text}`);
+    showToast({ text: TEXT.actionFailed(text), variant: "critical" });
+}
 
 /** Resolves with Claude's text, or shows a toast and resolves with null. */
 export async function askClaude(systemPrompt: string, input: string, model: string) {

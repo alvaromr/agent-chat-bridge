@@ -283,7 +283,7 @@ async function draft(req: ComposeRequest): Promise<ComposeResult> {
 
     const text = req.text ?? "";
     // The open chat's box is already mounted and ignores stored drafts; any other chat loads its draft when opened.
-    if (SelectedChannelStore.getChannelId() === chat.id) replaceChatInput(text);
+    if (SelectedChannelStore.getChannelId() === chat.id) await replaceChatInput(text);
     else {
         DraftActions.saveDraft(chat.id, text, DraftType.ChannelMessage);
         ChannelRouter.transitionToChannel(chat.id);

@@ -4,7 +4,7 @@ import type { Message } from "@plugin-api/discordTypes";
 import definePlugin, { OptionType } from "@plugin-api/plugin";
 import { definePluginSettings } from "@plugin-api/settings";
 
-import { askClaude, getDraft, replaceChatInput, SparklesIcon } from "../shared";
+import { askClaude, getDraft, replaceChatInput, reportFailure, SparklesIcon } from "../shared";
 import style from "./styles.css";
 import { buildInput } from "./transcript";
 
@@ -80,7 +80,7 @@ async function generateFrom(channelId: string, messageId: string) {
         showToast({ text: TEXT.changedWhileWriting, variant: "critical" });
         return;
     }
-    replaceChatInput(reply);
+    await replaceChatInput(reply);
 }
 
 let stopSelection: (() => void) | null = null;
@@ -96,7 +96,7 @@ function toggleSelection(channelId: string) {
         e.preventDefault();
         e.stopPropagation();
         stop();
-        generateFrom(channelId, el.id.slice(prefix.length));
+        generateFrom(channelId, el.id.slice(prefix.length)).catch(reportFailure);
     };
     const onKeyDown = (e: KeyboardEvent) => {
         if (e.key === "Escape") stop();
@@ -142,7 +142,7 @@ export default definePlugin({
             return {
                 label: TEXT.fromHere,
                 icon: SparklesIcon,
-                onClick: () => generateFrom(message.channel_id, message.id)
+                onClick: () => generateFrom(message.channel_id, message.id).catch(reportFailure)
             };
         }
     },

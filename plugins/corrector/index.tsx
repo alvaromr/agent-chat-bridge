@@ -4,7 +4,7 @@ import type { Message } from "@plugin-api/discordTypes";
 import definePlugin, { OptionType } from "@plugin-api/plugin";
 import { definePluginSettings } from "@plugin-api/settings";
 
-import { askClaude, getDraft, replaceChatInput, SpellcheckIcon } from "../shared";
+import { askClaude, getDraft, replaceChatInput, reportFailure, SpellcheckIcon } from "../shared";
 import { keepOriginalCase, rewritten } from "./text";
 
 const DEFAULT_PROMPT = `Eres un corrector ortográfico mínimo. Recibes un mensaje de chat entre <mensaje> y </mensaje> y lo devuelves casi literal.
@@ -68,24 +68,25 @@ async function correct(text: string) {
     return null;
 }
 
+/** Corrects the draft in the box, unless it changes meanwhile. */
+async function correctDraft(channelId: string) {
+    const draft = getDraft(channelId);
+    if (!draft?.trim()) return;
+
+    const fixed = await correct(draft);
+    if (fixed == null) return;
+    if (getDraft(channelId) !== draft) {
+        showToast({ text: TEXT.changedWhileFixing, variant: "critical" });
+        return;
+    }
+    await replaceChatInput(fixed);
+}
+
 const CorrectorChatBarButton: ChatBarButtonFactory = ({ isMainChat, channel }) => {
     if (!isMainChat) return null;
 
-    const onClick = async () => {
-        const draft = getDraft(channel.id);
-        if (!draft?.trim()) return;
-
-        const fixed = await correct(draft);
-        if (fixed == null) return;
-        if (getDraft(channel.id) !== draft) {
-            showToast({ text: TEXT.changedWhileFixing, variant: "critical" });
-            return;
-        }
-        replaceChatInput(fixed);
-    };
-
     return (
-        <ChatBarButton tooltip={TEXT.action} onClick={onClick}>
+        <ChatBarButton tooltip={TEXT.action} onClick={() => correctDraft(channel.id).catch(reportFailure)}>
             <SpellcheckIcon />
         </ChatBarButton>
     );
@@ -159,6 +160,8 @@ async function onKeyDown(e: KeyboardEvent) {
     busy = true;
     try {
         await task;
+    } catch (err) {
+        reportFailure(err);
     } finally {
         busy = false;
     }
@@ -182,7 +185,7 @@ export default definePlugin({
             return {
                 label: TEXT.action,
                 icon: SpellcheckIcon,
-                onClick: () => correctSentMessage(message)
+                onClick: () => correctSentMessage(message).catch(reportFailure)
             };
         }
     },
