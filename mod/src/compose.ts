@@ -99,7 +99,11 @@ export function startComposeServer() {
             if (ids) return startWatching(conn, ids);
             handle(line).then(r => conn.end(JSON.stringify(r) + "\n"));
         });
-        conn.on("error", () => { });
+        // Without a listener a socket error would crash the main process. The CLI hanging up (Ctrl+C on watch, a closed
+        // pipe) is normal; anything else is logged, by code only.
+        conn.on("error", (err: NodeJS.ErrnoException) => {
+            if (err.code !== "EPIPE" && err.code !== "ECONNRESET") console.error(`[discord-mod] CLI connection failed: ${err.code ?? err.message}`);
+        });
     });
     server.listen(SOCKET, () => chmodSync(SOCKET, 0o600));
     app.on("will-quit", () => {
