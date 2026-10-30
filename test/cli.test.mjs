@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { expect, test, vi } from "vitest";
 
-import { buildRequest, parseDate, UsageError } from "../scripts/discord-mod.mjs";
+import { buildRequest, dateSpan, UsageError } from "../scripts/discord-mod.mjs";
 
 const request = argv => buildRequest(argv).request;
 const usage = (argv, message) => assert.throws(() => buildRequest(argv), message ? new UsageError(message) : UsageError, argv.join(" "));
@@ -103,26 +103,22 @@ const local = (month, day) => new Date(2026, month - 1, day).getTime();
 test("named dates, in local time, across the daylight saving change", () => {
     // Monday 26 October 2026, a second before midnight; summer time ended on Sunday the 25th.
     at(new Date(2026, 9, 26, 23, 59, 59), () => {
-        assert.equal(parseDate("hoy", false), local(10, 26));
-        assert.equal(parseDate("hoy", true), local(10, 27));
-        assert.equal(parseDate("ayer", false), local(10, 25));
-        assert.equal(parseDate("ayer", true), local(10, 26));
-        assert.equal(parseDate("semana", false), local(10, 26));
-        assert.equal(parseDate("semana", true), local(10, 27));
+        assert.deepEqual(dateSpan("hoy"), { start: local(10, 26), end: local(10, 27) });
+        assert.deepEqual(dateSpan("ayer"), { start: local(10, 25), end: local(10, 26) });
+        assert.deepEqual(dateSpan("semana"), { start: local(10, 26), end: local(10, 27) });
     });
     // Sunday 25 October: the week started on Monday the 19th, still in summer time.
     at(new Date(2026, 9, 25, 12), () => {
-        assert.equal(parseDate("semana", false), local(10, 19));
-        assert.equal(parseDate("semana", true), local(10, 26));
+        assert.deepEqual(dateSpan("semana"), { start: local(10, 19), end: local(10, 26) });
     });
 });
 
-test("exact dates: --until with a bare day includes all of it, and impossible dates are refused", () => {
-    assert.equal(parseDate("2026-10-28", false), new Date(2026, 9, 28).getTime());
-    assert.equal(parseDate("2026-10-28", true), new Date(2026, 9, 29).getTime());
-    assert.equal(parseDate("2026-10-28T09:30", true), new Date(2026, 9, 28, 9, 30).getTime());
+test("exact dates: a bare day spans all of it, a date-time is one instant, and impossible dates are refused", () => {
+    assert.deepEqual(dateSpan("2026-10-28"), { start: new Date(2026, 9, 28).getTime(), end: new Date(2026, 9, 29).getTime() });
+    const instant = new Date(2026, 9, 28, 9, 30).getTime();
+    assert.deepEqual(dateSpan("2026-10-28T09:30"), { start: instant, end: instant });
     for (const bad of ["28-10-2026", "mañana", "2026-13-01", "2026-10-28T25:00", "2026-10-28T09:30:00", "+002026-10-28T09:30"])
-        assert.throws(() => parseDate(bad, false), new UsageError(`Fecha no válida: ${bad}`));
+        assert.throws(() => dateSpan(bad), new UsageError(`Fecha no válida: ${bad}`));
     assert.deepEqual(request(["read", "1", "--since", "2026-10-28", "--until", "2026-10-28"]),
         { read: "1", since: new Date(2026, 9, 28).getTime(), until: new Date(2026, 9, 29).getTime() });
 });

@@ -210,26 +210,32 @@ const TEXT = {
 
 export class UsageError extends Error { }
 
-/** Start of the given local day/week, or an exact local date-time; `end` moves a whole day to its end. */
-export function parseDate(value, end) {
+/**
+ * The local time span a date names, in ms: a whole day, the week up to the end of today, or one exact date-time.
+ * --since takes its start and --until its end.
+ */
+export function dateSpan(value) {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const day = (d, offset) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + offset);
-    const named = { hoy: today, ayer: day(today, -1), semana: day(today, -((today.getDay() + 6) % 7)) };
-    if (value in named) return (end ? day(value === "semana" ? today : named[value], 1) : named[value]).getTime();
+    const day = (d, offset) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + offset).getTime();
+    const named = {
+        hoy: { start: today.getTime(), end: day(today, 1) },
+        ayer: { start: day(today, -1), end: today.getTime() },
+        semana: { start: day(today, -((today.getDay() + 6) % 7)), end: day(today, 1) }
+    };
+    if (value in named) return named[value];
 
     // A date-time without an offset is local time; a bare date would be UTC, so it gets midnight added.
     const m = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.exec(value);
     const date = new Date(m?.[1] ? value : `${value}T00:00`);
     if (!m || isNaN(date.getTime())) throw new UsageError(TEXT.badDate(value));
-    if (!m[1] && end) date.setDate(date.getDate() + 1);
-    return date.getTime();
+    return { start: date.getTime(), end: m[1] ? date.getTime() : day(date, 1) };
 }
 
 function range(o) {
     return {
-        ...(o.since ? { since: parseDate(o.since, false) } : {}),
-        ...(o.until ? { until: parseDate(o.until, true) } : {})
+        ...(o.since ? { since: dateSpan(o.since).start } : {}),
+        ...(o.until ? { until: dateSpan(o.until).end } : {})
     };
 }
 
