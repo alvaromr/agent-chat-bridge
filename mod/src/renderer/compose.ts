@@ -42,8 +42,8 @@ const TEXT = {
 const TEXT_CHANNEL_TYPES = new Set([0, 5]); // text and announcement
 const VIEW_CHANNEL = 1n << 10n;
 
-const userName = (id: string) => {
-    const user = UserStore.getUser(id);
+const userName = (id: string | undefined) => {
+    const user = id && UserStore.getUser(id);
     return user ? [RelationshipStore.getNickname(id), user.globalName, user.username].filter((n): n is string => !!n) : [];
 };
 
@@ -51,7 +51,8 @@ function allCandidates(): Candidate[] {
     const list: Candidate[] = [];
     for (const ch of ChannelStore.getSortedPrivateChannels()) {
         if (ch.isDM()) {
-            const names = userName(ch.getRecipientId()!);
+            // A DM always has its other person; without one the chat would still show, under its id.
+            const names = userName(ch.getRecipientId());
             list.push({ id: ch.id, kind: "dm", label: names[0] ?? ch.id, names, lastMessageId: ch.lastMessageId ?? "0" });
         } else if (ch.isGroupDM()) {
             const members = ch.recipients.flatMap(id => userName(id).slice(0, 1));
@@ -85,7 +86,8 @@ function resolve(req: ComposeRequest): { chat?: Candidate; candidates: Candidate
         const chat = all.find(c => c.id === req.channelId);
         return chat ? { chat, candidates: [], searched } : { candidates: [], searched };
     }
-    return { ...match(all, req.query!), searched };
+    if (req.query === undefined) throw new Error("[discord-mod] A draft names its chat by id or by name; validate.ts checks it");
+    return { ...match(all, req.query), searched };
 }
 
 /** Whether the chat's last message falls in the requested range; always true without one. */
@@ -241,9 +243,9 @@ export async function compose(req: ComposeRequest): Promise<ComposeResult> {
     if (req.unread) return { ok: true, sinLeer: unreadChats(req) };
     if (req.read) return readChat(req);
     if (req.send) return send(req);
-    if (req.react) return react(req);
-    if (req.edit) return edit(req);
-    if (req.delete) return remove(req);
+    if (req.react) return react(req.react);
+    if (req.edit) return edit(req.edit);
+    if (req.delete) return remove(req.delete);
 
     const { chat, candidates, searched } = resolve(req);
     if (!chat) {
@@ -309,8 +311,7 @@ export async function compose(req: ComposeRequest): Promise<ComposeResult> {
  * Adds or removes the user's reaction with a Unicode emoji, through Discord's own reaction actions (rule 3: only
  * confirmed).
  */
-async function react(req: ComposeRequest): Promise<ComposeResult> {
-    const { chatId, messageId, emoji, remove } = req.react!;
+async function react({ chatId, messageId, emoji, remove }: NonNullable<ComposeRequest["react"]>): Promise<ComposeResult> {
     const chat = allCandidates().find(c => c.id === chatId);
     if (!chat) return { ok: false, error: TEXT.noChat };
     const message = () => MessageStore.getMessage(chat.id, messageId);
@@ -347,8 +348,7 @@ function ownMessage(chatId: string, messageId: string): { chat: Candidate; messa
 }
 
 /** Changes the text of the user's own message through Discord's edit action (rule 3: only confirmed). */
-async function edit(req: ComposeRequest): Promise<ComposeResult> {
-    const { chatId, messageId, text } = req.edit!;
+async function edit({ chatId, messageId, text }: NonNullable<ComposeRequest["edit"]>): Promise<ComposeResult> {
     const own = ownMessage(chatId, messageId);
     if (typeof own === "string") return { ok: false, error: own };
     if (own.message.content === text) return { ok: false, error: TEXT.sameText };
@@ -366,8 +366,7 @@ async function edit(req: ComposeRequest): Promise<ComposeResult> {
 }
 
 /** Deletes the user's own message for everyone, through Discord's delete action (rule 3: only confirmed). */
-async function remove(req: ComposeRequest): Promise<ComposeResult> {
-    const { chatId, messageId } = req.delete!;
+async function remove({ chatId, messageId }: NonNullable<ComposeRequest["delete"]>): Promise<ComposeResult> {
     const own = ownMessage(chatId, messageId);
     if (typeof own === "string") return { ok: false, error: own };
     const limited = rateLimit.limited(own.chat.id);

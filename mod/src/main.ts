@@ -11,9 +11,12 @@ import { settingsFile } from "./settingsFile";
 
 // Discord's own code sits at a path known only at run time, so it loads with require, not an import.
 /* eslint-disable @typescript-eslint/no-require-imports */
-const asarPath = join(dirname(require.main!.filename), "..", "_app.asar");
+// The entry module is the loader's index.js in Discord's app.asar; scripts/inject.mjs is the only way main.ts loads.
+const entry = require.main;
+if (!entry) throw new Error("[discord-mod] main.js must be loaded by the app.asar loader that scripts/inject.mjs writes");
+const asarPath = join(dirname(entry.filename), "..", "_app.asar");
 const discordPkg = require(join(asarPath, "package.json"));
-require.main!.filename = join(asarPath, discordPkg.main);
+entry.filename = join(asarPath, discordPkg.main);
 app.setAppPath(asarPath);
 
 ipcMain.on(IPC.getRenderer, e => {
@@ -35,4 +38,4 @@ app.once("ready", () => {
     startComposeServer();
 });
 
-require(require.main!.filename);
+require(entry.filename);

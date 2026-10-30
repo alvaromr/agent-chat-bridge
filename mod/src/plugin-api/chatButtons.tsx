@@ -59,7 +59,7 @@ export interface ChatBarButtonProps {
 let classes: { wrapper: Record<"button" | "buttonWrapper" | "notificationDot", string>; textArea: Record<"buttonContainer" | "channelTextArea" | "button", string>; } | undefined;
 
 export function ChatBarButton({ children, tooltip, onClick, onContextMenu = openSettingsModal }: ChatBarButtonProps) {
-    classes ??= {
+    const { wrapper, textArea } = classes ??= {
         wrapper: findCssClasses("button", "buttonWrapper", "notificationDot"),
         textArea: findCssClasses("buttonContainer", "channelTextArea", "button")
     };
@@ -69,16 +69,16 @@ export function ChatBarButton({ children, tooltip, onClick, onContextMenu = open
         <ErrorBoundary>
             <Tooltip text={text}>
                 {({ onMouseEnter, onMouseLeave }) => (
-                    <div className={`expression-picker-chat-input-button ${classes!.textArea.buttonContainer}`}>
+                    <div className={`expression-picker-chat-input-button ${textArea.buttonContainer}`}>
                         <Clickable
                             aria-label={tooltip}
                             onMouseEnter={onMouseEnter}
                             onMouseLeave={onMouseLeave}
-                            className={`${classes!.wrapper.button} ${classes!.textArea.button}`}
+                            className={`${wrapper.button} ${textArea.button}`}
                             onClick={onClick}
                             onContextMenu={onContextMenu}
                         >
-                            <div className={classes!.wrapper.buttonWrapper}>{children}</div>
+                            <div className={wrapper.buttonWrapper}>{children}</div>
                         </Clickable>
                     </div>
                 )}

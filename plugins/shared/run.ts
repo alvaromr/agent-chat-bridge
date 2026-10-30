@@ -51,7 +51,12 @@ export async function runClaude(_: IpcMainInvokeEvent, systemPrompt: string, inp
                 },
                 (err, stdout, stderr) => err ? reject(new Error(stderr.trim() || err.message)) : resolve(stdout.trim())
             );
-            child.stdin!.end(input);
+            // execFile always pipes stdin; without it claude would wait for input until the timeout.
+            if (!child.stdin) {
+                child.kill();
+                return reject(new Error("[discord-mod] claude was started without a stdin pipe"));
+            }
+            child.stdin.end(input);
         });
         return text ? { ok: true, text } : { ok: false, text: TEXT.empty };
     } catch (e) {
