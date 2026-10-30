@@ -42,6 +42,8 @@ const ATTEMPTS = 2;
 /** Returns the corrected text, or null when there is nothing to apply (a toast explains why). */
 async function correct(text: string) {
     for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+        // The text goes in unescaped, since the model must return it as it is. Text that closes <mensaje> and asks for
+        // something else gets an answer that changes words, which rewritten() discards.
         const raw = await askClaude(settings.store.prompt, `<mensaje>\n${text}\n</mensaje>`, settings.store.model);
         if (raw == null) return null;
 
