@@ -31,6 +31,8 @@ declare module "electron" {
 
     export const BrowserWindow: { getAllWindows(): BrowserWindowInstance[]; };
 
+    export const dialog: { showMessageBox(options: { type: "warning"; message: string; detail: string; }): Promise<unknown>; };
+
     export const ipcMain: {
         on(channel: string, listener: (event: IpcMainEvent, ...args: any[]) => void): void;
         handle(channel: string, listener: (event: IpcMainInvokeEvent, ...args: any[]) => unknown): void;

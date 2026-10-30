@@ -17,8 +17,10 @@ No new code reaches Discord without a review first (see «Review»). When in dou
     message toolbar buttons, and the Discord pieces they use (`discord.ts`) with their types (`discordTypes.ts`).
   - `mod/src/electron.d.ts`: types of the Electron APIs `mod/` calls.
   - Settings live in `~/Library/Application Support/discord-mod/settings.json`, keyed by plugin name, only the
-    values that differ from the default. There is no switch to disable a plugin: with both disabled, their buttons and
-    with them the access to the modal would disappear. Each feature has its own setting to turn it off.
+    values that differ from the default. A file that can't be read is moved aside (`settings.json.unreadable-<ms>`)
+    and a dialog says so; if it can't be moved, saving stays blocked. There is no switch to disable a plugin: with
+    both disabled, their buttons and with them the access to the modal would disappear. Each feature has its own
+    setting to turn it off.
 - `plugins/`: own plugins, registered in `mod/src/renderer/index.ts`. They import only from `@plugin-api/` and
   `plugins/shared/`, a rule the lint enforces.
   - `plugins/shared/`: code common to the plugins; `run.ts` runs `claude -p` in the main process.
