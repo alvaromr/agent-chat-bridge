@@ -11,7 +11,30 @@ function withOriginalCase(original: string, fixed: string) {
     return f.map((c, i) => elementAt(o, i) === elementAt(o, i).toUpperCase() ? c.toUpperCase() : c.toLowerCase()).join("");
 }
 
-/** Undoes case changes the model makes despite the prompt, keeping its accent fixes. */
+const isLetter = (c: string) => c.toLowerCase() !== c.toUpperCase();
+const isUpper = (c: string) => c === c.toUpperCase();
+
+/**
+ * Gives a word the model rewrote ("ke" → "Qué") the case pattern of the word it replaces: all lower, all upper or
+ * capitalized. Any other pattern, or a word with no letters, leaves the model's word as it is.
+ */
+function withCaseOf(original: string, fixed: string) {
+    const letters = [...original].filter(isLetter);
+    const [first, ...rest] = letters;
+    if (first === undefined) return fixed;
+    if (letters.every(c => !isUpper(c))) return fixed.toLowerCase();
+    if (rest.length && letters.every(isUpper)) return fixed.toUpperCase();
+    if (!isUpper(first) || rest.some(isUpper)) return fixed;
+    const chars = [...fixed.toLowerCase()];
+    const at = chars.findIndex(isLetter);
+    if (at >= 0) chars[at] = elementAt(chars, at).toUpperCase();
+    return chars.join("");
+}
+
+/**
+ * Undoes case changes the model makes despite the prompt, keeping its accent fixes. A word it only re-accented gets
+ * the original's case letter by letter; a word it rewrote, the case pattern of the original word in its place.
+ */
 export function keepOriginalCase(original: string, fixed: string) {
     // Stryker disable next-line MethodExpression,Regex: an empty word can only pair with an empty edge of `parts`, which stays empty.
     const a = original.split(/\s+/).filter(Boolean).map(w => ({ w, f: fold(w) }));
@@ -28,16 +51,33 @@ export function keepOriginalCase(original: string, fixed: string) {
             row[j] = word.f === other.f ? common(i + 1, j + 1) + 1 : Math.max(common(i + 1, j), common(i, j + 1));
     }
 
-    for (let i = 0, j = 0; i < a.length && j < b.length;) {
+    // Between two matched words, the rewritten ones pair up in order with the original ones they replace.
+    let gapA: number[] = [], gapB: number[] = [];
+    const closeGap = () => {
+        for (const [n, j] of gapB.entries()) {
+            const i = gapA[n];
+            const { k } = elementAt(b, j);
+            if (i !== undefined) parts[k] = withCaseOf(elementAt(a, i).w, elementAt(parts, k));
+        }
+        gapA = [];
+        gapB = [];
+    };
+    let i = 0, j = 0;
+    while (i < a.length && j < b.length) {
         const word = elementAt(a, i), other = elementAt(b, j);
         if (word.f === other.f) {
+            closeGap();
             parts[other.k] = withOriginalCase(word.w, elementAt(parts, other.k));
             i++;
             j++;
         }
-        else if (common(i + 1, j) >= common(i, j + 1)) i++;
-        else j++;
+        else if (common(i + 1, j) >= common(i, j + 1)) gapA.push(i++);
+        else gapB.push(j++);
     }
+    // Only the model's words can be left: it moves past an original word on a tie, and past one of its own only
+    // when a match lies ahead.
+    for (; j < b.length; j++) gapB.push(j);
+    closeGap();
     return parts.join("");
 }
 

@@ -24,8 +24,29 @@ test("corrector: when the letters don't pair one to one, the word stays as the u
     assert.equal(keepOriginalCase("n̈o", "No"), "n̈o");
 });
 
-test("corrector: a word the model replaces entirely stays as the model wrote it", () => {
-    assert.equal(keepOriginalCase("vamos mañana", "Iremos mañana"), "Iremos mañana");
+test.each([
+    ["ke tal", "Qué tal", "qué tal"],
+    ["ola k ase", "Hola, qué hace", "hola, qué hace"],
+    ["xq no", "Porque no", "porque no"],
+    ["Ke tal", "qué tal", "Qué tal"],
+    ["K tal", "qué tal", "Qué tal"],
+    ["KE TAL", "qué tal", "QUÉ TAL"],
+    ["q tal", "¿Qué tal?", "¿qué tal?"],
+    ["Q tal", "¿qué tal?", "¿Qué tal?"],
+    ["vamos mañana", "Iremos mañana", "iremos mañana"],
+    ["ke?", "¿Qué?", "¿qué?"],
+    ["k", "Qué tal", "qué tal"]
+])("corrector: a word the model rewrites takes the case of the user's word in its place: %s", (original, fixed, expected) => {
+    assert.equal(keepOriginalCase(original, fixed), expected);
+});
+
+test("corrector: with no case pattern to copy, the model's word stays as it is", () => {
+    // Mixed case, a word with no letters, a capital with nothing to put it on, and a word the model adds.
+    assert.equal(keepOriginalCase("iPhon", "IPHONE"), "IPHONE");
+    assert.equal(keepOriginalCase("PHon", "phone"), "phone");
+    assert.equal(keepOriginalCase("3 cosas", "Tres cosas"), "Tres cosas");
+    assert.equal(keepOriginalCase("A b", "¿? b"), "¿? b");
+    assert.equal(keepOriginalCase("no se", "No lo Sé"), "no lo sé");
 });
 
 test("corrector: words the model adds or drops don't shift the case onto another word", () => {
