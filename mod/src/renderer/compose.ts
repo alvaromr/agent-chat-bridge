@@ -10,7 +10,7 @@ import {
     MessageActions, MessageManager, MessageStore, PendingReplyStore, PermissionStore, ReadStateStore, RelationshipStore, removeReaction,
     SelectedChannelStore, UploadAttachmentStore, UploadHandler, UserGuildSettingsStore, UserStore
 } from "../plugin-api/discord";
-import { waitFor } from "../plugin-api/wait";
+import { CONFIRM_MS, waitFor } from "../plugin-api/wait";
 import { embedTexts, type Names, reaction, readableMentions } from "./format";
 import { byRecency, type Candidate, fold, inRange, match, snowflakeTime } from "./match";
 import { rateLimiter } from "./rateLimit";
@@ -39,6 +39,11 @@ const TEXT = {
     reactUnconfirmed: "Discord no confirmó la reacción; revisa el mensaje",
     unreactUnconfirmed: "Discord no confirmó que se quitara la reacción; revisa el mensaje"
 } as const;
+
+/** How long the chat box gets to show a draft, an emptied box or attachments, which happen without the server. */
+const BOX_UPDATE_MS = 3000;
+/** How long Discord gets to show an added or removed reaction. */
+const REACTION_CONFIRM_MS = 5000;
 
 const TEXT_CHANNEL_TYPES = new Set([0, 5]); // text and announcement
 const VIEW_CHANNEL = 1n << 10n;
@@ -196,7 +201,7 @@ async function readChat(req: ComposeRequest): Promise<ComposeResult> {
         if (!req.fetch) return { ok: false, error: TEXT.notFetched };
         // Exactly what Discord runs on opening a chat (rule 3): one request for its usual first page of messages.
         MessageManager.fetchMessages({ guildId: chat.guildId ?? null, channelId: chat.id });
-        await waitFor(fromNetwork, 8000);
+        await waitFor(fromNetwork, CONFIRM_MS);
         if (!fromNetwork()) return { ok: false, error: TEXT.fetchFailed };
     }
 
@@ -212,7 +217,7 @@ async function readChat(req: ComposeRequest): Promise<ComposeResult> {
         if (paginasExtra) await new Promise(r => setTimeout(r, PAGE_PAUSE_MS));
         const count = store()._array.length;
         MessageActions.fetchMessages({ channelId: chat.id, before: oldest.id, limit: PAGE_SIZE });
-        await waitFor(() => !store().loadingMore && store()._array.length > count, 8000);
+        await waitFor(() => !store().loadingMore && store()._array.length > count, CONFIRM_MS);
         paginasExtra++;
         if (store()._array.length <= count) break;
     }
@@ -265,7 +270,7 @@ async function draft(req: ComposeRequest): Promise<ComposeResult> {
         if (SelectedChannelStore.getChannelId() === chat.id) await replaceChatInput("");
         else DraftActions.saveDraft(chat.id, "", DraftType.ChannelMessage);
         const empty = () => !getDraft(chat.id);
-        await waitFor(empty, 3000);
+        await waitFor(empty, BOX_UPDATE_MS);
         return empty() ? { ok: true, chat: pick(chat), vaciado: true } : { ok: false, error: TEXT.notCleared };
     }
     if ((getDraft(chat.id) || UploadAttachmentStore.getUploadCount(chat.id, DraftType.ChannelMessage)) && !req.replace)
@@ -285,7 +290,7 @@ async function draft(req: ComposeRequest): Promise<ComposeResult> {
         ChannelRouter.transitionToChannel(chat.id);
     }
     const draftReady = () => SelectedChannelStore.getChannelId() === chat.id && (getDraft(chat.id) ?? "") === text;
-    await waitFor(draftReady, 3000);
+    await waitFor(draftReady, BOX_UPDATE_MS);
 
     if (replyTo) {
         FluxDispatcher.dispatch({
@@ -299,7 +304,7 @@ async function draft(req: ComposeRequest): Promise<ComposeResult> {
     if (req.files?.length) {
         const files = req.files.map(f => new File([f.data as BlobPart], f.name, { type: f.type }));
         UploadHandler.promptToUpload(files, channel, DraftType.ChannelMessage);
-        await waitFor(() => UploadAttachmentStore.getUploadCount(chat.id, DraftType.ChannelMessage) >= files.length, 3000);
+        await waitFor(() => UploadAttachmentStore.getUploadCount(chat.id, DraftType.ChannelMessage) >= files.length, BOX_UPDATE_MS);
     }
     ComponentDispatch.dispatchToLastSubscribed("TEXTAREA_FOCUS");
 
@@ -331,13 +336,13 @@ async function react({ chatId, messageId, emoji, remove }: NonNullable<ComposeRe
     const unicode = { id: null, name: emoji, animated: false };
     if (remove) {
         await removeReaction({ channelId: chat.id, messageId, emoji: unicode });
-        await waitFor(() => !mine(), 5000);
+        await waitFor(() => !mine(), REACTION_CONFIRM_MS);
         return !mine()
             ? { ok: true, chat: pick(chat), reaccionQuitada: true }
             : { ok: false, error: TEXT.unreactUnconfirmed };
     }
     await addReaction(chat.id, messageId, unicode);
-    await waitFor(mine, 5000);
+    await waitFor(mine, REACTION_CONFIRM_MS);
     return mine()
         ? { ok: true, chat: pick(chat), reaccionado: true }
         : { ok: false, error: TEXT.reactUnconfirmed };
@@ -365,7 +370,7 @@ async function edit({ chatId, messageId, text }: NonNullable<ComposeRequest["edi
     // Discord queues the edit and doesn't wait for it; the store has the new text once the server accepts it.
     await MessageActions.editMessage(own.chat.id, messageId, { content: text });
     const edited = () => MessageStore.getMessage(own.chat.id, messageId)?.content === text;
-    await waitFor(edited, 8000);
+    await waitFor(edited, CONFIRM_MS);
     return edited()
         ? { ok: true, chat: pick(own.chat), editado: true }
         : { ok: false, error: TEXT.editUnconfirmed };
@@ -382,7 +387,7 @@ async function remove({ chatId, messageId }: NonNullable<ComposeRequest["delete"
     // Discord doesn't wait for the request either; the message leaves the store once the server deletes it.
     await MessageActions.deleteMessage(own.chat.id, messageId);
     const deleted = () => !MessageStore.getMessage(own.chat.id, messageId);
-    await waitFor(deleted, 8000);
+    await waitFor(deleted, CONFIRM_MS);
     return deleted()
         ? { ok: true, chat: pick(own.chat), borrado: true }
         : { ok: false, error: TEXT.deleteUnconfirmed };
@@ -500,8 +505,7 @@ async function send(req: ComposeRequest): Promise<ComposeResult> {
         const last = MessageStore.getMessages(chat.id)?._array?.at(-1);
         return last && last.id !== before && last.author.id === me ? last : null;
     };
-    // Under the main process's 10 s timeout, so the answer says what happened instead of "Discord no respondió".
-    await waitFor(() => sentMessage()?.state === "SENT" || sentMessage()?.state === "SEND_FAILED", 8000);
+    await waitFor(() => sentMessage()?.state === "SENT" || sentMessage()?.state === "SEND_FAILED", CONFIRM_MS);
     const sent = sentMessage();
     if (sent?.state === "SENT") return { ok: true, chat: pick(chat), enviado: true, id: sent.id };
     return { ok: false, error: sent?.state === "SEND_FAILED" ? TEXT.sendFailed : TEXT.sendUnconfirmed };

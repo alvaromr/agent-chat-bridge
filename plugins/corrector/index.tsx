@@ -4,7 +4,7 @@ import { DraftType, MessageActions, MessageStore, SelectedChannelStore, showToas
 import type { Message } from "@plugin-api/discordTypes";
 import definePlugin, { OptionType } from "@plugin-api/plugin";
 import { definePluginSettings } from "@plugin-api/settings";
-import { waitFor } from "@plugin-api/wait";
+import { CONFIRM_MS, waitFor } from "@plugin-api/wait";
 
 import { askClaude, reportFailure, SpellcheckIcon } from "../shared";
 import { keepOriginalCase, rewritten } from "./text";
@@ -102,7 +102,7 @@ async function correctSentMessage(message: Message) {
     await MessageActions.editMessage(message.channel_id, message.id, { content: fixed });
     // Discord queues the edit and doesn't wait for it; the store has the new text once the server accepts it.
     const edited = () => MessageStore.getMessage(message.channel_id, message.id)?.content === fixed;
-    await waitFor(edited, 8000);
+    await waitFor(edited, CONFIRM_MS);
     showToast(edited() ? { text: TEXT.fixed, variant: "success" } : { text: TEXT.editUnconfirmed, variant: "critical" });
 }
 
