@@ -4,4 +4,4 @@
 - **Why:** the text sits in a `TEXT` object at the top of each module that shows text, or in the definition it belongs
   to (a plugin's settings, a CLI command's entry in `COMMANDS`), whole sentences only, so a later extraction is
   mechanical.
-- **Decided by:** the owner, 2026-11-03.
+- **Decided by:** the owner, 2026-10-30.

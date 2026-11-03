@@ -4,4 +4,4 @@
   a guess, not a check.
 - **Why:** `no-explicit-any` is off, `noImplicitAny` is false and the lint is not type-aware. `discordTypes.ts` types
   only the members the code uses.
-- **Decided by:** the owner, 2026-11-03.
+- **Decided by:** the owner, 2026-10-29.

@@ -3,4 +3,4 @@
 - **Value not at stake:** changeability through a generated changelog: there is none (`no-version-changelog-tags.md`).
 - **Why:** the repo's convention is a plain imperative subject. The `.githooks/commit-msg` hook checks what a machine
   can: length, initial capital, no final period, no WIP.
-- **Decided by:** the owner, 2026-11-03.
+- **Decided by:** the owner, 2026-10-29.

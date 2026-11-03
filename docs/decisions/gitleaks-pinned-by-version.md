@@ -4,4 +4,4 @@
   formula, as for any tool it installs.
 - **Why:** `scripts/secrets.mjs` runs only that version's binary, by its path, so an upgrade never runs before its
   changelog is read and the version bumped there.
-- **Decided by:** the owner, 2026-11-03.
+- **Decided by:** the owner, 2026-10-30.

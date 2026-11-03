@@ -7,4 +7,4 @@
   load, so the scripts that are only I/O stay out of it and are checked by running them: `scripts/inject.mjs`
   (`pnpm inject`), `scripts/secrets.mjs` (`pnpm check`), `scripts/cdp.mjs`, `scripts/a11y.mjs` and
   `scripts/devtools.mjs` (`docs/debugging.md`) and `mod/build.mjs` (`pnpm build`).
-- **Decided by:** the owner, 2026-11-03.
+- **Decided by:** the owner, 2026-10-29.
