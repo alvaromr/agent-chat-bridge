@@ -1,6 +1,5 @@
 // Renderer side shared by every plugin that talks to Claude.
-import { insertTextIntoChatInputBox } from "@plugin-api/chatInput";
-import { DraftStore, DraftType, showToast } from "@plugin-api/discord";
+import { showToast } from "@plugin-api/discord";
 import type { IconComponent } from "@plugin-api/plugin";
 
 /** The toasts the user sees while Claude answers. */
@@ -27,39 +26,6 @@ export async function askClaude(systemPrompt: string, input: string, model: stri
     if (ok) return text;
     showToast({ text: TEXT.failed(text), variant: "critical" });
     return null;
-}
-
-export const getDraft = (channelId: string) => DraftStore.getDraft(channelId, DraftType.ChannelMessage);
-
-/** Resolves once the condition holds or the timeout passes, whichever comes first. */
-export async function waitFor(condition: () => boolean, timeoutMs: number) {
-    for (const end = Date.now() + timeoutMs; !condition() && Date.now() < end;)
-        await new Promise(r => setTimeout(r, 50));
-}
-
-/** Presses Enter in the chat box as the user would, so Discord sends through its own path. */
-export const pressEnter = (editor: HTMLElement) =>
-    editor.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true, cancelable: true }));
-
-/** The open chat's own text box (not the edit box of a sent message). */
-export const chatEditor = () => document.querySelector<HTMLElement>('[class*="channelTextArea"] [data-slate-editor="true"]');
-
-/**
- * Replaces the whole chat box text: selects everything in the editor and inserts over it, as pasting would.
- * CLEAR_TEXT only empties the stored draft now, not the editor, so the insert landed at the cursor.
- */
-export async function replaceChatInput(text: string) {
-    const editor = chatEditor();
-    if (editor) {
-        editor.focus();
-        const range = document.createRange();
-        range.selectNodeContents(editor);
-        document.getSelection()?.removeAllRanges();
-        document.getSelection()?.addRange(range);
-        // The editor reads the page's selection on `selectionchange`, at most every 100 ms.
-        await new Promise(r => setTimeout(r, 150));
-    }
-    insertTextIntoChatInputBox(text);
 }
 
 export const SpellcheckIcon: IconComponent = ({ height = 20, width = 20, className }) => (

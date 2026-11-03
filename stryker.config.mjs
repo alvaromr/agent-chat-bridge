@@ -12,6 +12,7 @@ export default {
         "mod/src/ipc.ts",
         "mod/src/settingsFile.ts",
         "mod/src/validate.ts",
+        "mod/src/plugin-api/wait.ts",
         "mod/src/renderer/format.ts",
         "mod/src/renderer/match.ts",
         "mod/src/renderer/rateLimit.ts",

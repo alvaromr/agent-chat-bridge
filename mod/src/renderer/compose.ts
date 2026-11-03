@@ -2,14 +2,15 @@
 // sends, edits, deletes or reacts. Requests to Discord's API beyond what the user's own actions make are limited by
 // rule 3: `read --fetch` (one page, as opening a chat), `read --more` and `read --older` (up to 3 older pages), `send`,
 // `edit`, `delete` and `react`.
-import { chatEditor, getDraft, pressEnter, replaceChatInput, waitFor } from "../../../plugins/shared";
 import { type Command, commandOf, type ComposeCandidate, type ComposeRequest, type ComposeResult, type RequestFor } from "../ipc";
+import { chatEditor, getDraft, pressEnter, replaceChatInput } from "../plugin-api/chatInput";
 import {
     ActiveJoinedThreadsStore, addReaction, ChannelRouter, ChannelStore, ComponentDispatch, DraftActions, DraftType, FluxDispatcher, GuildMemberStore,
     GuildRoleStore, GuildStore,
     MessageActions, MessageManager, MessageStore, PendingReplyStore, PermissionStore, ReadStateStore, RelationshipStore, removeReaction,
     SelectedChannelStore, UploadAttachmentStore, UploadHandler, UserGuildSettingsStore, UserStore
 } from "../plugin-api/discord";
+import { waitFor } from "../plugin-api/wait";
 import { embedTexts, type Names, reaction, readableMentions } from "./format";
 import { byRecency, type Candidate, fold, inRange, match, snowflakeTime } from "./match";
 import { rateLimiter } from "./rateLimit";

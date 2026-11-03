@@ -1,10 +1,11 @@
 import { ChatBarButton, type ChatBarButtonFactory } from "@plugin-api/chatButtons";
+import { getDraft, replaceChatInput } from "@plugin-api/chatInput";
 import { MessageStore, showToast, UserStore } from "@plugin-api/discord";
 import type { Message } from "@plugin-api/discordTypes";
 import definePlugin, { OptionType } from "@plugin-api/plugin";
 import { definePluginSettings } from "@plugin-api/settings";
 
-import { askClaude, getDraft, replaceChatInput, reportFailure, SparklesIcon } from "../shared";
+import { askClaude, reportFailure, SparklesIcon } from "../shared";
 import style from "./styles.css";
 import { buildInput } from "./transcript";
 

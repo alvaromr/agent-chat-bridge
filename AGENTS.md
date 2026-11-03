@@ -14,7 +14,9 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   - `mod/src/renderer/`: webpack hook, plugin registry, the CLI's request handling and the settings modal
     (right-click a plugin button of the chat box).
   - `mod/src/plugin-api/`: what the plugins import as `@plugin-api/…`: plugin definition, settings, chat box and
-    message toolbar buttons, and the Discord pieces they use (`discord.ts`) with their types (`discordTypes.ts`).
+    message toolbar buttons, the chat box's text (`chatInput.ts`), the wait for Discord's stores (`wait.ts`), and the
+    Discord pieces they use (`discord.ts`) with their types (`discordTypes.ts`). The CLI's request handling uses the
+    same pieces; `mod/` imports nothing from `plugins/` but the registration and `run.ts`.
   - `mod/src/electron.d.ts`: types of the Electron APIs `mod/` calls.
   - Settings live in `~/Library/Application Support/discord-mod/settings.json`, keyed by plugin name, only the
     values that differ from the default. A file that can't be read is moved aside (`settings.json.unreadable-<ms>`)

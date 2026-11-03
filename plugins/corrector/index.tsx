@@ -1,10 +1,12 @@
 import { ChatBarButton, type ChatBarButtonFactory } from "@plugin-api/chatButtons";
+import { getDraft, pressEnter, replaceChatInput } from "@plugin-api/chatInput";
 import { DraftType, MessageActions, MessageStore, SelectedChannelStore, showToast, UploadAttachmentStore, UserStore } from "@plugin-api/discord";
 import type { Message } from "@plugin-api/discordTypes";
 import definePlugin, { OptionType } from "@plugin-api/plugin";
 import { definePluginSettings } from "@plugin-api/settings";
+import { waitFor } from "@plugin-api/wait";
 
-import { askClaude, getDraft, pressEnter, replaceChatInput, reportFailure, SpellcheckIcon, waitFor } from "../shared";
+import { askClaude, reportFailure, SpellcheckIcon } from "../shared";
 import { keepOriginalCase, rewritten } from "./text";
 
 const DEFAULT_PROMPT = `Eres un corrector ortográfico mínimo. Recibes un mensaje de chat entre <mensaje> y </mensaje> y lo devuelves casi literal.
