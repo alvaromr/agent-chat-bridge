@@ -133,30 +133,5 @@ The loader depends on Discord not enabling the Electron fuse `EnableEmbeddedAsar
 2026-10-28, Electron 42). If it enables it, no loader in `app.asar` starts.
 
 ## Decisions and deviations
-Deviations from the engineering baseline, with the value that is not at stake and why.
-- **Coverage covers the pure modules only.** The rest of `mod/` and `plugins/` runs only inside Discord, so its
-  checks are `pnpm smoke`, `pnpm check-discord` and the methods of `docs/debugging.md`. The CLI's socket side is
-  excluded in place, with that reason. The coverage counts only the files the tests load, so the scripts that are only
-  I/O stay out of it and are checked by running them: `scripts/inject.mjs` (`pnpm inject`), `scripts/secrets.mjs`
-  (`pnpm check`), `scripts/cdp.mjs`, `scripts/a11y.mjs` and `scripts/devtools.mjs` (`docs/debugging.md`) and
-  `mod/build.mjs` (`pnpm build`).
-- **gitleaks is pinned by version, not by a checksum in the repo:** it comes from Homebrew, which checks each download
-  against the checksum in its formula, so integrity rests on Homebrew as for any tool it installs.
-  `scripts/secrets.mjs` runs only that version's binary, by its path, so an upgrade never runs before its changelog
-  is read and the version bumped there.
-- **The accessibility checks run outside the gate,** with `pnpm a11y`: they need the running Discord with the
-  debugging port, which needs the user's permission each time, since any program on the machine can read Discord
-  while it is open.
-- **Lint and types allow `any`** (`no-explicit-any` off, `noImplicitAny: false`), and the lint is not type-aware:
-  Discord's internals are untyped, and `discordTypes.ts` types only the members the code uses.
-- **No separate formatter:** the lint's stylistic rules format the code.
-- **TypeScript stays on 6.0:** TypeScript 7 ships no JavaScript API, which typescript-eslint (`typescript <6.1.0`),
-  Stryker's TypeScript checker and `test/discord-code.mjs` load. Move when they support it.
-- **No version, changelog or tags:** nothing is released or distributed; the reviewed commit is the version.
-- **User-facing text is in Spanish:** CLI help and errors, toasts, the settings modal, prompts and the skill's
-  replies, because the user reads them in Spanish. Logs, internal errors and test names are in English.
-- **User-facing text is grouped per module:** in a `TEXT` object at the top of each module that shows text, or in the
-  definition it belongs to (a plugin's settings, a CLI command's entry in `COMMANDS`). No resource files while there
-  is one language and no plan to translate.
-- **Commit subjects** follow the repo's convention: plain imperative, no Conventional Commits prefix. The
-  `.githooks/commit-msg` hook checks what a machine can: length, initial capital, no final period, no WIP.
+Deviations from the engineering baseline live in `docs/decisions/`, one file each, with the value that is not at
+stake, why, and who decided. Read them before changing a practice; a new deviation gets its own file there.
