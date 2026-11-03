@@ -145,9 +145,5 @@ export default definePlugin({
                 onClick: () => generateFrom(message.channel_id, message.id).catch(reportFailure)
             };
         }
-    },
-
-    stop() {
-        stopSelection?.();
     }
 });

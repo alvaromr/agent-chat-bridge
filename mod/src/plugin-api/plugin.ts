@@ -24,7 +24,6 @@ export interface PluginDef {
     chatBarButton?: { icon: IconComponent; render: ChatBarButtonFactory; };
     messagePopoverButton?: { icon: IconComponent; render: MessagePopoverButtonFactory; };
     start?(): void;
-    stop?(): void;
 }
 
 export default function definePlugin<P extends PluginDef>(plugin: P) {

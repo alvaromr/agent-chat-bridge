@@ -190,9 +190,5 @@ export default definePlugin({
 
     start() {
         document.addEventListener("keydown", onKeyDown, true);
-    },
-
-    stop() {
-        document.removeEventListener("keydown", onKeyDown, true);
     }
 });
