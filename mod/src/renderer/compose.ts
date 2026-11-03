@@ -3,7 +3,7 @@
 // rule 3: `read --fetch` (one page, as opening a chat), `read --more` and `read --older` (up to 3 older pages), `send`,
 // `edit`, `delete` and `react`.
 import { type Command, commandOf, type ComposeCandidate, type ComposeRequest, type ComposeResult, type RequestFor } from "../ipc";
-import { DEFAULT_READ_LIMIT, MAX_EXTRA_PAGES, MAX_READ_LIMIT } from "../limits.mts";
+import { MAX_EXTRA_PAGES } from "../limits.mts";
 import { chatEditor, getDraft, pressEnter, replaceChatInput } from "../plugin-api/chatInput";
 import {
     ActiveJoinedThreadsStore, addReaction, ChannelRouter, ChannelStore, ComponentDispatch, DraftActions, DraftType, FluxDispatcher, GuildMemberStore,
@@ -13,7 +13,7 @@ import {
 } from "../plugin-api/discord";
 import { CONFIRM_MS, waitFor } from "../plugin-api/wait";
 import { embedTexts, type Names, reaction, readableMentions } from "./format";
-import { byRecency, type Candidate, fold, inRange, match, snowflakeTime } from "./match";
+import { byRecency, type Candidate, fold, inRange, match, selectMessages, snowflakeTime } from "./match";
 import { rateLimiter } from "./rateLimit";
 
 /** Why a request couldn't be done, as the CLI shows it to the user. */
@@ -207,32 +207,24 @@ async function readChat(req: ComposeRequest): Promise<ComposeResult> {
     // Rule 3: older pages, as scrolling up would. --more stops at the first unread message or MAX_EXTRA_PAGES;
     // --older loads that many pages, read or not, for the context of a message to write.
     const pages = req.older ?? (req.more ? MAX_EXTRA_PAGES : 0);
-    let paginasExtra = 0;
-    while (paginasExtra < pages && store().hasMoreBefore) {
+    let extraPages = 0;
+    while (extraPages < pages && store().hasMoreBefore) {
         const oldest = store()._array[0];
         if (!oldest || (!req.older && !unread(oldest))) break;
-        if (paginasExtra) await new Promise(r => setTimeout(r, PAGE_PAUSE_MS));
+        if (extraPages) await new Promise(r => setTimeout(r, PAGE_PAUSE_MS));
         const count = store()._array.length;
         MessageActions.fetchMessages({ channelId: chat.id, before: oldest.id, limit: PAGE_SIZE });
         await waitFor(() => !store().loadingMore && store()._array.length > count, CONFIRM_MS);
-        paginasExtra++;
+        extraPages++;
         if (store()._array.length <= count) break;
     }
 
-    const { _array: loadedMessages, hasMoreBefore } = store();
-    const [oldest] = loadedMessages;
-    const ranged = req.since != null || req.until != null;
-    // Older messages than the first loaded one may exist beyond what --more loaded.
-    const rangoCompleto = !ranged || req.since == null || !hasMoreBefore
-        || (oldest != null && new Date(oldest.timestamp).getTime() < req.since);
-    const masSinLeerSinCargar = hasMoreBefore && oldest != null && unread(oldest);
-    const limit = req.limit ?? (ranged || req.unreadOnly || req.older ? MAX_READ_LIMIT : DEFAULT_READ_LIMIT);
-    const wanted = loadedMessages.filter(m => inRange(new Date(m.timestamp).getTime(), req) && (!req.unreadOnly || unread(m)));
-    const mensajes = wanted.slice(-limit).map(m => formatMessage(m, chat));
+    const { _array: messages, hasMoreBefore } = store();
+    const { selected, unreadLoaded, rangeComplete, moreUnreadNotLoaded } = selectMessages({ messages, hasMoreBefore, isUnread: unread }, req);
     return {
-        ok: true, chat: pick(chat), mensajes,
-        cargados: loadedMessages.length, sinLeerCargados: loadedMessages.filter(unread).length, paginasExtra,
-        hayMasAntiguos: hasMoreBefore, rangoCompleto, masSinLeerSinCargar
+        ok: true, chat: pick(chat), mensajes: selected.map(m => formatMessage(m, chat)),
+        cargados: messages.length, sinLeerCargados: unreadLoaded, paginasExtra: extraPages,
+        hayMasAntiguos: hasMoreBefore, rangoCompleto: rangeComplete, masSinLeerSinCargar: moreUnreadNotLoaded
     };
 }
 

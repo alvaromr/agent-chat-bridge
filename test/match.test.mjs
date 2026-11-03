@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import { test } from "vitest";
 
-import { fold, inRange, match, snowflakeTime } from "../mod/src/renderer/match.ts";
+import { fold, inRange, match, selectMessages, snowflakeTime } from "../mod/src/renderer/match.ts";
 
 let nextId = 1;
 const chat = (kind, names, extra = {}) => ({ id: String(nextId), kind, label: names[0] ?? "", names, lastMessageId: String(nextId++), ...extra });
@@ -91,4 +91,51 @@ test("inRange includes since and excludes until", () => {
     assert.equal(inRange(20, { since: 10, until: 20 }), false);
     assert.equal(inRange(9, { since: 10 }), false);
     assert.equal(inRange(9, {}), true);
+});
+
+/**
+ * A chat's loaded messages, oldest first, one a minute; the ids in `unread` are the unread ones.
+ * @param {number} count @param {{ hasMoreBefore?: boolean, unread?: string[] }} [options]
+ */
+const loaded =(count, { hasMoreBefore = false, unread = [] } = {}) => ({
+    messages: Array.from({ length: count }, (_, i) => ({ id: String(i), timestamp: new Date(i * 60_000) })),
+    hasMoreBefore,
+    isUnread: m => unread.includes(m.id)
+});
+const selectedIds = ({ selected }) => selected.map(m => m.id);
+
+test("read returns the latest 20 by default, or as many as asked", () => {
+    assert.deepEqual(selectedIds(selectMessages(loaded(25), {})), Array.from({ length: 20 }, (_, i) => String(i + 5)));
+    assert.deepEqual(selectedIds(selectMessages(loaded(25), { limit: 3 })), ["22", "23", "24"]);
+});
+
+test("read returns up to 100 by default with unread only, older pages or dates", () => {
+    const all = loaded(30, { unread: Array.from({ length: 30 }, (_, i) => String(i)) });
+    for (const req of [{ unreadOnly: true }, { older: 1 }, { since: 0 }, { until: 30 * 60_000 }])
+        assert.equal(selectMessages(all, req).selected.length, 30, JSON.stringify(req));
+});
+
+test("read keeps the messages in the range, and the unread ones when asked", () => {
+    const chat = loaded(5, { unread: ["3", "4"] });
+    assert.deepEqual(selectedIds(selectMessages(chat, { since: 60_000, until: 3 * 60_000 })), ["1", "2"]);
+    assert.deepEqual(selectedIds(selectMessages(chat, { unreadOnly: true })), ["3", "4"]);
+    assert.equal(selectMessages(chat, { limit: 1 }).unreadLoaded, 2);
+});
+
+test("a range is complete unless it may reach back past the oldest loaded message", () => {
+    const complete = (chat, req) => selectMessages(chat, req).rangeComplete;
+    assert.equal(complete(loaded(3, { hasMoreBefore: true }), {}), true, "no start");
+    assert.equal(complete(loaded(3, { hasMoreBefore: true }), { until: 60_000 }), true, "only an end");
+    assert.equal(complete(loaded(3), { since: 60_000 }), true, "nothing older to load");
+    assert.equal(complete(loaded(3, { hasMoreBefore: true }), { since: 1 }), true, "the oldest is before the start");
+    assert.equal(complete(loaded(3, { hasMoreBefore: true }), { since: 0 }), false, "the oldest is at the start");
+    assert.equal(complete(loaded(0, { hasMoreBefore: true }), { since: 0 }), false, "nothing loaded");
+});
+
+test("more unread messages exist than loaded when the oldest loaded one is unread and older ones exist", () => {
+    const more = chat => selectMessages(chat, {}).moreUnreadNotLoaded;
+    assert.equal(more(loaded(3, { hasMoreBefore: true, unread: ["0", "1", "2"] })), true);
+    assert.equal(more(loaded(3, { hasMoreBefore: true, unread: ["1", "2"] })), false);
+    assert.equal(more(loaded(3, { unread: ["0", "1", "2"] })), false);
+    assert.equal(more(loaded(0, { hasMoreBefore: true })), false);
 });

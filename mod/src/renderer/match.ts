@@ -1,5 +1,7 @@
-// Finds a chat by name and filters by date, without touching Discord, so test/ can load it straight from Node.
+// Finds a chat by name, and picks by date the chats and messages `list` and `read` return, without touching Discord,
+// so test/ can load it straight from Node.
 import type { ComposeCandidate, ComposeRequest } from "../ipc";
+import { DEFAULT_READ_LIMIT, MAX_READ_LIMIT } from "../limits.mts";
 
 export interface Candidate extends ComposeCandidate {
     /** Names the query is matched against, strongest first; `weak` ones (group members) count for less. */
@@ -68,3 +70,24 @@ export const snowflakeTime = (id: string) => Number((BigInt(id) >> 22n) + 142007
 
 export const inRange = (time: number, { since, until }: ComposeRequest) =>
     (since == null || time >= since) && (until == null || time < until);
+
+/** A chat's loaded messages, oldest first, whether older ones exist, and which ones are unread. */
+interface LoadedMessages<M> {
+    messages: M[];
+    hasMoreBefore: boolean;
+    isUnread(message: NoInfer<M>): boolean;
+}
+
+/** The messages `read` returns, and what it says about the ones it couldn't see. */
+export function selectMessages<M extends { timestamp: Date; }>({ messages, hasMoreBefore, isUnread }: LoadedMessages<M>, req: ComposeRequest) {
+    const time = (m: M) => new Date(m.timestamp).getTime();
+    const [oldest] = messages;
+    const limit = req.limit ?? (req.since != null || req.until != null || req.unreadOnly || req.older ? MAX_READ_LIMIT : DEFAULT_READ_LIMIT);
+    return {
+        selected: messages.filter(m => inRange(time(m), req) && (!req.unreadOnly || isUnread(m))).slice(-limit),
+        unreadLoaded: messages.filter(isUnread).length,
+        /** False when older messages than the oldest loaded one may still fall in the range. */
+        rangeComplete: req.since == null || !hasMoreBefore || (oldest != null && time(oldest) < req.since),
+        moreUnreadNotLoaded: hasMoreBefore && oldest != null && isUnread(oldest)
+    };
+}
