@@ -1,6 +1,6 @@
 // Rule 3: `send`, `edit`, `delete` and `react` can't be used to flood a chat, whoever calls them; all count against one limit.
-const MIN_SEND_INTERVAL_MS = 5000;
-const MAX_SENDS_PER_HOUR = 30;
+import { MAX_SENDS_PER_HOUR, MIN_SEND_INTERVAL_MS } from "../limits.mts";
+
 const HOUR_MS = 3_600_000;
 
 /** Why an action has to wait, as the CLI shows it to the user. */

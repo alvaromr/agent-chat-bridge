@@ -3,6 +3,7 @@
 // rule 3: `read --fetch` (one page, as opening a chat), `read --more` and `read --older` (up to 3 older pages), `send`,
 // `edit`, `delete` and `react`.
 import { type Command, commandOf, type ComposeCandidate, type ComposeRequest, type ComposeResult, type RequestFor } from "../ipc";
+import { DEFAULT_READ_LIMIT, MAX_EXTRA_PAGES, MAX_READ_LIMIT } from "../limits.mts";
 import { chatEditor, getDraft, pressEnter, replaceChatInput } from "../plugin-api/chatInput";
 import {
     ActiveJoinedThreadsStore, addReaction, ChannelRouter, ChannelStore, ComponentDispatch, DraftActions, DraftType, FluxDispatcher, GuildMemberStore,
@@ -129,10 +130,6 @@ function unreadChats(req: ComposeRequest) {
         }));
 }
 
-const DEFAULT_READ_LIMIT = 20;
-const MAX_READ_LIMIT = 100;
-/** Rule 3: --more and --older load at most this many older pages per read. */
-const MAX_EXTRA_PAGES = 3;
 /** Between older pages, as a person scrolling up waits to see each one before the next. */
 const PAGE_PAUSE_MS = 1500;
 /** The most messages Discord's API returns per page. */

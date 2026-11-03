@@ -10,6 +10,7 @@ export default {
     mutate: [
         "mod/src/attachments.ts",
         "mod/src/ipc.ts",
+        "mod/src/limits.mts",
         "mod/src/settingsFile.ts",
         "mod/src/validate.ts",
         "mod/src/plugin-api/wait.ts",

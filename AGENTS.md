@@ -32,7 +32,8 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   delete own messages and react. Its documentation is its `--help`. `mod/src/compose.ts` serves it over a local
   socket. A new command goes into `COMMANDS` of `mod/src/ipc.ts`: the compiler then asks for its check in
   `mod/src/validate.ts` and its handler in `mod/src/renderer/compose.ts`, and `test/validate.test.mjs` asks for its
-  entry in the CLI.
+  entry in the CLI. A limit that `mod/` enforces and the `--help` states goes into `mod/src/limits.mts`, which the CLI
+  loads with plain Node.
 - `skills/discord-mod/`: short skill that points to the CLI's `--help` and sets the usage rules.
   `pnpm links` links the skill into `~/.claude/skills/` and the CLI into `~/.local/bin/`.
 - `scripts/inject.mjs`: the patcher. Renames `app.asar` to `_app.asar` and writes a loader `app.asar`, built by

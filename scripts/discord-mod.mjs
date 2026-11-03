@@ -6,6 +6,11 @@ import { homedir } from "os";
 import { join, resolve } from "path";
 import { parseArgs } from "util";
 
+import {
+    DEFAULT_READ_LIMIT, MAX_ATTACHMENT_MB, MAX_ATTACHMENTS, MAX_EXTRA_PAGES, MAX_READ_LIMIT, MAX_SENDS_PER_HOUR,
+    MAX_WATCHED_CHATS, MIN_SEND_INTERVAL_MS
+} from "../mod/src/limits.mts";
+
 const KINDS = ["dm", "grupo", "canal", "hilo"];
 
 const DATE_HELP = `Fechas (--since, --until): hoy, ayer, semana (desde el lunes), AAAA-MM-DD o AAAA-MM-DDTHH:MM, en hora local.
@@ -27,7 +32,7 @@ Solo abre un chat si el nombre encaja claramente; si no, devuelve en "candidatos
   --id             <chat> es el id de un chat (de "candidatos", list o unread), no un nombre
   --reply <id>     lo deja como respuesta a ese mensaje (id de read), como el botón Responder de Discord;
                    el mensaje tiene que estar cargado (read --fetch). "respondiendo": true si quedó así.
-  --attach <ruta>  adjunta un archivo o imagen (hasta 10, de 25 MB como mucho); repítelo para varios.
+  --attach <ruta>  adjunta un archivo o imagen (hasta ${MAX_ATTACHMENTS}, de ${MAX_ATTACHMENT_MB} MB como mucho); repítelo para varios.
                    Con adjuntos el texto es opcional. "adjuntos" dice cuántos hay en la caja.
   --replace        sustituye el borrador o los adjuntos que ya tuviera ese chat (sin esto, se niega)
   --background     no pone Discord al frente (el chat sí cambia dentro de Discord); para la respuesta automática
@@ -62,7 +67,7 @@ envía nada. Si solo hay adjuntos, <texto confirmado> es "".
 
 Úsalo solo con confirmación explícita del usuario de ese mensaje (chat, texto, respuesta y adjuntos), salvo en la
 respuesta automática que él haya activado. Devuelve "enviado": true y el id del mensaje. Comparte con edit, delete
-y react un límite de ritmo: 5 s entre acciones en el mismo chat y 30 por hora.`,
+y react un límite de ritmo: ${MIN_SEND_INTERVAL_MS / 1000} s entre acciones en el mismo chat y ${MAX_SENDS_PER_HOUR} por hora.`,
         options: { direct: { type: "boolean" }, reply: { type: "string" } },
         positionals: 2,
         validate: (_, o) => o.reply && !o.direct ? "--reply solo funciona con --direct; sin él, usa draft --reply" : null,
@@ -109,7 +114,7 @@ Comparte el límite de ritmo de send.`,
     watch: {
         summary: "escucha los mensajes nuevos, editados y borrados de unos chats, en tiempo real",
         usage: "discord-mod watch <id> [<id>...]",
-        help: `Mantiene la conexión abierta y escribe una línea JSON por cada cambio en esos chats (hasta 10), incluidos
+        help: `Mantiene la conexión abierta y escribe una línea JSON por cada cambio en esos chats (hasta ${MAX_WATCHED_CHATS}), incluidos
 los mensajes del usuario ("yo": true). Los mensajes tienen el mismo formato que read:
   {"evento":"mensaje","chat":{…},"mensaje":{…}}   mensaje nuevo
   {"evento":"editado","chat":{…},"mensaje":{…}}   mensaje editado, con su texto nuevo
@@ -117,7 +122,7 @@ los mensajes del usuario ("yo": true). Los mensajes tienen el mismo formato que 
 La primera línea confirma qué chats escucha. Termina al cerrar Discord o con Ctrl+C.
 Para contestar automáticamente, sigue las reglas de «Auto-reply» de la skill discord-mod.`,
         options: {},
-        positionals: [1, 10],
+        positionals: [1, MAX_WATCHED_CHATS],
         request: ids => ({ watch: ids })
     },
     list: {
@@ -157,12 +162,12 @@ ${DATE_HELP}`,
   "sinLeer" y "meMencionan" (al usuario, a todos o a un rol suyo).
 
   --unread      solo los mensajes sin leer
-  --limit <n>   cuántos, de 1 a 100 (por defecto 20, o 100 con --unread, --older o fechas)
+  --limit <n>   cuántos, de 1 a ${MAX_READ_LIMIT} (por defecto ${DEFAULT_READ_LIMIT}, o ${MAX_READ_LIMIT} con --unread, --older o fechas)
   --fetch       si Discord no tiene cargado el chat, lo carga con la misma petición que hace al abrirlo,
                 sin abrirlo ni marcarlo como leído. Sin esto solo sirven los chats ya cargados.
   --more        carga páginas anteriores, como al subir con el scroll, hasta el primer mensaje sin leer
-                y 3 páginas como mucho ("paginasExtra" dice cuántas)
-  --older <n>   para el contexto: carga n páginas anteriores (de 1 a 3), aunque estén leídas, como al subir
+                y ${MAX_EXTRA_PAGES} páginas como mucho ("paginasExtra" dice cuántas)
+  --older <n>   para el contexto: carga n páginas anteriores (de 1 a ${MAX_EXTRA_PAGES}), aunque estén leídas, como al subir
                 con el scroll. Repetido, sigue desde la más antigua cargada.
 
 "cargados" y "sinLeerCargados" cuentan los mensajes que Discord tiene del chat, antes de --limit y filtros.

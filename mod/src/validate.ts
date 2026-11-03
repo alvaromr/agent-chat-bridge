@@ -3,10 +3,9 @@
 import { isAbsolute } from "path";
 
 import { type Command, commandOf, type ComposeRequest } from "./ipc";
+import { MAX_ATTACHMENTS, MAX_EXTRA_PAGES, MAX_READ_LIMIT, MAX_WATCHED_CHATS } from "./limits.mts";
 
 const KINDS = ["dm", "grupo", "canal", "hilo"];
-const MAX_ATTACHMENTS = 10;
-const MAX_WATCHED = 10;
 
 const isId = (v: unknown) => typeof v === "string" && /^\d{1,20}$/.test(v);
 const isTime = (v: unknown) => v === undefined || (Number.isSafeInteger(v) && (v as number) >= 0);
@@ -39,9 +38,9 @@ const CHECKS: Record<Command, (req: any) => boolean> = {
     list: req => req.list === true && isKinds(req.kinds),
     unread: req => req.unread === true && isKinds(req.kinds),
     read: req => isId(req.read)
-        && (req.limit === undefined || (Number.isInteger(req.limit) && req.limit >= 1 && req.limit <= 100))
+        && (req.limit === undefined || (Number.isInteger(req.limit) && req.limit >= 1 && req.limit <= MAX_READ_LIMIT))
         && isFlag(req.fetch) && isFlag(req.unreadOnly) && isFlag(req.more)
-        && (req.older === undefined || (!req.more && Number.isInteger(req.older) && req.older >= 1 && req.older <= 3)),
+        && (req.older === undefined || (!req.more && Number.isInteger(req.older) && req.older >= 1 && req.older <= MAX_EXTRA_PAGES)),
     send: req => isId(req.send) && typeof req.expect === "string" && req.expect.length <= 4000 && isFlag(req.direct)
         && (req.replyTo === undefined || (req.direct === true && isId(req.replyTo))),
     react: ({ react: r }) => isId(r?.chatId) && isId(r.messageId)
@@ -62,7 +61,7 @@ export function isValid(req: any): req is ComposeRequest {
 export function watchRequest(raw: string): string[] | null {
     try {
         const { watch } = JSON.parse(raw);
-        return Array.isArray(watch) && watch.length >= 1 && watch.length <= MAX_WATCHED && watch.every(isId) ? watch : null;
+        return Array.isArray(watch) && watch.length >= 1 && watch.length <= MAX_WATCHED_CHATS && watch.every(isId) ? watch : null;
     } catch {
         return null;
     }

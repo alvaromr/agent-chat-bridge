@@ -9,7 +9,7 @@ export default tseslint.config(
     { ignores: ["mod/dist/", "node_modules/", "coverage/", "reports/", ".stryker-tmp/"] },
     ...tseslint.configs.recommended,
     {
-        files: ["**/*.{ts,tsx,mjs}"],
+        files: ["**/*.{ts,tsx,mts,mjs}"],
         linterOptions: { reportUnusedDisableDirectives: "error" },
         plugins: {
             "@stylistic": stylistic,

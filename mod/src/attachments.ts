@@ -3,8 +3,7 @@ import { readFileSync, statSync } from "fs";
 import { basename, extname } from "path";
 
 import type { ComposeRequest } from "./ipc";
-
-const MAX_ATTACHMENT_MB = 25; // Discord's upload limit without Nitro
+import { MAX_ATTACHMENT_MB } from "./limits.mts";
 const MIME_TYPES: Record<string, string> = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp",
     ".mp4": "video/mp4", ".mov": "video/quicktime", ".pdf": "application/pdf", ".txt": "text/plain"
