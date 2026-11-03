@@ -132,6 +132,13 @@ review what you take from it like own code.
 The loader depends on Discord not enabling the Electron fuse `EnableEmbeddedAsarIntegrityValidation` (disabled on
 2026-10-28, Electron 42). If it enables it, no loader in `app.asar` starts.
 
+## Conventions
+- **User-facing text is in Spanish:** CLI help and errors, toasts, the settings modal, prompts and the skill's
+  replies, because the user reads them in Spanish. Logs, internal errors and test names are in English.
+- **User-facing text is grouped per module:** in a `TEXT` object at the top of each module that shows text, or in the
+  definition it belongs to (a plugin's settings, a CLI command's entry in `COMMANDS`), in whole sentences. No resource
+  files while there is one language and no plan to translate.
+
 ## Decisions and deviations
 Deviations from the engineering baseline live in `docs/decisions/`, one file each, with the value that is not at
 stake, why, and who decided. Read them before changing a practice; a new deviation gets its own file there.
