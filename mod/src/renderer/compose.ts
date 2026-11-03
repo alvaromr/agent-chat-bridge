@@ -2,7 +2,7 @@
 // sends, edits, deletes or reacts. Requests to Discord's API beyond what the user's own actions make are limited by
 // rule 3: `read --fetch` (one page, as opening a chat), `read --more` and `read --older` (up to 3 older pages), `send`,
 // `edit`, `delete` and `react`.
-import { type Command, commandOf, type ComposeCandidate, type ComposeRequest, type ComposeResult, type RequestFor } from "../ipc";
+import { type Command, commandOf, type ComposeCandidate, type ComposeRequest, type ComposeResult, type Reaction, type RequestFor } from "../ipc";
 import { MAX_EXTRA_PAGES } from "../limits.mts";
 import { chatEditor, getDraft, pressEnter, replaceChatInput } from "../plugin-api/chatInput";
 import {
@@ -235,7 +235,9 @@ const HANDLERS: { [C in Command]: (req: RequestFor<C>) => Promise<ComposeResult>
     unread: async req => ({ ok: true, sinLeer: unreadChats(req) }),
     read: readChat,
     send,
+    sendDirect,
     react: req => react(req.react),
+    unreact: req => unreact(req.unreact),
     edit: req => edit(req.edit),
     delete: req => remove(req.delete),
     draft
@@ -308,34 +310,47 @@ async function draft(req: ComposeRequest): Promise<ComposeResult> {
     };
 }
 
-/**
- * Adds or removes the user's reaction with a Unicode emoji, through Discord's own reaction actions (rule 3: only
- * confirmed).
- */
-async function react({ chatId, messageId, emoji, remove }: NonNullable<ComposeRequest["react"]>): Promise<ComposeResult> {
+/** The chat of a reaction, its emoji as Discord's actions take it, and whether the user's reaction is there; or why not. */
+function reactionTarget({ chatId, messageId, emoji }: Reaction) {
     const chat = allCandidates().find(c => c.id === chatId);
-    if (!chat) return { ok: false, error: TEXT.noChat };
+    if (!chat) return TEXT.noChat;
     const message = () => MessageStore.getMessage(chat.id, messageId);
-    if (!message()) return { ok: false, error: TEXT.messageNotLoaded };
+    if (!message()) return TEXT.messageNotLoaded;
     const mine = () => !!message()?.reactions?.some((r: any) => r.emoji.name === emoji && r.emoji.id == null && r.me);
-    if (remove && !mine()) return { ok: false, error: TEXT.notReacted };
+    return { chat, mine, unicode: { id: null, name: emoji, animated: false } };
+}
+
+/** Adds the user's reaction with a Unicode emoji, through Discord's own reaction action (rule 3: only confirmed). */
+async function react(reaction: Reaction): Promise<ComposeResult> {
+    const target = reactionTarget(reaction);
+    if (typeof target === "string") return { ok: false, error: target };
+    const { chat, mine, unicode } = target;
     const limited = rateLimit.limited(chat.id);
     if (limited) return { ok: false, error: limited };
     rateLimit.record(chat.id);
 
-    const unicode = { id: null, name: emoji, animated: false };
-    if (remove) {
-        await removeReaction({ channelId: chat.id, messageId, emoji: unicode });
-        await waitFor(() => !mine(), REACTION_CONFIRM_MS);
-        return !mine()
-            ? { ok: true, chat: pick(chat), reaccionQuitada: true }
-            : { ok: false, error: TEXT.unreactUnconfirmed };
-    }
-    await addReaction(chat.id, messageId, unicode);
+    await addReaction(chat.id, reaction.messageId, unicode);
     await waitFor(mine, REACTION_CONFIRM_MS);
     return mine()
         ? { ok: true, chat: pick(chat), reaccionado: true }
         : { ok: false, error: TEXT.reactUnconfirmed };
+}
+
+/** Takes away the user's reaction with a Unicode emoji, as clicking it does (rule 3: only confirmed). */
+async function unreact(reaction: Reaction): Promise<ComposeResult> {
+    const target = reactionTarget(reaction);
+    if (typeof target === "string") return { ok: false, error: target };
+    const { chat, mine, unicode } = target;
+    if (!mine()) return { ok: false, error: TEXT.notReacted };
+    const limited = rateLimit.limited(chat.id);
+    if (limited) return { ok: false, error: limited };
+    rateLimit.record(chat.id);
+
+    await removeReaction({ channelId: chat.id, messageId: reaction.messageId, emoji: unicode });
+    await waitFor(() => !mine(), REACTION_CONFIRM_MS);
+    return !mine()
+        ? { ok: true, chat: pick(chat), reaccionQuitada: true }
+        : { ok: false, error: TEXT.unreactUnconfirmed };
 }
 
 /** One of the user's own messages that Discord has loaded, or why it can't be edited or deleted. */
@@ -431,7 +446,9 @@ const rateLimit = rateLimiter();
  * Sends `expect` as a new message without opening the chat or touching its box, through Discord's own send action
  * (the one its chat box ends up calling). Text and an optional reply only; attachments need the box (`draft` + `send`).
  */
-async function sendDirect(chat: Candidate, req: ComposeRequest): Promise<ComposeResult> {
+async function sendDirect(req: RequestFor<"sendDirect">): Promise<ComposeResult> {
+    const chat = allCandidates().find(c => c.id === req.sendDirect);
+    if (!chat) return { ok: false, error: TEXT.noChat };
     const text = req.expect ?? "";
     if (!text.trim()) return { ok: false, error: TEXT.nothingToSend };
     const replyTo = req.replyTo ? MessageStore.getMessage(chat.id, req.replyTo) : null;
@@ -458,7 +475,6 @@ async function sendDirect(chat: Candidate, req: ComposeRequest): Promise<Compose
     }
 }
 
-
 /**
  * Sends what is in the chat box, by pressing Enter in it as the user would, so replies, attachments and mentions go
  * through Discord's own path. Only when the box holds exactly `expect`, the text the user saw and confirmed (rule 3).
@@ -466,7 +482,6 @@ async function sendDirect(chat: Candidate, req: ComposeRequest): Promise<Compose
 async function send(req: ComposeRequest): Promise<ComposeResult> {
     const chat = allCandidates().find(c => c.id === req.send);
     if (!chat) return { ok: false, error: TEXT.noChat };
-    if (req.direct) return sendDirect(chat, req);
     if (SelectedChannelStore.getChannelId() !== chat.id)
         return { ok: false, error: TEXT.notOpen };
 

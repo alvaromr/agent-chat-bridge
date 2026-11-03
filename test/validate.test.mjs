@@ -54,18 +54,18 @@ test("read --older: 1 to 3 pages, and not with --more", () => {
     no({ read: "123", older: 1, more: true });
 });
 
-test("react: Unicode emojis only, and ids as text", () => {
-    ok({ react: { chatId: "1", messageId: "2", emoji: "👍" } });
-    no({ react: { chatId: "1", messageId: "2", emoji: ":thumbsup:" } });
-    no({ react: { chatId: "1", messageId: "2", emoji: "<:custom:3>" } });
-    no({ react: { chatId: "1", messageId: "2", emoji: "" } });
-    ok({ react: { chatId: "1", messageId: "2", emoji: "👍".repeat(16) } });
-    no({ react: { chatId: "1", messageId: "2", emoji: "👍".repeat(16) + "!" } });
-    no({ react: { chatId: "1", messageId: "2", emoji: ["👍"] } });
-    no({ react: { chatId: 1, messageId: "2", emoji: "👍" } });
-    no({ react: null });
-    ok({ react: { chatId: "1", messageId: "2", emoji: "👍", remove: true } });
-    no({ react: { chatId: "1", messageId: "2", emoji: "👍", remove: "yes" } });
+test.each(["react", "unreact"])("%s: Unicode emojis only, and ids as text", command => {
+    const on = reaction => ({ [command]: reaction });
+    ok(on({ chatId: "1", messageId: "2", emoji: "👍" }));
+    no(on({ chatId: "1", messageId: "2", emoji: ":thumbsup:" }));
+    no(on({ chatId: "1", messageId: "2", emoji: "<:custom:3>" }));
+    no(on({ chatId: "1", messageId: "2", emoji: "" }));
+    ok(on({ chatId: "1", messageId: "2", emoji: "👍".repeat(16) }));
+    no(on({ chatId: "1", messageId: "2", emoji: "👍".repeat(16) + "!" }));
+    no(on({ chatId: "1", messageId: "2", emoji: ["👍"] }));
+    no(on({ chatId: 1, messageId: "2", emoji: "👍" }));
+    no(on({ chatId: "1", messageId: 2, emoji: "👍" }));
+    no(on(null));
 });
 
 test("draft --clear: only the chat, with no text, attachments or reply", () => {
@@ -93,16 +93,20 @@ test("edit and delete: ids as text and a non-empty new text", () => {
     no({ delete: null });
 });
 
-test("send: the confirmed text, and --reply only with --direct", () => {
-    ok({ send: "1", expect: "hola" });
-    ok({ send: "1", expect: "", });
-    ok({ send: "1", expect: "hola", direct: true, replyTo: "2" });
-    no({ send: "1" });
-    ok({ send: "1", expect: "x".repeat(4000) });
-    no({ send: "1", expect: "x".repeat(4001) });
+test.each(["send", "sendDirect"])("%s: a chat id and the confirmed text", command => {
+    ok({ [command]: "1", expect: "hola" });
+    ok({ [command]: "1", expect: "" });
+    no({ [command]: "1" });
+    no({ [command]: "x", expect: "hola" });
+    ok({ [command]: "1", expect: "x".repeat(4000) });
+    no({ [command]: "1", expect: "x".repeat(4001) });
+    no({ [command]: "1", expect: 1 });
+});
+
+test("a reply goes only with sendDirect; send replies with what the box holds", () => {
+    ok({ sendDirect: "1", expect: "hola", replyTo: "2" });
+    no({ sendDirect: "1", expect: "hola", replyTo: "x" });
     no({ send: "1", expect: "hola", replyTo: "2" });
-    no({ send: "1", expect: "hola", direct: false, replyTo: "2" });
-    no({ send: "1", expect: "hola", direct: "true" });
 });
 
 test("draft: the chat by name or id, and text or attachments", () => {
@@ -140,23 +144,30 @@ test("a request with several commands is checked as the one the renderer runs", 
     no({ list: true, kinds: ["servidor"], read: "1" });
     no({ list: 1, unread: true });
     assert.deepEqual(
-        [{ list: true }, { unread: true }, { read: "1" }, { send: "1" }, { react }, { edit: {} }, { delete: {} }, { query: "x" },
-            { read: "1", send: "1", react, edit: {}, delete: {} }, { send: "1", react, edit: {}, delete: {} }, { react, edit: {} },
-            { edit: {}, delete: {} }].map(commandOf),
-        ["list", "unread", "read", "send", "react", "edit", "delete", "draft", "read", "send", "react", "edit"]
+        [{ list: true }, { unread: true }, { read: "1" }, { send: "1" }, { sendDirect: "1" }, { react }, { unreact: react },
+            { edit: {} }, { delete: {} }, { query: "x" },
+            { read: "1", send: "1", react, edit: {}, delete: {} }, { send: "1", sendDirect: "1", react }, { sendDirect: "1", react },
+            { react, unreact: react, edit: {} }, { unreact: react, edit: {} }, { edit: {}, delete: {} }].map(commandOf),
+        ["list", "unread", "read", "send", "sendDirect", "react", "unreact", "edit", "delete", "draft",
+            "read", "send", "sendDirect", "react", "unreact", "edit"]
     );
 });
 
 test("every CLI command but watch builds a request the socket accepts, of that command", () => {
+    /** Each CLI command's argument lists, with the socket command each one builds. @type {Record<string, [string[], string][]>} */
     const argv = {
-        draft: ["draft", "nacho", "hola"], send: ["send", "1", "hola"], edit: ["edit", "1", "2", "hola"],
-        delete: ["delete", "1", "2"], react: ["react", "1", "2", "👍"], list: ["list"], unread: ["unread"], read: ["read", "1"]
+        draft: [[["draft", "nacho", "hola"], "draft"]],
+        send: [[["send", "1", "hola"], "send"], [["send", "1", "hola", "--direct", "--reply", "2"], "sendDirect"]],
+        edit: [[["edit", "1", "2", "hola"], "edit"]],
+        delete: [[["delete", "1", "2"], "delete"]],
+        react: [[["react", "1", "2", "👍"], "react"], [["react", "1", "2", "👍", "--remove"], "unreact"]],
+        list: [[["list"], "list"]], unread: [[["unread"], "unread"]], read: [[["read", "1"], "read"]]
     };
     assert.deepEqual(Object.keys(argv).sort(), Object.keys(COMMANDS).filter(name => name !== "watch").sort());
-    for (const [name, args] of Object.entries(argv)) {
+    for (const [args, command] of Object.values(argv).flat()) {
         const { request } = buildRequest(args);
         ok(request);
-        assert.equal(commandOf(request), name);
+        assert.equal(commandOf(request), command, args.join(" "));
     }
 });
 

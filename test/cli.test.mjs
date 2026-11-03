@@ -51,7 +51,8 @@ test("draft --clear takes no text and no other options", () => {
 test("send: --reply only with --direct", () => {
     usage(["send", "1", "hola", "--reply", "2"]);
     assert.deepEqual(request(["send", "1", "hola"]), { send: "1", expect: "hola" });
-    assert.deepEqual(request(["send", "1", "hola", "--direct", "--reply", "2"]), { send: "1", expect: "hola", direct: true, replyTo: "2" });
+    assert.deepEqual(request(["send", "1", "hola", "--direct", "--reply", "2"]), { sendDirect: "1", expect: "hola", replyTo: "2" });
+    assert.deepEqual(request(["send", "1", "hola", "--direct"]), { sendDirect: "1", expect: "hola" });
 });
 
 test("list and unread: known kinds and filters", () => {
@@ -85,7 +86,7 @@ test("edit and delete", () => {
 
 test("react and watch", () => {
     assert.deepEqual(request(["react", "1", "2", "👍"]), { react: { chatId: "1", messageId: "2", emoji: "👍" } });
-    assert.deepEqual(request(["react", "1", "2", "👍", "--remove"]), { react: { chatId: "1", messageId: "2", emoji: "👍", remove: true } });
+    assert.deepEqual(request(["react", "1", "2", "👍", "--remove"]), { unreact: { chatId: "1", messageId: "2", emoji: "👍" } });
     assert.deepEqual(request(["watch", "1", "2"]), { watch: ["1", "2"] });
 });
 

@@ -12,6 +12,11 @@ const isTime = (v: unknown) => v === undefined || (Number.isSafeInteger(v) && (v
 const isServer = (v: unknown) => v === undefined || (typeof v === "string" && v.length >= 1 && v.length <= 100);
 const isKinds = (v: unknown) => v === undefined || (Array.isArray(v) && v.every(k => KINDS.includes(k as string)));
 const isFlag = (v: unknown) => v === undefined || typeof v === "boolean";
+/** The text the user confirmed for a send. */
+const isConfirmed = (v: unknown) => typeof v === "string" && v.length <= 4000;
+/** A Unicode emoji, never a custom one (`:name:` or `<:name:id>`), on a message given by ids. */
+const isReaction = (r: any) => isId(r?.chatId) && isId(r.messageId)
+    && typeof r.emoji === "string" && r.emoji.length > 0 && r.emoji.length <= 32 && !/[\s:<>]/.test(r.emoji);
 
 function isDraft(req: any) {
     if (req.files !== undefined) return false; // only the main process fills it in
@@ -41,11 +46,10 @@ const CHECKS: Record<Command, (req: any) => boolean> = {
         && (req.limit === undefined || (Number.isInteger(req.limit) && req.limit >= 1 && req.limit <= MAX_READ_LIMIT))
         && isFlag(req.fetch) && isFlag(req.unreadOnly) && isFlag(req.more)
         && (req.older === undefined || (!req.more && Number.isInteger(req.older) && req.older >= 1 && req.older <= MAX_EXTRA_PAGES)),
-    send: req => isId(req.send) && typeof req.expect === "string" && req.expect.length <= 4000 && isFlag(req.direct)
-        && (req.replyTo === undefined || (req.direct === true && isId(req.replyTo))),
-    react: ({ react: r }) => isId(r?.chatId) && isId(r.messageId)
-        && typeof r.emoji === "string" && r.emoji.length > 0 && r.emoji.length <= 32 && !/[\s:<>]/.test(r.emoji)
-        && isFlag(r.remove),
+    send: req => isId(req.send) && isConfirmed(req.expect) && req.replyTo === undefined,
+    sendDirect: req => isId(req.sendDirect) && isConfirmed(req.expect) && (req.replyTo === undefined || isId(req.replyTo)),
+    react: req => isReaction(req.react),
+    unreact: req => isReaction(req.unreact),
     edit: ({ edit: e }) => isId(e?.chatId) && isId(e.messageId)
         && typeof e.text === "string" && e.text.trim() !== "" && e.text.length <= 4000,
     delete: ({ delete: d }) => isId(d?.chatId) && isId(d.messageId),

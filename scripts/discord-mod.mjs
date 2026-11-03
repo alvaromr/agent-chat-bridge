@@ -71,7 +71,7 @@ y react un límite de ritmo: ${MIN_SEND_INTERVAL_MS / 1000} s entre acciones en 
         options: { direct: { type: "boolean" }, reply: { type: "string" } },
         positionals: 2,
         validate: (_, o) => o.reply && !o.direct ? "--reply solo funciona con --direct; sin él, usa draft --reply" : null,
-        request: ([id, text], o) => ({ send: id, expect: text, direct: o.direct, replyTo: o.reply })
+        request: ([id, text], o) => o.direct ? { sendDirect: id, expect: text, replyTo: o.reply } : { send: id, expect: text }
     },
     edit: {
         summary: "cambia el texto de un mensaje del usuario, solo con su confirmación",
@@ -109,7 +109,7 @@ servidor no están soportados. Devuelve "reaccionado": true si Discord lo confir
 Comparte el límite de ritmo de send.`,
         options: { remove: { type: "boolean" } },
         positionals: 3,
-        request: ([chatId, messageId, emoji], o) => ({ react: { chatId, messageId, emoji, remove: o.remove } })
+        request: ([chatId, messageId, emoji], o) => ({ [o.remove ? "unreact" : "react"]: { chatId, messageId, emoji } })
     },
     watch: {
         summary: "escucha los mensajes nuevos, editados y borrados de unos chats, en tiempo real",

@@ -14,7 +14,7 @@ export const IPC = {
 } as const;
 
 /** The keys that name a request's command, in the order they are told apart; a request with none is a draft. */
-const COMMANDS = ["list", "unread", "read", "send", "react", "edit", "delete"] as const;
+const COMMANDS = ["list", "unread", "read", "send", "sendDirect", "react", "unreact", "edit", "delete"] as const;
 export type Command = typeof COMMANDS[number] | "draft";
 /** A request of that command: its key is there. */
 export type RequestFor<C extends Command> = C extends keyof ComposeRequest ? ComposeRequest & Required<Pick<ComposeRequest, C>> : ComposeRequest;
@@ -23,9 +23,9 @@ export type RequestFor<C extends Command> = C extends keyof ComposeRequest ? Com
 export const commandOf = (req: { [C in typeof COMMANDS[number]]?: unknown }): Command => COMMANDS.find(c => req[c] !== undefined) ?? "draft";
 
 /**
- * What scripts/discord-mod.mjs asks for: one of a draft (the default), `list`, `unread`, `read`, `send`, `edit`,
- * `delete` or `react`. Only the last four publish anything, and the CLI documents that they need the user's
- * confirmation (rule 3).
+ * What scripts/discord-mod.mjs asks for: one of a draft (the default), `list`, `unread`, `read`, `send`,
+ * `sendDirect`, `edit`, `delete`, `react` or `unreact`. Only the last six publish anything, and the CLI documents
+ * that they need the user's confirmation (rule 3).
  */
 export interface ComposeRequest {
     list?: boolean;
@@ -43,7 +43,7 @@ export interface ComposeRequest {
     more?: boolean;
     /** With `read`, instead of `more`: like scrolling up, load this many older pages (1 to 3), read or not. */
     older?: number;
-    /** With a draft: reply to this message of the chat, as Discord's Reply button does. */
+    /** With a draft or `sendDirect`: reply to this message of the chat, as Discord's Reply button does. */
     replyTo?: string;
     /** With a draft: absolute paths of files to attach (scripts/discord-mod.mjs → main process). */
     attach?: string[];
@@ -51,15 +51,17 @@ export interface ComposeRequest {
     files?: { name: string; type: string; data: Uint8Array; }[];
     /** Send what this chat's box holds, only if its text is exactly `expect` (what the user confirmed). */
     send?: string;
+    /** Send `expect` itself (plus `replyTo`) to this chat, without opening it or using its box. */
+    sendDirect?: string;
     expect?: string;
-    /** With `send`: send `expect` itself (plus `replyTo`) without opening the chat or using its box. */
-    direct?: boolean;
     /** Change the text of one of the user's own loaded messages. */
     edit?: { chatId: string; messageId: string; text: string; };
     /** Delete one of the user's own loaded messages, for everyone. */
     delete?: { chatId: string; messageId: string; };
-    /** Add the user's reaction (a Unicode emoji) to a loaded message, or with `remove` take it away. */
-    react?: { chatId: string; messageId: string; emoji: string; remove?: boolean; };
+    /** Add the user's reaction (a Unicode emoji) to a loaded message. */
+    react?: Reaction;
+    /** Take away the user's reaction with that emoji from a loaded message. */
+    unreact?: Reaction;
     /** With a draft (no text, attachments or reply): empty the chat's box without opening the chat. */
     clear?: boolean;
     /** Keep the connection open and stream a ComposeEvent per change in these chats (handled by main). */
@@ -78,6 +80,13 @@ export interface ComposeRequest {
     dryRun?: boolean;
     /** With a draft: don't bring Discord to the front (it still opens the chat inside Discord). */
     background?: boolean;
+}
+
+/** A Unicode emoji on a message of a chat, for `react` and `unreact`. */
+export interface Reaction {
+    chatId: string;
+    messageId: string;
+    emoji: string;
 }
 
 export interface ComposeCandidate {
