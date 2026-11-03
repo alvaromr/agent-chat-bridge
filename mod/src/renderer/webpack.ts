@@ -75,12 +75,14 @@ function wrapFactory(modules: Record<PropertyKey, any>, id: PropertyKey, factory
 
     const wrapper = function (this: unknown, ...args: unknown[]) {
         modules[id] = factory;
-        const patched = patchFactory(id, factory);
+        const { patched, applied } = patchFactory(id, factory);
         try {
             return patched.apply(this, args);
         } catch (err) {
             if (patched === factory) throw err;
-            console.error("[discord-mod] A patched module failed; using the original", err);
+            // The original runs instead, so the settings modal must not show these patches as applied.
+            for (const patch of applied) patch.status = "failed";
+            console.error(`[discord-mod] A patched module failed; using the original, without ${applied.map(p => p.name).join(", ")}`, err);
             return factory.apply(this, args);
         }
     };
@@ -89,9 +91,11 @@ function wrapFactory(modules: Record<PropertyKey, any>, id: PropertyKey, factory
     return wrapper;
 }
 
-function patchFactory(id: PropertyKey, factory: any) {
+/** The factory with every pending patch whose `find` it contains, and the patches that applied. */
+function patchFactory(id: PropertyKey, factory: any): { patched: any; applied: Patch[]; } {
     const pending = patches.filter(p => !p.status);
-    if (!pending.length) return factory;
+    const applied: Patch[] = [];
+    if (!pending.length) return { patched: factory, applied };
 
     const source = String(factory);
     // Factories may be methods ("123(e,t,n){…}"); turn them into an expression that eval can return.
@@ -107,13 +111,14 @@ function patchFactory(id: PropertyKey, factory: any) {
             patched = (0, eval)(`${next}\n//# sourceURL=file:///DiscordModWebpack${String(id)}`);
             code = next;
             patch.status = "ok";
+            applied.push(patch);
             console.log(`[discord-mod] Patch applied: ${patch.name}`);
         } catch (err) {
             patch.status = "failed";
             console.error(`[discord-mod] Patch failed: ${patch.name}`, err);
         }
     }
-    return patched;
+    return { patched, applied };
 }
 
 const PROXY_CHECK = "is this a proxy that returns values for any key?";
