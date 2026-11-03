@@ -36,7 +36,7 @@ function Field({ def, value, onChange }: { def: SettingDef; value: SettingDef["d
             return <input type="checkbox" checked={value as boolean} onChange={e => onChange(e.currentTarget.checked)} />;
         case OptionType.NUMBER:
             return <input type="number" min={0} value={value as number} onChange={e => onChange(e.currentTarget.valueAsNumber || 0)} />;
-        default:
+        case OptionType.STRING:
             return <TextArea value={value as string} onChange={onChange} rows={def.multiline ? 6 : 1} autosize />;
     }
 }
