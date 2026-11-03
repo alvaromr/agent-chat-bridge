@@ -21,7 +21,7 @@ After a Discord update, run `pnpm inject` again.
 
 ## Develop
 ```sh
-pnpm check      # lint, types and tests: the gate before each commit
+pnpm check      # the gate before each commit (AGENTS.md, «Commands»)
 pnpm build      # then restart Discord
 pnpm smoke      # read-only checks against the running Discord
 ```
