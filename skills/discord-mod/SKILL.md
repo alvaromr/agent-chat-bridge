@@ -14,7 +14,7 @@ Rules:
    - **`send`:** first show the chat, the text, which message it replies to and the attachments. With attachments,
      leave it with `draft` and send with `send`; otherwise `send --direct` is enough.
    - **`edit` and `delete`:** first quote the message and, when editing, the new text. Deleting can't be undone.
-   - **`react`:** first say which message (quote it) and which emoji.
+   - **`react`:** first say which message (quote it) and which emoji, also to remove the reaction.
 2. **How to write the message:**
    - **Context first:** before writing, read the chat's last 10 messages (`read <id> --limit 10`, with `--fetch` if
      it isn't loaded). If they refer to something you can't see, go back with `read <id> --older 1`, one page at a

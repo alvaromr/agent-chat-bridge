@@ -81,13 +81,11 @@ Defined in `package.json`.
    - Every send or edit is triggered by an explicit user action, never automatically. The Corrector edits without a
      dialog on Enter in an empty box and with its button on an own message: the key or the click is the confirmation.
      It discards the correction if it changes words or removes parts of the message.
-   - Claude may publish with the CLI only with the user's explicit confirmation:
-     - **`discord-mod send`:** after showing the draft (chat, text, reply and attachments). It requires the confirmed
-       text and sends by pressing Enter in the box, Discord's normal path; with `--direct`, with the send action that
-       box uses, without opening the chat.
-     - **`discord-mod edit` and `delete`:** own messages only, after quoting the message and, when editing, the new
-       text. Always with confirmation, in the auto-reply too.
-     - **`discord-mod react`:** after saying which message and which emoji, also to remove the reaction.
+   - Claude may publish with the CLI (`send`, `edit`, `delete` and `react`) only with the user's explicit
+     confirmation, after showing what rule 1 of `skills/discord-mod/SKILL.md` sets for each command. `send` requires
+     the confirmed text and sends by pressing Enter in the box, Discord's normal path; with `--direct`, with the send
+     action that box uses, without opening the chat. `edit` and `delete` act on own messages only, always with
+     confirmation, in the auto-reply too.
    - Auto-reply experiment: see «Auto-reply» in `skills/discord-mod/SKILL.md`. Only in chats the user enables for one
      session, with the messages marked as Claude's and the rate limit that `send` enforces.
    - Read only messages the app already has loaded; never download histories through the API or make requests in a
