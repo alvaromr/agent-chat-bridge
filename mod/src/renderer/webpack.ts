@@ -134,6 +134,8 @@ function matches(filter: Filter, value: any) {
     try {
         return !shouldIgnore(value) && filter(value);
     } catch {
+        // Filters probe every export, and some exports throw on property access: that export just isn't the one. A
+        // piece that no export matches fails loudly in lazy().
         return false;
     }
 }
