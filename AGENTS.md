@@ -41,7 +41,9 @@ No new code reaches Discord without a review first (see «Review»). When in dou
 - `test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test the pure logic without Discord, and without
   network (`test/setup.mjs` refuses every connection): logic exported by the CLI or `scripts/asar.mjs`, or in `mod/`
   and `plugins/` modules with no Discord or Electron imports except types (`import type`). New pure logic goes into
-  one of those modules, with its test, and into the `mutate` list of `stryker.config.mjs`.
+  one of those modules, with its test, and into the `mutate` list of `stryker.config.mjs`, which is also the list
+  the coverage counts. A fix in Discord-side code gets a regression test on a fake Discord (`test/fake-discord.mjs`,
+  or a `vi.mock` of Electron or `net`) that fails without the fix.
   `smoke.mjs` and `discord-code.mjs` run on `node --test` instead, so neither Vitest nor Stryker runs them.
   `smoke.mjs` tests in the running Discord only what publishes nothing and asks nothing of the API, and shows no
   content. `discord-code.mjs` finds the patches and the pieces of `mod/` in the Discord code of its HTTP cache, without

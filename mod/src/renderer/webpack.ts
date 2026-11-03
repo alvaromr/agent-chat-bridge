@@ -69,8 +69,11 @@ function hookFactories(instance: any, modules: Record<PropertyKey, any>) {
     });
 }
 
-/** Defers patching until the module first runs; then puts the original factory back, as it never runs again. */
-function wrapFactory(modules: Record<PropertyKey, any>, id: PropertyKey, factory: any) {
+/**
+ * Defers patching until the module first runs; then puts the original factory back, as it never runs again. Exported
+ * for its test.
+ */
+export function wrapFactory(modules: Record<PropertyKey, any>, id: PropertyKey, factory: any) {
     if (typeof factory !== "function") return factory;
 
     const wrapper = function (this: unknown, ...args: unknown[]) {
