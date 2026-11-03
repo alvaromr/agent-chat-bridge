@@ -1,4 +1,6 @@
 // Buttons left of the gift icon in the chat box: the patch that makes room for them, and the button component.
+// Derived from Vencord (https://github.com/Vendicated/Vencord), Copyright (c) Vendicated and contributors; modified
+// since 2026-10-29. GPL-3.0-or-later (LICENSE).
 import type { JSX, MouseEventHandler, ReactNode } from "react";
 
 import { API_REF, chatBarButtons } from "../renderer/registry";

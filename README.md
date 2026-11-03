@@ -30,3 +30,7 @@ pnpm smoke      # read-only checks against the running Discord
 - `AGENTS.md`: structure, commands, rules and the mandatory review.
 - `docs/debugging.md`: how to verify a failure in the running Discord.
 - `discord-mod --help`: the CLI.
+
+## License
+GPL-3.0-or-later (`LICENSE`). `mod/` was first derived from [Vencord](https://github.com/Vendicated/Vencord), by
+Vendicated and contributors, under the same license; each file that still holds derived code says so at its top.

@@ -1,4 +1,6 @@
 // Buttons in the toolbar shown when hovering a message: the patch that adds them, and their rendering.
+// Derived from Vencord (https://github.com/Vendicated/Vencord), Copyright (c) Vendicated and contributors; modified
+// since 2026-10-29. GPL-3.0-or-later (LICENSE).
 import type { ComponentType } from "react";
 
 import { API_REF, popoverButtons } from "../renderer/registry";

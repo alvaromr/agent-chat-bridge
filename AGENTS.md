@@ -128,7 +128,7 @@ macOS replaces the whole app and the patch disappears; `pnpm inject` restores it
 If a patch or piece is no longer found (`pnpm check-discord`, or the settings modal with Discord open), find what
 changed in Discord's code (`docs/debugging.md`, method 3) and adapt `mod/`. `mod/` was first derived from Vencord
 (<https://github.com/Vendicated/Vencord>): when the cause is unclear, see how its repo solved the same change, and
-review what you take from it like own code.
+review what you take from it like own code. A file that takes code from it says so at its top (README, «License»).
 The loader depends on Discord not enabling the Electron fuse `EnableEmbeddedAsarIntegrityValidation` (disabled on
 2026-10-28, Electron 42). If it enables it, no loader in `app.asar` starts.
 

@@ -1,4 +1,6 @@
 // What a plugin declares: its settings, its buttons and its lifecycle. mod/src/renderer/index.ts registers each one.
+// Derived from Vencord (https://github.com/Vendicated/Vencord), Copyright (c) Vendicated and contributors; modified
+// since 2026-10-29. GPL-3.0-or-later (LICENSE).
 import type { ReactNode } from "react";
 
 import type { ChatBarButtonFactory } from "./chatButtons";

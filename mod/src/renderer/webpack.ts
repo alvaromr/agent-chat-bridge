@@ -1,5 +1,7 @@
 // Hooks Discord's webpack to patch module source before it runs and to look up its loaded modules: only the main
 // Discord instance, lazy patching (on first run of each module) and lookups by filter (regexes in ./regex.ts).
+// Derived from Vencord (https://github.com/Vendicated/Vencord), Copyright (c) Vendicated and contributors; modified
+// since 2026-10-29. GPL-3.0-or-later (LICENSE).
 import { canonicalize, classNameRegex } from "./regex";
 
 export interface Patch {

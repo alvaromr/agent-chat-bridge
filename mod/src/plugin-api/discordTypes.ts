@@ -1,5 +1,7 @@
 // Types of the Discord objects, stores and components that mod/ and the plugins touch: only the members they use, with
 // absence (`undefined`, `null`) where Discord can return it.
+// Derived from Vencord (https://github.com/Vendicated/Vencord), Copyright (c) Vendicated and contributors; modified
+// since 2026-10-29. GPL-3.0-or-later (LICENSE).
 import type { ComponentType, ReactNode } from "react";
 
 export interface User {
