@@ -1,7 +1,6 @@
 #!/bin/sh
-# Checks the commit subject against the repo's convention (docs/decisions/commit-subjects.md): a plain imperative
-# sentence of at most 72 characters, starting in upper case, with no type prefix and no final period. Installed by
-# `pnpm setup`.
+# Checks the commit subject against the repo's convention: a plain imperative sentence of at most 72 characters,
+# starting in upper case, with no type prefix and no final period. Installed by `pnpm setup`.
 subject=$(git stripspace --strip-comments < "$1" | head -n 1)
 fail() {
     echo "commit-msg: $1: $subject" >&2
