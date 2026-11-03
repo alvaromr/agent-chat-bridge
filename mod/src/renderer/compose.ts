@@ -12,6 +12,7 @@ import {
     SelectedChannelStore, UploadAttachmentStore, UploadHandler, UserGuildSettingsStore, UserStore
 } from "../plugin-api/discord";
 import { CONFIRM_MS, waitFor } from "../plugin-api/wait";
+import { firstTimeChecker } from "./dedupe";
 import { embedTexts, type Names, reaction, readableMentions } from "./format";
 import { byRecency, type Candidate, fold, inRange, match, selectMessages, snowflakeTime } from "./match";
 import { rateLimiter } from "./rateLimit";
@@ -401,13 +402,7 @@ export function forwardWatchedMessages() {
         // Each id is announced once: a message sent from this Discord arrives as optimistic twice, first still
         // SENDING and then as the server confirmed it, and the gateway may echo it too. Deleting one's own message
         // fires MESSAGE_DELETE twice (seen in watch output).
-        const announced = new Set<string>();
-        const firstTime = (key: string) => {
-            if (announced.has(key)) return false;
-            if (announced.size >= 200) announced.clear();
-            announced.add(key);
-            return true;
-        };
+        const firstTime = firstTimeChecker();
         FluxDispatcher.subscribe("MESSAGE_CREATE", ({ channelId, message }: any) => {
             const chat = message?.state !== "SENDING" && watchedChat(channelId);
             if (chat && firstTime(`mensaje:${message.id}`))
