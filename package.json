@@ -19,16 +19,16 @@
     "audit": "pnpm audit",
     "smoke": "node --test test/smoke.mjs",
     "a11y": "node scripts/a11y.mjs",
-    "check-discord":"node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/discord-code.mjs",
+    "check-discord": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/discord-code.mjs",
     "inject": "node scripts/inject.mjs install",
     "uninject": "node scripts/inject.mjs uninstall",
     "links": "ln -sfn \"$PWD/skills/discord-mod\" ~/.claude/skills/discord-mod && ln -sfn \"$PWD/scripts/discord-mod.mjs\" ~/.local/bin/discord-mod"
   },
   "devDependencies": {
-    "@stryker-mutator/api": "10.0.0",
-    "@stryker-mutator/core": "10.0.0",
-    "@stryker-mutator/typescript-checker": "10.0.0",
-    "@stryker-mutator/vitest-runner": "10.0.0",
+    "@stryker-mutator/api": "10.1.1",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/typescript-checker": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@stylistic/eslint-plugin": "5.10.0",
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
@@ -37,9 +37,9 @@
     "eslint": "10.13.0",
     "eslint-plugin-simple-import-sort": "14.0.0",
     "eslint-plugin-unused-imports": "4.4.1",
-    "knip": "6.42.1",
+    "knip": "6.43.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.0",
+    "typescript-eslint": "8.72.1",
     "vitest": "5.0.5"
   }
 }
