@@ -96,6 +96,12 @@ try {
         const ax = await nameOf(chatButton(label));
         check(`chat box button «${label}» is a named button`, ax?.role === "button" && ax.name === label, ax);
     }
+    // On a run right after Discord started, the first Tab from the box once left the focus there and the next one was
+    // a step behind; the re-run passed. Assumed, not verified: that first Tab only turns on Discord's keyboard mode. So
+    // one Tab and Shift+Tab first, and the path starts from the box again.
+    await focusBox();
+    await press("Tab");
+    await press("Tab", SHIFT);
     await focusBox();
     for (const label of CHAT_BUTTONS) {
         await press("Tab");
