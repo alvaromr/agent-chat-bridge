@@ -23,6 +23,7 @@ export default {
         "plugins/corrector/text.ts",
         "plugins/shared/list.ts",
         "scripts/asar.mjs",
+        "scripts/changelog.mjs",
         "scripts/discord-mod.mjs"
     ],
     incremental: true,

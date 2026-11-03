@@ -7,7 +7,7 @@
   fake, and a fake proves the code's logic, not that Discord still behaves as faked. The coverage counts the pure
   modules, the `mutate` list of `stryker.config.mjs`, so a regression test may load Discord-side code without counting
   it. The CLI's socket side is excluded in place, with that reason. The scripts that are only I/O stay out and are
-  checked by running them: `scripts/inject.mjs` (`pnpm inject`), `scripts/secrets.mjs` (`pnpm check`),
-  `scripts/cdp.mjs`, `scripts/a11y.mjs` and `scripts/devtools.mjs` (`docs/debugging.md`) and `mod/build.mjs`
-  (`pnpm build`).
+  checked by running them: `scripts/inject.mjs` (`pnpm inject`), `scripts/release.mjs` (`pnpm release`),
+  `scripts/secrets.mjs` (`pnpm check`), `scripts/cdp.mjs`, `scripts/a11y.mjs` and `scripts/devtools.mjs`
+  (`docs/debugging.md`) and `mod/build.mjs` (`pnpm build`).
 - **Decided by:** the owner, 2026-10-29.

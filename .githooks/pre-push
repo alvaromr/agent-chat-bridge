@@ -1,0 +1,15 @@
+#!/bin/sh
+# Refuses to move or delete a tag the remote already has: a released version identifies one commit forever.
+# Installed by `pnpm setup`. Git passes one line per ref: local ref, local sha, remote ref, remote sha.
+zero=0000000000000000000000000000000000000000
+while read -r local_ref local_sha remote_ref remote_sha; do
+    case "$remote_ref" in
+        refs/tags/*)
+            if [ "$remote_sha" != "$zero" ] && [ "$local_sha" != "$remote_sha" ]; then
+                echo "pre-push: ${remote_ref#refs/tags/} is already on the remote; tags are never moved or deleted" >&2
+                exit 1
+            fi
+            ;;
+    esac
+done
+exit 0

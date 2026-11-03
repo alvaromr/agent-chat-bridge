@@ -39,11 +39,11 @@ No new code reaches Discord without a review first (see «Review»). When in dou
 - `scripts/inject.mjs`: the patcher. Renames `app.asar` to `_app.asar` and writes a loader `app.asar`, built by
   `scripts/asar.mjs`.
 - `test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test the pure logic without Discord, and without
-  network (`test/setup.mjs` refuses every connection): logic exported by the CLI or `scripts/asar.mjs`, or in `mod/`
-  and `plugins/` modules with no Discord or Electron imports except types (`import type`). New pure logic goes into
-  one of those modules, with its test, and into the `mutate` list of `stryker.config.mjs`, which is also the list
-  the coverage counts. A fix in Discord-side code gets a regression test on a fake Discord (`test/fake-discord.mjs`,
-  or a `vi.mock` of Electron or `net`) that fails without the fix.
+  network (`test/setup.mjs` refuses every connection): logic exported by the CLI, `scripts/asar.mjs` or
+  `scripts/changelog.mjs`, or in `mod/` and `plugins/` modules with no Discord or Electron imports except types
+  (`import type`). New pure logic goes into one of those modules, with its test, and into the `mutate` list of
+  `stryker.config.mjs`, which is also the list the coverage counts. A fix in Discord-side code gets a regression test
+  on a fake Discord (`test/fake-discord.mjs`, or a `vi.mock` of Electron or `net`) that fails without the fix.
   `smoke.mjs` and `discord-code.mjs` run on `node --test` instead, so neither Vitest nor Stryker runs them.
   `smoke.mjs` tests in the running Discord only what publishes nothing and asks nothing of the API, and shows no
   content. `discord-code.mjs` finds the patches and the pieces of `mod/` in the Discord code of its HTTP cache, without
@@ -72,6 +72,10 @@ Defined in `package.json`.
   (`docs/debugging.md`, method 4). Run it after a change to what `mod/` or the plugins show.
 - `pnpm inject` / `pnpm uninject`: patch (or re-patch) Discord with `mod/`, or remove the patch. Discord closed.
   After `pnpm build`, restarting Discord is enough: the loader reads `mod/dist/` on every start.
+- `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, `pnpm mutation --force`,
+  `pnpm check-discord` and a fresh clone installed and tested, then the version in `package.json`, the dated
+  `CHANGELOG.md`, the commit and the `v<x.y.z>` tag. A user-visible change adds its entry under `[Unreleased]` in the
+  same commit. The `.githooks/` pre-push hook refuses to move or delete a tag the remote has.
 
 ## Rules
 1. **As close to Discord as possible**: `mod/` contains only what the own plugins use: no themes, custom CSS or
