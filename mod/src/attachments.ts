@@ -22,16 +22,16 @@ const TEXT = {
 export function readAttachments(paths: string[]): NonNullable<ComposeRequest["files"]> | string {
     const files: NonNullable<ComposeRequest["files"]> = [];
     for (const path of paths) {
-        let size: number;
+        let data: Buffer;
         try {
             const stat = statSync(path);
             if (!stat.isFile()) return TEXT.notFile(path);
-            size = stat.size;
+            if (stat.size > MAX_ATTACHMENT_MB * 1024 * 1024) return TEXT.tooBig(path);
+            data = readFileSync(path);
         } catch (err: any) {
             return err.code === "ENOENT" ? TEXT.missing(path) : TEXT.unreadable(path, err.code);
         }
-        if (size > MAX_ATTACHMENT_MB * 1024 * 1024) return TEXT.tooBig(path);
-        files.push({ name: basename(path), type: MIME_TYPES[extname(path).toLowerCase()] ?? "application/octet-stream", data: readFileSync(path) });
+        files.push({ name: basename(path), type: MIME_TYPES[extname(path).toLowerCase()] ?? "application/octet-stream", data });
     }
     return files;
 }

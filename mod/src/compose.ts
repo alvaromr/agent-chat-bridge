@@ -18,7 +18,8 @@ const TIMEOUT_MS = 10_000;
 const TEXT = {
     invalid: "Petición no válida",
     noWindow: "Discord no tiene la ventana principal abierta",
-    noAnswer: "Discord no respondió"
+    noAnswer: "Discord no respondió",
+    failed: "Discord no pudo atender la petición"
 } as const;
 
 const pending = new Map<number, (result: ComposeResult) => void>();
@@ -104,7 +105,13 @@ export function startComposeServer() {
             const line = data.slice(0, data.indexOf("\n"));
             const ids = watchRequest(line);
             if (ids) return startWatching(conn, ids);
-            handle(line).then(r => conn.end(JSON.stringify(r) + "\n"));
+            // Every request gets an answer, so a failure never leaves the CLI waiting for one.
+            handle(line)
+                .catch((err: unknown): ComposeResult => {
+                    console.error(`[discord-mod] CLI request failed: ${err instanceof Error ? err.message : err}`);
+                    return { ok: false, error: TEXT.failed };
+                })
+                .then(r => conn.end(JSON.stringify(r) + "\n"));
         });
         // Without a listener a socket error would crash the main process. The CLI hanging up (Ctrl+C on watch, a closed
         // pipe) is normal; anything else is logged, by code only.

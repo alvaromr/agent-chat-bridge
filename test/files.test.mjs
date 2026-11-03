@@ -58,6 +58,16 @@ test("attachments: a path that exists but can't be read says why", () => {
     }
 });
 
+test("attachments: a file that can be found but not read says why instead of failing the request", () => {
+    const locked = file("bloqueada.png");
+    chmodSync(locked, 0o000);
+    try {
+        assert.equal(readAttachments([locked]), `No se puede leer (EACCES): ${locked}`);
+    } finally {
+        chmodSync(locked, 0o600);
+    }
+});
+
 test("settings: saved to a 0600 file in a 0700 folder, leaving no temporary file", () => {
     const path = join(dir, "ajustes", "settings.json");
     settingsFile(path).write({ corrector: { model: "x" } });
