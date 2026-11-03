@@ -4,7 +4,7 @@ import type { ComponentType } from "react";
 import { API_REF, popoverButtons } from "../renderer/registry";
 import { patches } from "../renderer/webpack";
 import type { Message } from "./discordTypes";
-import { ErrorBoundary } from "./ErrorBoundary";
+import { ErrorBoundary, reportRenderFailure } from "./ErrorBoundary";
 
 export interface MessagePopoverButtonItem {
     label: string;
@@ -29,9 +29,9 @@ function PopoverButtons({ Component, message }: { Component: ComponentType<Messa
             {Array.from(popoverButtons, ([key, render]) => {
                 try {
                     const item = render(message);
-                    return item && <ErrorBoundary key={key}><Component {...item} /></ErrorBoundary>;
+                    return item && <ErrorBoundary key={key} name={key}><Component {...item} /></ErrorBoundary>;
                 } catch (err) {
-                    console.error(`[discord-mod] The ${key} message button failed`, err);
+                    reportRenderFailure(key, err);
                     return null;
                 }
             })}

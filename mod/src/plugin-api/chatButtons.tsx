@@ -29,7 +29,7 @@ function ChatBarButtons(props: ChatBarProps) {
     return (
         <>
             {Array.from(chatBarButtons, ([key, Button]) => (
-                <ErrorBoundary key={key}>
+                <ErrorBoundary key={key} name={key}>
                     <Button {...props} isMainChat={analyticsName === "normal"} isAnyChat={["normal", "sidebar"].includes(analyticsName)} />
                 </ErrorBoundary>
             ))}
@@ -66,7 +66,7 @@ export function ChatBarButton({ children, tooltip, onClick, onContextMenu = open
     const text = onContextMenu === openSettingsModal ? TEXT.withSettings(tooltip) : tooltip;
 
     return (
-        <ErrorBoundary>
+        <ErrorBoundary name={tooltip}>
             <Tooltip text={text}>
                 {({ onMouseEnter, onMouseLeave }) => (
                     <div className={`expression-picker-chat-input-button ${textArea.buttonContainer}`}>
