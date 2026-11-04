@@ -5,6 +5,9 @@ verifyDepsBeforeRun: error
 allowBuilds:
   esbuild: false
 # Stryker's typed-rest-client pins qs 6.15.1, which has 4 moderate advisories (pnpm audit); 6.16.1 fixes them. Drop it
-# once typed-rest-client moves past them.
+# once typed-rest-client moves past them. ESLint, typescript-eslint and Stryker ask for minimatch 10, which has a
+# moderate advisory (pnpm audit) fixed only in 11; they use only what 11 keeps (Minimatch, match, hasMagic). Drop it
+# once they ask for 11.
 overrides:
   qs: 6.16.1
+  minimatch: 11.0.1
