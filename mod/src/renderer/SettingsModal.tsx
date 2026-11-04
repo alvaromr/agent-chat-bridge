@@ -1,5 +1,6 @@
 // Settings of every plugin in one modal, opened by right-clicking a plugin button in the chat box, built from each
 // plugin's settings definition.
+import { APP_NAME } from "../name.mts";
 import { Modal, openModal, showToast, TextArea, useState } from "../plugin-api/discord";
 import type { RenderModalProps } from "../plugin-api/discordTypes";
 import { OptionType, type PluginDef } from "../plugin-api/plugin";
@@ -20,7 +21,7 @@ const currentValues = (): Values => Object.fromEntries(configurable().map(({ nam
 
 /** What the modal and its toasts say. */
 const TEXT = {
-    title: "Ajustes de agent-chat-bridge",
+    title: `Ajustes de ${APP_NAME}`,
     patches: (list: string) => `Parches: ${list}`,
     patchStatus: { ok: "✓", failed: "✗ falló", pending: "pendiente" },
     reset: "Restablecer",

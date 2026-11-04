@@ -8,7 +8,7 @@ if (location.origin === "https://discord.com") {
     let composeHandlerSet = false;
     let watchHandlerSet = false;
 
-    contextBridge.exposeInMainWorld("DiscordModNative", {
+    contextBridge.exposeInMainWorld("AgentChatBridgeNative", {
         getSettings: () => ipcRenderer.sendSync(IPC.getSettings),
         setSettings: (settings: unknown) => ipcRenderer.invoke(IPC.setSettings, settings),
         runClaude: (systemPrompt: string, input: string, model: string) => ipcRenderer.invoke(IPC.runClaude, systemPrompt, input, model),
@@ -29,7 +29,7 @@ if (location.origin === "https://discord.com") {
             handler(ipcRenderer.sendSync(IPC.watchGet));
         },
         emitWatchEvent: (event: ComposeEvent) => ipcRenderer.send(IPC.watchEvent, event)
-    } satisfies Window["DiscordModNative"]);
+    } satisfies Window["AgentChatBridgeNative"]);
 
     // Runs in the page's own world before Discord's scripts, so the webpack hook is in place when they load.
     webFrame.executeJavaScript(ipcRenderer.sendSync(IPC.getRenderer));

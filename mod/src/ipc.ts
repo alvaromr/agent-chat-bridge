@@ -1,16 +1,18 @@
 // IPC channel names shared by the main process and the preload.
+import { APP_NAME } from "./name.mts";
+
 export const IPC = {
-    getRenderer: "discord-mod:get-renderer",
-    getSettings: "discord-mod:get-settings",
-    setSettings: "discord-mod:set-settings",
-    runClaude: "discord-mod:run-claude",
-    composeRequest: "discord-mod:compose-request",
-    composeResponse: "discord-mod:compose-response",
+    getRenderer: `${APP_NAME}:get-renderer`,
+    getSettings: `${APP_NAME}:get-settings`,
+    setSettings: `${APP_NAME}:set-settings`,
+    runClaude: `${APP_NAME}:run-claude`,
+    composeRequest: `${APP_NAME}:compose-request`,
+    composeResponse: `${APP_NAME}:compose-response`,
     /** main → renderer: the chats some `watch` is listening to. Renderer → main (sync): ask for them. */
-    watchSet: "discord-mod:watch-set",
-    watchGet: "discord-mod:watch-get",
+    watchSet: `${APP_NAME}:watch-set`,
+    watchGet: `${APP_NAME}:watch-get`,
     /** renderer → main: a new, edited or deleted message in a watched chat. */
-    watchEvent: "discord-mod:watch-event"
+    watchEvent: `${APP_NAME}:watch-event`
 } as const;
 
 /** The keys that name a request's command, in the order they are told apart; a request with none is a draft. */

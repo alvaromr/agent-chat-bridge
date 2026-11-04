@@ -6,7 +6,7 @@ declare module "*.css" {
 
 interface Window {
     /** Exposed by mod/src/preload.ts. */
-    DiscordModNative: {
+    AgentChatBridgeNative: {
         getSettings(): Record<string, Record<string, unknown>>;
         setSettings(settings: unknown): Promise<void>;
         runClaude(systemPrompt: string, input: string, model: string): Promise<import("../../plugins/shared/run").ClaudeResult>;

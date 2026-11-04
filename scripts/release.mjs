@@ -27,7 +27,7 @@ try {
     run("pnpm", ["check-discord"]);
 
     // As someone who clones it: only what is committed, installed from the lockfile.
-    const clone = mkdtempSync(join(tmpdir(), "discord-mod-release-"));
+    const clone = mkdtempSync(join(tmpdir(), "agent-chat-bridge-release-"));
     try {
         run("git", ["clone", "--quiet", "--no-hardlinks", ".", clone]);
         run("pnpm", ["install", "--frozen-lockfile"], clone);

@@ -23,7 +23,7 @@ vi.mock("net", () => ({
     }
 }));
 
-fake.appData = mkdtempSync(join(tmpdir(), "discord-mod-socket-"));
+fake.appData = mkdtempSync(join(tmpdir(), "agent-chat-bridge-socket-"));
 afterAll(() => rmSync(fake.appData, { recursive: true, force: true }));
 const { startComposeServer } = await import("../mod/src/compose.ts");
 startComposeServer();

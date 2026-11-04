@@ -6,6 +6,8 @@ import { mkdtemp, rm } from "fs/promises";
 import { homedir, tmpdir } from "os";
 import { join } from "path";
 
+import { APP_NAME } from "../../mod/src/name.mts";
+
 const CLAUDE_BIN = join(homedir(), ".local/bin/claude");
 const MODEL_RE = /^claude-[a-z0-9-]+$/;
 const TIMEOUT_MS = 120_000;
@@ -54,7 +56,7 @@ export async function runClaude(_: IpcMainInvokeEvent, systemPrompt: string, inp
             // execFile always pipes stdin; without it claude would wait for input until the timeout.
             if (!child.stdin) {
                 child.kill();
-                return reject(new Error("[agent-chat-bridge] claude was started without a stdin pipe"));
+                return reject(new Error(`[${APP_NAME}] claude was started without a stdin pipe`));
             }
             child.stdin.end(input);
         });

@@ -10,6 +10,7 @@ import {
     DEFAULT_READ_LIMIT, MAX_ATTACHMENT_MB, MAX_ATTACHMENTS, MAX_EXTRA_PAGES, MAX_READ_LIMIT, MAX_SENDS_PER_HOUR,
     MAX_WATCHED_CHATS, MIN_SEND_INTERVAL_MS
 } from "../mod/src/limits.mts";
+import { APP_NAME, SOCKET_FILE } from "../mod/src/name.mts";
 
 const KINDS = ["dm", "grupo", "canal", "hilo"];
 
@@ -273,7 +274,7 @@ export function buildRequest(argv) {
 // it.
 /* v8 ignore start */
 // Stryker disable all
-const SOCKET = join(homedir(), "Library", "Application Support", "agent-chat-bridge", "compose.sock");
+const SOCKET = join(homedir(), "Library", "Application Support", APP_NAME, SOCKET_FILE);
 
 function main() {
     let built;

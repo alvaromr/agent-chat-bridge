@@ -23,7 +23,7 @@ export function reportFailure(err: unknown) {
 /** Resolves with Claude's text, or shows a toast and resolves with null. */
 export async function askClaude(systemPrompt: string, input: string, model: string) {
     showToast({ text: TEXT.asking });
-    const { ok, text } = await window.DiscordModNative.runClaude(systemPrompt, input, model);
+    const { ok, text } = await window.AgentChatBridgeNative.runClaude(systemPrompt, input, model);
     if (ok) return text;
     showToast({ text: TEXT.failed(text), variant: "critical" });
     return null;

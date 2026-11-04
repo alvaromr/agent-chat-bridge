@@ -9,7 +9,7 @@ const refused = { message: "The unit tests run without network" };
 
 test("a TCP or local socket connection is refused before it leaves", () => {
     assert.throws(() => connect(9, "127.0.0.1"), refused);
-    assert.throws(() => connect("/tmp/discord-mod-test.sock"), refused);
+    assert.throws(() => connect("/tmp/agent-chat-bridge-test.sock"), refused);
 });
 
 test("fetch is refused before it leaves", async () => {

@@ -20,7 +20,7 @@ Shows whether something runs, and in which order. The user has to reproduce the 
    temporary file outside the repo:
    ```sh
    /Applications/Discord.app/Contents/MacOS/Discord --enable-logging=stderr 2>&1 \
-     | grep --line-buffered CONSOLE | grep --line-buffered -E "agent-chat-bridge|DiscordMod|Uncaught" > "$TMPDIR/discord.log"
+     | grep --line-buffered CONSOLE | grep --line-buffered -E "agent-chat-bridge|AgentChatBridge|Uncaught" > "$TMPDIR/discord.log"
    ```
 3. If temporary marks are needed, they log only lengths or states, with the `[agent-chat-bridge] DEBUG` prefix.
 4. When done: remove the marks, delete the log and restart Discord with `open -a Discord`.
@@ -31,7 +31,7 @@ Ask for permission first: while the port is open, any program on the machine can
 1. Quit Discord and start it in the background with
    `/Applications/Discord.app/Contents/MacOS/Discord --remote-debugging-port=9229 --remote-debugging-address=127.0.0.1`.
 2. To reach the patch's functions, expose them temporarily in `mod/src/renderer/index.ts`, inside the
-   `window[Symbol.for("discord-mod")]` object. Discord's main webpack is not reachable from outside.
+   `window[Symbol.for("agent-chat-bridge")]` object. Discord's main webpack is not reachable from outside.
 3. Write the test script in a temporary folder outside the repo. Run it with `node scripts/cdp.mjs <script.js>`.
 4. After `pnpm build`, reload with `node scripts/cdp.mjs --reload`, without restarting Discord.
 5. When done: remove the temporary exposure, rebuild, restart Discord with `open -a Discord` and check that the port

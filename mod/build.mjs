@@ -38,10 +38,10 @@ await Promise.all([
         platform: "browser",
         format: "iife",
         jsx: "transform",
-        jsxFactory: "DiscordModCreateElement",
-        jsxFragment: "DiscordModFragment",
+        jsxFactory: "AgentChatBridgeCreateElement",
+        jsxFragment: "AgentChatBridgeFragment",
         inject: [path("src/plugin-api/jsx.ts")],
         plugins: [cssAsText],
-        footer: { js: "//# sourceURL=file:///DiscordModRenderer" }
+        footer: { js: "//# sourceURL=file:///AgentChatBridgeRenderer" }
     })
 ]);

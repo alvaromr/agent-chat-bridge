@@ -10,7 +10,7 @@ import { afterAll, test, vi } from "vitest";
 import { readAttachments } from "../mod/src/attachments.ts";
 import { settingsFile } from "../mod/src/settingsFile.ts";
 
-const dir = mkdtempSync(join(tmpdir(), "discord-mod-test-"));
+const dir = mkdtempSync(join(tmpdir(), "agent-chat-bridge-test-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const file = (name, data = "x") => {
     const path = join(dir, name);

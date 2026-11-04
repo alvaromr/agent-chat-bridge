@@ -126,8 +126,8 @@ const watchedChat = (channelId: string) => watched.has(channelId) ? allCandidate
  * Subscribes to Discord's events only once something is watched, so nothing leaves the page otherwise.
  */
 export function forwardWatchedMessages() {
-    const emit = window.DiscordModNative.emitWatchEvent;
-    window.DiscordModNative.onWatchChange(chatIds => {
+    const emit = window.AgentChatBridgeNative.emitWatchEvent;
+    window.AgentChatBridgeNative.onWatchChange(chatIds => {
         watched = new Set(chatIds);
         if (subscribed || !watched.size) return;
         subscribed = true;

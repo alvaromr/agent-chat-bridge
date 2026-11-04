@@ -42,7 +42,7 @@ function ChatBarButtons(props: ChatBarProps) {
 /** Called from Discord's patched chat box with its button list. */
 export function _injectButtons(buttons: ReactNode[], props: ChatBarProps) {
     if (props.disabled || buttons.length === 0) return;
-    buttons.unshift(<ChatBarButtons key="discord-mod-chat-buttons" {...props} />);
+    buttons.unshift(<ChatBarButtons key="plugin-chat-buttons" {...props} />);
 }
 
 /** The tooltip of a button that opens the settings with a right click. */

@@ -8,10 +8,11 @@ import { join } from "path";
 
 import { readAttachments } from "./attachments";
 import { type ComposeEvent, type ComposeRequest, type ComposeResult, IPC } from "./ipc";
+import { APP_NAME, SOCKET_FILE } from "./name.mts";
 import { log } from "./plugin-api/log";
 import { isValid, watchRequest } from "./validate";
 
-const SOCKET = join(app.getPath("appData"), "agent-chat-bridge", "compose.sock");
+const SOCKET = join(app.getPath("appData"), APP_NAME, SOCKET_FILE);
 const MAX_REQUEST_BYTES = 16 * 1024;
 const TIMEOUT_MS = 10_000;
 

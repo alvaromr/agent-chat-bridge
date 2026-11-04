@@ -10,8 +10,8 @@ export default defineConfig({
     // As mod/build.mjs builds the renderer: `@plugin-api/…`, and JSX on Discord's React through plugin-api/jsx.ts.
     resolve: { alias: [{ find: /^@plugin-api\//, replacement: fileURLToPath(new URL("mod/src/plugin-api/", import.meta.url)) }] },
     oxc: {
-        jsx: { runtime: "classic", pragma: "DiscordModCreateElement", pragmaFrag: "DiscordModFragment" },
-        jsxInject: 'import { DiscordModCreateElement, DiscordModFragment } from "@plugin-api/jsx";'
+        jsx: { runtime: "classic", pragma: "AgentChatBridgeCreateElement", pragmaFrag: "AgentChatBridgeFragment" },
+        jsxInject: 'import { AgentChatBridgeCreateElement, AgentChatBridgeFragment } from "@plugin-api/jsx";'
     },
     test: {
         include: ["test/*.test.mjs"],

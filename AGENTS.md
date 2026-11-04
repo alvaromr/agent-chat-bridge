@@ -10,7 +10,8 @@ No new code reaches Discord without a review first (see «Review»). When in dou
 ## Structure
 - `mod/`: the patch.
   - `mod/src/main.ts`: main-process loader; registers the IPC handlers and a session preload, then loads Discord.
-  - `mod/src/preload.ts`: exposes `DiscordModNative` and injects the renderer into the page.
+  - `mod/src/preload.ts`: exposes `AgentChatBridgeNative` and injects the renderer into the page.
+  - `mod/src/name.mts`: the project's name, the one source of its folder, IPC channels, window symbol and log prefix.
   - `mod/src/renderer/`: webpack hook, plugin registry, the CLI's request handling and the settings modal
     (README, «Use»).
   - `mod/src/plugin-api/`: what the plugins import as `@plugin-api/…`: plugin definition, settings, chat box and

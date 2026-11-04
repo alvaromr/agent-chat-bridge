@@ -1,6 +1,7 @@
 // The chats the CLI can name: DMs, groups, visible text channels and joined threads, found by id or by name, and the
 // `list` and `unread` answers.
 import type { ComposeCandidate, ComposeRequest } from "../ipc";
+import { APP_NAME } from "../name.mts";
 import {
     ActiveJoinedThreadsStore, ChannelStore, GuildStore, PermissionStore, ReadStateStore, RelationshipStore, UserGuildSettingsStore, UserStore
 } from "../plugin-api/discord";
@@ -58,7 +59,7 @@ export function resolve(req: ComposeRequest): { chat?: Candidate; candidates: Ca
         const chat = all.find(c => c.id === req.channelId);
         return chat ? { chat, candidates: [], searched } : { candidates: [], searched };
     }
-    if (req.query === undefined) throw new Error("[agent-chat-bridge] A draft names its chat by id or by name; validate.ts checks it");
+    if (req.query === undefined) throw new Error(`[${APP_NAME}] A draft names its chat by id or by name; validate.ts checks it`);
     return { ...match(all, req.query), searched };
 }
 

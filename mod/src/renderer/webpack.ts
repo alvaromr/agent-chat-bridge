@@ -2,6 +2,7 @@
 // Discord instance, lazy patching (on first run of each module) and lookups by filter (regexes in ./regex.ts).
 // Derived from Vencord (https://github.com/Vendicated/Vencord), Copyright (c) Vendicated and contributors; modified
 // since 2026-10-29. GPL-3.0-or-later (LICENSE).
+import { APP_NAME } from "../name.mts";
 import { log } from "../plugin-api/log";
 import { canonicalize, classNameRegex } from "./regex";
 
@@ -114,7 +115,7 @@ function patchFactory(id: PropertyKey, factory: any): { patched: any; applied: P
         const next = code.replace(canonicalize(patch.match), patch.replace as any);
         try {
             if (next === code) throw new Error("the replacement changed nothing");
-            patched = (0, eval)(`${next}\n//# sourceURL=file:///DiscordModWebpack${String(id)}`);
+            patched = (0, eval)(`${next}\n//# sourceURL=file:///AgentChatBridgeWebpack${String(id)}`);
             code = next;
             patch.status = "ok";
             applied.push(patch);
@@ -216,7 +217,7 @@ export function lazy<T>(name: string, get: () => T | null | undefined) {
     let value: T | null | undefined;
     return () => {
         value ??= get();
-        if (value == null) throw new Error(`[agent-chat-bridge] ${name} not found in Discord`);
+        if (value == null) throw new Error(`[${APP_NAME}] ${name} not found in Discord`);
         return value;
     };
 }

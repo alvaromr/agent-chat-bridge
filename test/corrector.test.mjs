@@ -10,7 +10,7 @@ const native = vi.hoisted(() => {
     /** @type {{ answer: () => Promise<{ ok: boolean, text: string }> }} */
     const runClaude = { answer: async () => ({ ok: true, text: "" }) };
     /** @type {any} */ (globalThis).window = Object.assign(globalThis, {
-        DiscordModNative: { getSettings: () => ({}), runClaude: () => runClaude.answer() }
+        AgentChatBridgeNative: { getSettings: () => ({}), runClaude: () => runClaude.answer() }
     });
     return runClaude;
 });

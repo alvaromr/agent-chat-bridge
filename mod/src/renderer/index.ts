@@ -3,6 +3,7 @@ import "./webpack"; // installs the webpack hook first
 
 import autorespuesta from "../../../plugins/autorespuesta";
 import corrector from "../../../plugins/corrector";
+import { APP_NAME } from "../name.mts";
 import { _injectButtons } from "../plugin-api/chatButtons";
 import { _buildPopoverElements } from "../plugin-api/messagePopover";
 import type { PluginDef } from "../plugin-api/plugin";
@@ -11,8 +12,8 @@ import { forwardWatchedMessages } from "./read";
 import { chatBarButtons, plugins, popoverButtons } from "./registry";
 import baseStyle from "./styles.css";
 
-Object.defineProperty(window, Symbol.for("discord-mod"), { value: Object.freeze({ _injectButtons, _buildPopoverElements }) });
-window.DiscordModNative.onComposeRequest(compose);
+Object.defineProperty(window, Symbol.for(APP_NAME), { value: Object.freeze({ _injectButtons, _buildPopoverElements }) });
+window.AgentChatBridgeNative.onComposeRequest(compose);
 forwardWatchedMessages();
 
 function addStyle(css: string) {

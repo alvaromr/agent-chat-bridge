@@ -75,7 +75,7 @@ async function focusBox() {
 const theme = await evaluate("document.documentElement.classList.contains('theme-light') ? 'theme-light' : 'theme-dark'");
 // Only in the page, never in Discord's settings: every element with Discord's theme class gets the other one, and an
 // observer keeps it on what React renders afterwards, until the theme Discord had comes back.
-const OBSERVER = "window[Symbol.for('discord-mod-a11y')]";
+const OBSERVER = "window[Symbol.for('agent-chat-bridge-a11y')]";
 /** @param {string} to */
 const setTheme = to => evaluate(`(() => {
     ${OBSERVER}?.disconnect();
