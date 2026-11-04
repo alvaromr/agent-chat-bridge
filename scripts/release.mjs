@@ -1,6 +1,6 @@
-// `pnpm release <x.y.z>`: the whole release from main, stopping at the first failure. It runs the gate, the mutation
-// run and the Discord code check, installs and tests a fresh clone, then sets the version, dates the changelog, commits
-// and tags. Pushing stays with whoever releases: `git push --follow-tags`.
+// `pnpm release <x.y.z>`: the whole release from main, stopping at the first failure. It runs the gate, the audit, the
+// mutation run and the Discord code check, installs and tests a fresh clone, then sets the version, dates the
+// changelog, commits and tags. Pushing stays with whoever releases: `git push --follow-tags`.
 import { execFileSync } from "child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
@@ -22,6 +22,7 @@ try {
     const changelog = releaseChangelog(readFileSync("CHANGELOG.md", "utf8"), version, pkg.version, date);
 
     run("pnpm", ["check"]);
+    run("pnpm", ["audit"]);
     run("pnpm", ["mutation", "--force"]);
     run("pnpm", ["check-discord"]);
 

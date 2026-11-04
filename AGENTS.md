@@ -63,17 +63,18 @@ Defined in `package.json`.
   files through JSDoc (`tsconfig.json`).
 - `pnpm test`: tests without Discord, with 100 % line, branch, function and statement coverage.
 - `pnpm mutation`: Stryker on the pure modules, with a 100 % score, run by the `.githooks/` pre-push hook instead of
-  the pre-commit one. Run it after changing one of them or their tests. It is incremental and re-tests only what changed, but it can keep a stale survivor after a
-  test change: before committing, confirm with `pnpm mutation --force` (about 2 min). Every surviving mutant gets a
-  test, or an inline `// Stryker disable next-line <mutator>: <reason>` when it is equivalent.
-- `pnpm audit`: known advisories in the dependencies; part of the review of any dependency change.
+  the pre-commit one. Run it after changing one of them or their tests. It is incremental and re-tests only what
+  changed, but it can keep a stale survivor after a test change: before committing, confirm with
+  `pnpm mutation --force` (about 2 min). Every surviving mutant gets a test, or an inline `// Stryker disable next-line <mutator>: <reason>` when it is equivalent.
+- `pnpm audit`: known advisories in the dependencies; part of the review of any dependency change, and run by the
+  pre-push hook and `pnpm release`.
 - `pnpm smoke`: read-only checks with Discord open and patched.
 - `pnpm check-discord`: patches and pieces against the last Discord version the app loaded; Discord need not be open.
 - `pnpm a11y`: names, keyboard paths and contrast of what `mod/` adds, in both themes, through the debugging port
   (`docs/debugging.md`, method 4). Run it after a change to what `mod/` or the plugins show.
 - `pnpm inject` / `pnpm uninject`: patch (or re-patch) Discord with `mod/`, or remove the patch. Discord closed.
   After `pnpm build`, restarting Discord is enough: the loader reads `mod/dist/` on every start.
-- `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, `pnpm mutation --force`,
+- `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,
   `pnpm check-discord` and a fresh clone installed and tested, then the version in `package.json`, the dated
   `CHANGELOG.md`, the commit and the `v<x.y.z>` tag. A user-visible change adds its entry under `[Unreleased]` in the
   same commit. The pre-push hook also refuses to move or delete a tag the remote has.
