@@ -55,7 +55,7 @@ export const MessageActions: any = lazyObject("MessageActions", () => find(filte
 /** Discord's message manager; its fetchMessages is what CHANNEL_SELECT runs when the user opens a chat. */
 export const MessageManager: { fetchMessages(args: { guildId: string | null; channelId: string; }): void; } =
     lazyObject("MessageManager", () => find(filters.byProps("loadSelectedChannelIfNecessary", "fetchMessages")));
-export const DraftActions:{ saveDraft(channelId: string, text: string, draftType: number): void; } =
+export const DraftActions: { saveDraft(channelId: string, text: string, draftType: number): void; } =
     lazyObject("DraftActions", () => find(filters.byProps("clearDraft", "saveDraft")));
 export const ChannelRouter = {
     transitionToChannel: lazyFunction<(channelId: string) => void>("transitionToChannel", () => findInModule('"Thread must have a parent ID."', filters.byCode(".openTextInVoiceIfVoiceChannel")))

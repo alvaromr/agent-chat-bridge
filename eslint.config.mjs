@@ -38,6 +38,12 @@ export default tseslint.config(
             "@stylistic/spaced-comment": ["error", "always", { markers: ["!"] }],
             "@stylistic/no-extra-semi": "error",
             "@stylistic/function-call-spacing": ["error", "never"],
+            "@stylistic/key-spacing": "error",
+            "@stylistic/type-annotation-spacing": "error",
+            "@stylistic/padding-line-between-statements": ["error",
+                { blankLine: "always", prev: "import", next: "*" },
+                { blankLine: "any", prev: "import", next: "import" }
+            ],
 
             "yoda": "error",
             "eqeqeq": ["error", "always", { null: "ignore" }],
