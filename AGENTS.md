@@ -96,11 +96,11 @@ Defined in `package.json`.
      loop. Exceptions, always on an explicit request:
      - `discord-mod read --fetch`: 1 request, the one Discord makes when opening a chat (`fetchMessages` of its
        message manager).
-     - `discord-mod read --more`: up to 3 older pages of 50 messages, as scrolling up does, and only back to the
-       first unread message.
-     - `discord-mod read --older <n>`: for the context of a message the user asks to write, n older pages (1 to 3),
-       read or not, the same request as `--more`.
-     - Between pages, `mod/` waits 1.5 s, like someone scrolling up.
+     - `discord-mod read --more`: older pages, as scrolling up does, up to `MAX_EXTRA_PAGES` (`mod/src/limits.mts`)
+       and only back to the first unread message.
+     - `discord-mod read --older <n>`: for the context of a message the user asks to write, n older pages up to the
+       same limit, read or not, the same request as `--more`.
+     - Between pages, `mod/` waits like someone scrolling up (`PAGE_PAUSE_MS` in `mod/src/renderer/read.ts`).
 4. **LLM**: the plugins only use the local `claude -p` (the user's subscription). The `discord-mod` CLI hands chat
    content to the Claude Code session that runs it, at the user's request. No other network destination for chat
    content. `mod/` makes no network requests of its own, except the Discord API calls rule 3 allows.
