@@ -1,6 +1,8 @@
 #!/bin/sh
-# Refuses to move or delete a tag the remote already has: a released version identifies one commit forever.
-# Installed by `pnpm setup`. Git passes one line per ref: local ref, local sha, remote ref, remote sha.
+# Refuses to move or delete a tag the remote already has: a released version identifies one commit forever. Then runs
+# the mutation testing, too slow for the pre-commit hook, so what reaches the remote has tests that notice a wrong
+# result. Installed by `pnpm setup`. Git passes one line per ref: local ref, local sha, remote ref, remote sha.
+set -e
 zero=0000000000000000000000000000000000000000
 while read -r local_ref local_sha remote_ref remote_sha; do
     case "$remote_ref" in
@@ -12,4 +14,4 @@ while read -r local_ref local_sha remote_ref remote_sha; do
             ;;
     esac
 done
-exit 0
+pnpm mutation
