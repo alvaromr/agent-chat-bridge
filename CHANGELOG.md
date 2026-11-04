@@ -5,6 +5,8 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-04
+
 ### Added
 - Corrector: fixes the spelling of the draft in the chat box and of your own sent messages, and drops any correction
   that changes words or removes parts of the message.
@@ -14,3 +16,4 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
   confirmation.
 - A settings modal for each plugin: right-click its button in the chat box.
 - `pnpm inject` and `pnpm uninject`, to patch Discord for macOS and to remove the patch.
+
