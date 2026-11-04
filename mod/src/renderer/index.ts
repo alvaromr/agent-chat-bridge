@@ -6,7 +6,8 @@ import corrector from "../../../plugins/corrector";
 import { _injectButtons } from "../plugin-api/chatButtons";
 import { _buildPopoverElements } from "../plugin-api/messagePopover";
 import type { PluginDef } from "../plugin-api/plugin";
-import { compose, forwardWatchedMessages } from "./compose";
+import { compose } from "./compose";
+import { forwardWatchedMessages } from "./read";
 import { chatBarButtons, plugins, popoverButtons } from "./registry";
 import baseStyle from "./styles.css";
 

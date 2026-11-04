@@ -30,7 +30,8 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   attachments), list and read chats, listen for changes (`watch`) and, with confirmation (rule 3), send, edit and
   delete own messages and react. Its documentation is its `--help`. `mod/src/compose.ts` serves it over a local
   socket. A new command goes into `COMMANDS` of `mod/src/ipc.ts`: the compiler then asks for its check in
-  `mod/src/validate.ts` and its handler in `mod/src/renderer/compose.ts`, and `test/validate.test.mjs` asks for its
+  `mod/src/validate.ts` and its handler in `HANDLERS` of `mod/src/renderer/compose.ts`, which answers from `chats.ts`,
+  `read.ts` or `write.ts` beside it, and `test/validate.test.mjs` asks for its
   entry in the CLI. A limit that `mod/` enforces and the `--help` states goes into `mod/src/limits.mts`, which the CLI
   loads with plain Node.
 - `skills/discord-mod/`: short skill that points to the CLI's `--help` and sets the usage rules.

@@ -1,4 +1,4 @@
-// Message text as `read` and `watch` return it, without Discord: compose.ts looks the names up in its stores.
+// Message text as `read` and `watch` return it, without Discord: read.ts looks the names up in its stores.
 import type { ComposeMessage } from "../ipc";
 
 /** What Discord calls the users, roles and channels a message mentions; undefined when it doesn't know them. */
