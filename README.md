@@ -30,6 +30,13 @@ pnpm links      # optional: the discord-mod CLI and its Claude Code skill
 ```
 After a Discord update, run `pnpm inject` again.
 
+## Use
+- Each plugin adds a button to the chat box, left of the gift icon.
+- Right-click one of those buttons to open the settings of both plugins. Each feature has its own setting to turn it
+  off.
+- Settings are saved in `~/Library/Application Support/discord-mod/settings.json`. If that file can't be read, it is
+  moved aside as `settings.json.unreadable-<ms>` and a dialog says so.
+
 ## Develop
 ```sh
 pnpm check      # the gate before each commit (AGENTS.md, «Commands»)

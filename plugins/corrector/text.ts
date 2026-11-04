@@ -1,5 +1,5 @@
 // With its extension, so Node loads it in test/ as the bundlers do.
-import { elementAt } from "../shared/list.ts";
+import { elementAt } from "./list.ts";
 
 // Stryker disable next-line MethodExpression: both sides of every comparison fold alike; upper and lower case only part ways on letters like ß, which Spanish doesn't use.
 const fold = (word: string) => word.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();

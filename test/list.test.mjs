@@ -1,9 +1,9 @@
-// Bounded index access (plugins/shared/list.ts). Run with `pnpm test`.
+// Bounded index access (plugins/corrector/list.ts). Run with `pnpm test`.
 import assert from "node:assert/strict";
 
 import { test } from "vitest";
 
-import { elementAt } from "../plugins/shared/list.ts";
+import { elementAt } from "../plugins/corrector/list.ts";
 
 test("elementAt returns the element at an index inside the list, null included", () => {
     assert.equal(elementAt(["a", "b"], 1), "b");

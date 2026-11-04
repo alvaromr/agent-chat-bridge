@@ -12,17 +12,16 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   - `mod/src/main.ts`: main-process loader; registers the IPC handlers and a session preload, then loads Discord.
   - `mod/src/preload.ts`: exposes `DiscordModNative` and injects the renderer into the page.
   - `mod/src/renderer/`: webpack hook, plugin registry, the CLI's request handling and the settings modal
-    (right-click a plugin button of the chat box).
+    (README, «Use»).
   - `mod/src/plugin-api/`: what the plugins import as `@plugin-api/…`: plugin definition, settings, chat box and
     message toolbar buttons, the chat box's text (`chatInput.ts`), the wait for Discord's stores (`wait.ts`), and the
     Discord pieces they use (`discord.ts`) with their types (`discordTypes.ts`). The CLI's request handling uses the
     same pieces; `mod/` imports nothing from `plugins/` but the registration and `run.ts`.
   - `mod/src/electron.d.ts`: types of the Electron APIs `mod/` calls.
-  - Settings live in `~/Library/Application Support/discord-mod/settings.json`, keyed by plugin name, only the
-    values that differ from the default. A file that can't be read is moved aside (`settings.json.unreadable-<ms>`)
-    and a dialog says so; if it can't be moved, saving stays blocked. There is no switch to disable a plugin: with
-    both disabled, their buttons and with them the access to the modal would disappear. Each feature has its own
-    setting to turn it off.
+  - Settings: where they live and what happens to a file that can't be read are in the README («Use»). The file is
+    keyed by plugin name and holds only the values that differ from the default; if an unreadable file can't be
+    moved aside, saving stays blocked. There is no switch to disable a plugin: with both disabled, their buttons and
+    with them the access to the modal would disappear.
 - `plugins/`: own plugins, registered in `mod/src/renderer/index.ts`. They import only from `@plugin-api/` and
   `plugins/shared/`, a rule the lint enforces.
   - `plugins/shared/`: code common to the plugins; `run.ts` runs `claude -p` in the main process.
@@ -99,7 +98,7 @@ Defined in `package.json`.
      - `discord-mod read --more`: up to 3 older pages of 50 messages, as scrolling up does, and only back to the
        first unread message.
      - `discord-mod read --older <n>`: for the context of a message the user asks to write, n older pages (1 to 3),
-       read or not, the same request as `--more`. The skill sets one page at a time and 3 per message.
+       read or not, the same request as `--more`.
      - Between pages, `mod/` waits 1.5 s, like someone scrolling up.
 4. **LLM**: the plugins only use the local `claude -p` (the user's subscription). The `discord-mod` CLI hands chat
    content to the Claude Code session that runs it, at the user's request. No other network destination for chat

@@ -20,8 +20,8 @@ export default {
         "mod/src/renderer/rateLimit.ts",
         "mod/src/renderer/regex.ts",
         "plugins/autorespuesta/transcript.ts",
+        "plugins/corrector/list.ts",
         "plugins/corrector/text.ts",
-        "plugins/shared/list.ts",
         "scripts/asar.mjs",
         "scripts/changelog.mjs",
         "scripts/discord-mod.mjs"
