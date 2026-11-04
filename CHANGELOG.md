@@ -5,6 +5,8 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-04
+
 ### Fixed
 - `acb --help` and each command's help show the usage as you type it, with a space after `acb`
   (`acb send <id> …`, not `acbsend<id> …`).
