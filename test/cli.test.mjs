@@ -23,6 +23,15 @@ test("help: general and per command", () => {
     }
 });
 
+test("help: every usage line starts with the command as the user types it", () => {
+    assert.match(help([]), /^Ayuda de cada uno: acb <comando> --help$/m);
+    for (const name of ["draft", "send", "edit", "delete", "react", "watch", "list", "unread", "read"]) {
+        const [first = "", ...more] = help([name, "--help"]).split("\n\n")[0]?.split("\n") ?? [];
+        assert.ok(first.startsWith(`acb ${name} `), first);
+        for (const line of more) assert.ok(line.startsWith(`       acb ${name} `), line);
+    }
+});
+
 test("commands and their number of arguments", () => {
     usage(["borrar"], `Comando desconocido: borrar\n\n${help([])}`);
     usage(["send", "1"], `Uso: ${help(["send", "--help"]).split("\n")[0]}`);
