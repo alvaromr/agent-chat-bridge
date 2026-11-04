@@ -216,7 +216,7 @@ export function lazy<T>(name: string, get: () => T | null | undefined) {
     let value: T | null | undefined;
     return () => {
         value ??= get();
-        if (value == null) throw new Error(`[discord-mod] ${name} not found in Discord`);
+        if (value == null) throw new Error(`[agent-chat-bridge] ${name} not found in Discord`);
         return value;
     };
 }

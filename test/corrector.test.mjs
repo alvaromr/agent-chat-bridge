@@ -60,5 +60,5 @@ test("corrector: an action that fails shows the user why, not only the console",
     const error = vi.spyOn(console, "error").mockImplementation(() => { });
     await correctSent();
     assert.deepEqual(toasts().at(-1), { text: "No se pudo terminar: sin conexión con el proceso principal", variant: "critical" });
-    assert.deepEqual(error.mock.calls, [["[discord-mod] A plugin action failed: Error: sin conexión con el proceso principal"]]);
+    assert.deepEqual(error.mock.calls, [["[agent-chat-bridge] A plugin action failed: Error: sin conexión con el proceso principal"]]);
 });

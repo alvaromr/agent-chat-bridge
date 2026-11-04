@@ -1,4 +1,4 @@
-// Local socket for scripts/discord-mod.mjs. Only the user's account can connect (socket 0600 in a 0700 dir).
+// Local socket for scripts/acb.mjs. Only the user's account can connect (socket 0600 in a 0700 dir).
 // Validates each request, reads files to attach, hands the request to the renderer and brings Discord to the front
 // after a draft.
 import { app, BrowserWindow, ipcMain } from "electron";
@@ -11,7 +11,7 @@ import { type ComposeEvent, type ComposeRequest, type ComposeResult, IPC } from 
 import { log } from "./plugin-api/log";
 import { isValid, watchRequest } from "./validate";
 
-const SOCKET = join(app.getPath("appData"), "discord-mod", "compose.sock");
+const SOCKET = join(app.getPath("appData"), "agent-chat-bridge", "compose.sock");
 const MAX_REQUEST_BYTES = 16 * 1024;
 const TIMEOUT_MS = 10_000;
 

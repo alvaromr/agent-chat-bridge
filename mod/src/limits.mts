@@ -1,5 +1,5 @@
 // Limits that mod/ enforces and the CLI's --help states, defined once. No imports and only erasable TypeScript, so
-// scripts/discord-mod.mjs loads it with plain Node; .mts keeps Node from guessing its module type.
+// scripts/acb.mjs loads it with plain Node; .mts keeps Node from guessing its module type.
 
 /** Rule 3: `send`, `edit`, `delete` and `react` share these, per chat and in total. */
 export const MIN_SEND_INTERVAL_MS = 5000;

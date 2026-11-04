@@ -126,7 +126,7 @@ test.each([
             settings: {},
             problem: `No se pudieron leer los ajustes (${reason}), así que se usan los de por defecto. El fichero queda en ${copy}`
         });
-        assert.deepEqual(error.mock.calls, [[`[discord-mod] Unreadable settings, using the defaults: ${path}: ${reason}; moved to ${copy}`]]);
+        assert.deepEqual(error.mock.calls, [[`[agent-chat-bridge] Unreadable settings, using the defaults: ${path}: ${reason}; moved to ${copy}`]]);
         settings.write({ a: 1 });
         assert.equal(readFileSync(copy, "utf8"), text);
         assert.deepEqual(settings.read(), { settings: { a: 1 } });
@@ -149,7 +149,7 @@ test("settings: a file that can't be read or moved blocks saving, so nothing ove
             problem: `No se pudieron leer los ajustes (${parseError("{")}), así que se usan los de por defecto. Tampoco se pudo apartar el fichero, así que los cambios no se guardarán hasta que lo arregles o lo borres: ${path}`
         });
         assert.equal(error.mock.calls.length, 1);
-        assert.match(String(error.mock.calls[0]?.[0]), new RegExp(`^\\[discord-mod\\] Unreadable settings, using the defaults: ${path}: .+; not moved: EACCES: `));
+        assert.match(String(error.mock.calls[0]?.[0]), new RegExp(`^\\[agent-chat-bridge\\] Unreadable settings, using the defaults: ${path}: .+; not moved: EACCES: `));
         chmodSync(folder, 0o700);
         assert.throws(() => settings.write({ a: 1 }), new Error(`Los ajustes guardados no se pudieron leer; arregla o borra ${path}`));
         assert.equal(readFileSync(path, "utf8"), "{");

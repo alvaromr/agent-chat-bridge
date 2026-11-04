@@ -24,7 +24,7 @@ export default {
         "plugins/corrector/text.ts",
         "scripts/asar.mjs",
         "scripts/changelog.mjs",
-        "scripts/discord-mod.mjs"
+        "scripts/acb.mjs"
     ],
     incremental: true,
     // Safety limits: few processes at once, and a mutant that loops is cut close to the suite's real time.

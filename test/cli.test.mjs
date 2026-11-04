@@ -1,9 +1,9 @@
-// Arguments and dates of the CLI (scripts/discord-mod.mjs), without Discord. Run with `pnpm test`.
+// Arguments and dates of the CLI (scripts/acb.mjs), without Discord. Run with `pnpm test`.
 import assert from "node:assert/strict";
 
 import { expect, test, vi } from "vitest";
 
-import { buildRequest, dateSpan, UsageError } from "../scripts/discord-mod.mjs";
+import { buildRequest, dateSpan, UsageError } from "../scripts/acb.mjs";
 
 const request = argv => buildRequest(argv).request;
 const usage = (argv, message) => assert.throws(() => buildRequest(argv), message ? new UsageError(message) : UsageError, argv.join(" "));

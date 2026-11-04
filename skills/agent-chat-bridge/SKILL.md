@@ -1,11 +1,11 @@
 ---
-name: discord-mod
-description: Uses the user's Discord from the terminal with the `discord-mod` CLI. Leaves messages ready to send (with a reply to a message and attachments), sends them, edits or deletes the user's messages and reacts with their confirmation, lists chats and unread messages, and reads chats. Use it when the user asks to write, answer or tell someone something on Discord, or to know which conversations or unread messages they have.
+name: agent-chat-bridge
+description: Uses the user's Discord from the terminal with the `acb` CLI. Leaves messages ready to send (with a reply to a message and attachments), sends them, edits or deletes the user's messages and reacts with their confirmation, lists chats and unread messages, and reads chats. Use it when the user asks to write, answer or tell someone something on Discord, or to know which conversations or unread messages they have.
 ---
 
 # Discord from Claude
 
-Run `discord-mod --help` and `discord-mod <command> --help` before using it. The options are documented there.
+Run `acb --help` and `acb <command> --help` before using it. The options are documented there.
 Do everything with the CLI. If something can't be done, tell the user instead of working around it.
 
 Rules:

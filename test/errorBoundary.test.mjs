@@ -29,6 +29,6 @@ test("a failing plugin button tells the user once per name, after the render, an
         [{ text: "Autorespuesta no se pudo mostrar; el detalle está en la consola", variant: "critical" }]
     ]);
     assert.deepEqual(error.mock.calls, [
-        ["[discord-mod] Corrector failed", boom], ["[discord-mod] Corrector failed", boom], ["[discord-mod] Autorespuesta failed", boom]
+        ["[agent-chat-bridge] Corrector failed", boom], ["[agent-chat-bridge] Corrector failed", boom], ["[agent-chat-bridge] Autorespuesta failed", boom]
     ]);
 });

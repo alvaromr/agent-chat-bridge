@@ -9,7 +9,7 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 - Corrector: fixes the spelling of the draft in the chat box and of your own sent messages, and drops any correction
   that changes words or removes parts of the message.
 - Autorespuesta: drafts a reply in your tone to a message you pick, for you to review and send.
-- The `discord-mod` CLI and its Claude Code skill: drafts with a reply and attachments, the list of chats and unread
+- The `acb` CLI and its Claude Code skill: drafts with a reply and attachments, the list of chats and unread
   messages, reading chats and listening for changes, and sending, editing, deleting and reacting, each only with your
   confirmation.
 - A settings modal for each plugin: right-click its button in the chat box.

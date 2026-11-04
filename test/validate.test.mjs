@@ -5,7 +5,7 @@ import { test } from "vitest";
 
 import { commandOf } from "../mod/src/ipc.ts";
 import { isValid, watchRequest } from "../mod/src/validate.ts";
-import { buildRequest, COMMANDS } from "../scripts/discord-mod.mjs";
+import { buildRequest, COMMANDS } from "../scripts/acb.mjs";
 
 const ok = req => assert.equal(isValid(req), true, JSON.stringify(req));
 const no = req => assert.equal(isValid(req), false, JSON.stringify(req));

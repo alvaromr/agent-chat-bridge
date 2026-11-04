@@ -58,7 +58,7 @@ export function resolve(req: ComposeRequest): { chat?: Candidate; candidates: Ca
         const chat = all.find(c => c.id === req.channelId);
         return chat ? { chat, candidates: [], searched } : { candidates: [], searched };
     }
-    if (req.query === undefined) throw new Error("[discord-mod] A draft names its chat by id or by name; validate.ts checks it");
+    if (req.query === undefined) throw new Error("[agent-chat-bridge] A draft names its chat by id or by name; validate.ts checks it");
     return { ...match(all, req.query), searched };
 }
 

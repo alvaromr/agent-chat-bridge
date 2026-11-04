@@ -27,15 +27,14 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   `plugins/shared/`, a rule the lint enforces.
   - `plugins/shared/`: code common to the plugins; `run.ts` runs `claude -p` in the main process.
   - `plugins/corrector/`, `plugins/autorespuesta/`.
-- `scripts/discord-mod.mjs`: the `discord-mod` CLI, to use Discord from the terminal: leave drafts (with a reply and
+- `scripts/acb.mjs`: the `acb` CLI, to use Discord from the terminal: leave drafts (with a reply and
   attachments), list and read chats, listen for changes (`watch`) and, with confirmation (rule 3), send, edit and
   delete own messages and react. Its documentation is its `--help`. `mod/src/compose.ts` serves it over a local
   socket. A new command goes into `COMMANDS` of `mod/src/ipc.ts`: the compiler then asks for its check in
   `mod/src/validate.ts` and its handler in `HANDLERS` of `mod/src/renderer/compose.ts`, which answers from `chats.ts`,
-  `read.ts` or `write.ts` beside it, and `test/validate.test.mjs` asks for its
-  entry in the CLI. A limit that `mod/` enforces and the `--help` states goes into `mod/src/limits.mts`, which the CLI
-  loads with plain Node.
-- `skills/discord-mod/`: short skill that points to the CLI's `--help` and sets the usage rules.
+  `read.ts` or `write.ts` beside it, and `test/validate.test.mjs` asks for its entry in the CLI. A limit that `mod/`
+  enforces and the `--help` states goes into `mod/src/limits.mts`, which the CLI loads with plain Node.
+- `skills/agent-chat-bridge/`: short skill that points to the CLI's `--help` and sets the usage rules.
   `pnpm links` links the skill into `~/.claude/skills/` and the CLI into `~/.local/bin/`.
 - `scripts/inject.mjs`: the patcher. Renames `app.asar` to `_app.asar` and writes a loader `app.asar`, built by
   `scripts/asar.mjs`.
@@ -89,22 +88,22 @@ Defined in `package.json`.
      dialog on Enter in an empty box and with its button on an own message: the key or the click is the confirmation.
      It discards the correction if it changes words or removes parts of the message.
    - Claude may publish with the CLI (`send`, `edit`, `delete` and `react`) only with the user's explicit
-     confirmation, after showing what rule 1 of `skills/discord-mod/SKILL.md` sets for each command. `send` requires
-     the confirmed text and sends by pressing Enter in the box, Discord's normal path; with `--direct`, with the send
-     action that box uses, without opening the chat. `edit` and `delete` act on own messages only, always with
+     confirmation, after showing what rule 1 of `skills/agent-chat-bridge/SKILL.md` sets for each command. `send`
+     requires the confirmed text and sends by pressing Enter in the box, Discord's normal path; with `--direct`, with
+     the send action that box uses, without opening the chat. `edit` and `delete` act on own messages only, always with
      confirmation, in the auto-reply too.
-   - Auto-reply experiment: see «Auto-reply» in `skills/discord-mod/SKILL.md`. Only in chats the user enables for one
-     session, with the messages marked as Claude's and the rate limit that `send` enforces.
+   - Auto-reply experiment: see «Auto-reply» in `skills/agent-chat-bridge/SKILL.md`. Only in chats the user enables for
+     one session, with the messages marked as Claude's and the rate limit that `send` enforces.
    - Read only messages the app already has loaded; never download histories through the API or make requests in a
      loop. Exceptions, always on an explicit request:
-     - `discord-mod read --fetch`: 1 request, the one Discord makes when opening a chat (`fetchMessages` of its
-       message manager).
-     - `discord-mod read --more`: older pages, as scrolling up does, up to `MAX_EXTRA_PAGES` (`mod/src/limits.mts`)
+     - `acb read --fetch`: 1 request, the one Discord makes when opening a chat (`fetchMessages` of its message
+       manager).
+     - `acb read --more`: older pages, as scrolling up does, up to `MAX_EXTRA_PAGES` (`mod/src/limits.mts`)
        and only back to the first unread message.
-     - `discord-mod read --older <n>`: for the context of a message the user asks to write, n older pages up to the
-       same limit, read or not, the same request as `--more`.
+     - `acb read --older <n>`: for the context of a message the user asks to write, n older pages up to the same
+       limit, read or not, the same request as `--more`.
      - Between pages, `mod/` waits like someone scrolling up (`PAGE_PAUSE_MS` in `mod/src/renderer/read.ts`).
-4. **LLM**: the plugins only use the local `claude -p` (the user's subscription). The `discord-mod` CLI hands chat
+4. **LLM**: the plugins only use the local `claude -p` (the user's subscription). The `acb` CLI hands chat
    content to the Claude Code session that runs it, at the user's request. No other network destination for chat
    content. `mod/` makes no network requests of its own, except the Discord API calls rule 3 allows.
 5. **Privacy in own plugins**: never record message content or the token in logs or persistent files. If a plugin

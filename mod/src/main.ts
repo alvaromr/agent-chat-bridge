@@ -13,7 +13,7 @@ import { settingsFile } from "./settingsFile";
 /* eslint-disable @typescript-eslint/no-require-imports */
 // The entry module is the loader's index.js in Discord's app.asar; scripts/inject.mjs is the only way main.ts loads.
 const entry = require.main;
-if (!entry) throw new Error("[discord-mod] main.js must be loaded by the app.asar loader that scripts/inject.mjs writes");
+if (!entry) throw new Error("[agent-chat-bridge] main.js must be loaded by the app.asar loader that scripts/inject.mjs writes");
 const asarPath = join(dirname(entry.filename), "..", "_app.asar");
 const discordPkg = require(join(asarPath, "package.json"));
 entry.filename = join(asarPath, discordPkg.main);
@@ -22,10 +22,10 @@ app.setAppPath(asarPath);
 ipcMain.on(IPC.getRenderer, e => {
     e.returnValue = readFileSync(join(__dirname, "renderer.js"), "utf8");
 });
-const settings = settingsFile(join(app.getPath("appData"), "discord-mod", "settings.json"));
+const settings = settingsFile(join(app.getPath("appData"), "agent-chat-bridge", "settings.json"));
 ipcMain.on(IPC.getSettings, e => {
     const { settings: saved, problem } = settings.read();
-    if (problem) dialog.showMessageBox({ type: "warning", message: "discord-mod", detail: problem });
+    if (problem) dialog.showMessageBox({ type: "warning", message: "agent-chat-bridge", detail: problem });
     e.returnValue = saved;
 });
 ipcMain.handle(IPC.setSettings, (_, saved) => settings.write(saved));

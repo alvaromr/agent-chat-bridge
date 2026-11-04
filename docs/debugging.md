@@ -20,9 +20,9 @@ Shows whether something runs, and in which order. The user has to reproduce the 
    temporary file outside the repo:
    ```sh
    /Applications/Discord.app/Contents/MacOS/Discord --enable-logging=stderr 2>&1 \
-     | grep --line-buffered CONSOLE | grep --line-buffered -E "discord-mod|DiscordMod|Uncaught" > "$TMPDIR/discord.log"
+     | grep --line-buffered CONSOLE | grep --line-buffered -E "agent-chat-bridge|DiscordMod|Uncaught" > "$TMPDIR/discord.log"
    ```
-3. If temporary marks are needed, they log only lengths or states, with the `[discord-mod] DEBUG` prefix.
+3. If temporary marks are needed, they log only lengths or states, with the `[agent-chat-bridge] DEBUG` prefix.
 4. When done: remove the marks, delete the log and restart Discord with `open -a Discord`.
 
 ## 2. Debugging port

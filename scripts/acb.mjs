@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// discord-mod: talks to the patched Discord through its local socket (mod/src/compose.ts).
+// acb (agent-chat-bridge): talks to the patched Discord through its local socket (mod/src/compose.ts).
 // Run with --help for the commands; `pnpm links` puts it on the PATH.
 import { connect } from "net";
 import { homedir } from "os";
@@ -24,7 +24,7 @@ const filters = (kinds, o) => ({ ...(kinds.length ? { kinds } : {}), ...(o.serve
 export const COMMANDS = {
     draft: {
         summary: "deja un mensaje listo para enviar en un chat y lo abre",
-        usage: "discord-mod draft <chat> [<texto>] [--id] [--reply <id>] [--attach <ruta>]... [--replace] [--background] [--dry-run]\n       discord-mod draft <chat> --clear [--id]",
+        usage: "acbdraft <chat> [<texto>] [--id] [--reply <id>] [--attach <ruta>]... [--replace] [--background] [--dry-run]\n       acbdraft <chat> --clear [--id]",
         help: `Busca el chat por nombre (DM, grupo, canal o hilo), deja <texto> en su caja de texto, lo abre y pone
 Discord al frente. No envía nada: para eso está send.
 Solo abre un chat si el nombre encaja claramente; si no, devuelve en "candidatos" todos los que encajan.
@@ -56,7 +56,7 @@ Solo abre un chat si el nombre encaja claramente; si no, devuelve en "candidatos
     },
     send: {
         summary: "envía un mensaje confirmado por el usuario: el borrador de la caja o, con --direct, sin abrir el chat",
-        usage: "discord-mod send <id> <texto confirmado> [--direct [--reply <id>]]",
+        usage: "acbsend <id> <texto confirmado> [--direct [--reply <id>]]",
         help: `Sin --direct: envía lo que hay en la caja del chat <id> (con su respuesta y adjuntos), pulsando Enter como lo
 haría el usuario. Solo si el chat está abierto y el texto de la caja es exactamente <texto confirmado>; si no, no
 envía nada. Si solo hay adjuntos, <texto confirmado> es "".
@@ -75,7 +75,7 @@ y react un límite de ritmo: ${MIN_SEND_INTERVAL_MS / 1000} s entre acciones en 
     },
     edit: {
         summary: "cambia el texto de un mensaje del usuario, solo con su confirmación",
-        usage: "discord-mod edit <id del chat> <id del mensaje> <texto confirmado>",
+        usage: "acbedit <id del chat> <id del mensaje> <texto confirmado>",
         help: `Sustituye el texto de un mensaje del usuario por <texto confirmado>, con la misma acción que usa Discord al
 editar. Se publica al momento y la otra persona ve "(editado)": úsalo solo tras enseñarle al usuario el mensaje
 (cítalo) y el texto nuevo, y con su confirmación explícita, también en la respuesta automática. Solo mensajes del
@@ -87,7 +87,7 @@ usuario y cargados (read --fetch). Devuelve "editado": true si Discord lo confir
     },
     delete: {
         summary: "borra un mensaje del usuario para todos, solo con su confirmación",
-        usage: "discord-mod delete <id del chat> <id del mensaje>",
+        usage: "acbdelete <id del chat> <id del mensaje>",
         help: `Borra un mensaje del usuario para todos, con la misma acción que usa Discord al borrar. No se puede deshacer:
 úsalo solo tras citarle al usuario el mensaje y con su confirmación explícita, también en la respuesta automática.
 Solo mensajes del usuario y cargados (read --fetch). Devuelve "borrado": true si Discord lo confirma. Comparte el
@@ -98,7 +98,7 @@ límite de ritmo de send.`,
     },
     react: {
         summary: "reacciona a un mensaje con un emoji, solo con confirmación del usuario",
-        usage: "discord-mod react <id del chat> <id del mensaje> <emoji> [--remove]",
+        usage: "acbreact <id del chat> <id del mensaje> <emoji> [--remove]",
         help: `Añade la reacción del usuario a un mensaje con un emoji Unicode (por ejemplo 👍), con la misma acción que
 usa Discord al reaccionar. Se publica al momento: úsalo solo tras decirle al usuario a qué mensaje y con qué emoji,
 y con su confirmación explícita. El mensaje tiene que estar cargado (read --fetch). Los emojis propios de un
@@ -113,21 +113,21 @@ Comparte el límite de ritmo de send.`,
     },
     watch: {
         summary: "escucha los mensajes nuevos, editados y borrados de unos chats, en tiempo real",
-        usage: "discord-mod watch <id> [<id>...]",
+        usage: "acbwatch <id> [<id>...]",
         help: `Mantiene la conexión abierta y escribe una línea JSON por cada cambio en esos chats (hasta ${MAX_WATCHED_CHATS}), incluidos
 los mensajes del usuario ("yo": true). Los mensajes tienen el mismo formato que read:
   {"evento":"mensaje","chat":{…},"mensaje":{…}}   mensaje nuevo
   {"evento":"editado","chat":{…},"mensaje":{…}}   mensaje editado, con su texto nuevo
   {"evento":"borrado","chat":{…},"id":"…"}         mensaje borrado
 La primera línea confirma qué chats escucha. Termina al cerrar Discord o con Ctrl+C.
-Para contestar automáticamente, sigue las reglas de «Auto-reply» de la skill discord-mod.`,
+Para contestar automáticamente, sigue las reglas de «Auto-reply» de la skill agent-chat-bridge.`,
         options: {},
         positionals: [1, MAX_WATCHED_CHATS],
         request: ids => ({ watch: ids })
     },
     list: {
         summary: "lista los chats, del más reciente al más antiguo",
-        usage: "discord-mod list [dm|grupo|canal|hilo ...] [--server <nombre>] [--since <fecha>] [--until <fecha>]",
+        usage: "acblist [dm|grupo|canal|hilo ...] [--server <nombre>] [--since <fecha>] [--until <fecha>]",
         help: `Lista id, tipo y nombre de los chats de los tipos dados (todos si no se dan).
 ${FILTER_HELP}
 
@@ -138,7 +138,7 @@ ${DATE_HELP}`,
     },
     unread: {
         summary: "lista los chats con mensajes sin leer, silenciados incluidos",
-        usage: "discord-mod unread [dm|grupo|canal|hilo ...] [--server <nombre>] [--since <fecha>] [--until <fecha>]",
+        usage: "acbunread [dm|grupo|canal|hilo ...] [--server <nombre>] [--since <fecha>] [--until <fecha>]",
         help: `Lista los chats con mensajes sin leer de los tipos dados (todos si no se dan) y sus recuentos, sin
 contenido. Los silenciados llevan "silenciado": true. En canales de servidor los recuentos suelen salir a 0: lee el
 chat (read --unread) para ver cuáles son.
@@ -151,7 +151,7 @@ ${DATE_HELP}`,
     },
     read: {
         summary: "devuelve los últimos mensajes de un chat",
-        usage: "discord-mod read <id> [--unread] [--limit <n>] [--fetch] [--more | --older <n>] [--since <fecha>] [--until <fecha>]",
+        usage: "acbread <id> [--unread] [--limit <n>] [--fetch] [--more | --older <n>] [--since <fecha>] [--until <fecha>]",
         help: `Devuelve de los últimos mensajes de un chat:
   id (para draft --reply), autor, fecha, "editado" (fecha de la última edición, si la hay),
   "respondeA" (id del mensaje al que responde, con su autor y un extracto si está cargado),
@@ -194,13 +194,13 @@ ${DATE_HELP}`,
     }
 };
 
-const MAIN_HELP = `discord-mod: usa el Discord parcheado desde la terminal.
+const MAIN_HELP = `acb: usa el Discord parcheado desde la terminal.
 Solo send, edit, delete y react publican algo, y solo con confirmación explícita del usuario.
 
 Comandos:
 ${Object.entries(COMMANDS).map(([name, c]) => `  ${name.padEnd(7)} ${c.summary}`).join("\n")}
 
-Ayuda de cada uno: discord-mod <comando> --help
+Ayuda de cada uno: acb<comando> --help
 Responde en JSON; sale con 1 si "ok" es false y con 2 si los argumentos no son válidos.`;
 
 /** The CLI's own errors; each command's help and checks live in its entry of COMMANDS. */
@@ -273,7 +273,7 @@ export function buildRequest(argv) {
 // it.
 /* v8 ignore start */
 // Stryker disable all
-const SOCKET = join(homedir(), "Library", "Application Support", "discord-mod", "compose.sock");
+const SOCKET = join(homedir(), "Library", "Application Support", "agent-chat-bridge", "compose.sock");
 
 function main() {
     let built;

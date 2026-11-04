@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`help: general and per command > delete 1`] = `
-"discord-mod delete <id del chat> <id del mensaje>
+"acbdelete <id del chat> <id del mensaje>
 
 Borra un mensaje del usuario para todos, con la misma acción que usa Discord al borrar. No se puede deshacer:
 úsalo solo tras citarle al usuario el mensaje y con su confirmación explícita, también en la respuesta automática.
@@ -10,8 +10,8 @@ límite de ritmo de send."
 `;
 
 exports[`help: general and per command > draft 1`] = `
-"discord-mod draft <chat> [<texto>] [--id] [--reply <id>] [--attach <ruta>]... [--replace] [--background] [--dry-run]
-       discord-mod draft <chat> --clear [--id]
+"acbdraft <chat> [<texto>] [--id] [--reply <id>] [--attach <ruta>]... [--replace] [--background] [--dry-run]
+       acbdraft <chat> --clear [--id]
 
 Busca el chat por nombre (DM, grupo, canal o hilo), deja <texto> en su caja de texto, lo abre y pone
 Discord al frente. No envía nada: para eso está send.
@@ -30,7 +30,7 @@ Solo abre un chat si el nombre encaja claramente; si no, devuelve en "candidatos
 `;
 
 exports[`help: general and per command > edit 1`] = `
-"discord-mod edit <id del chat> <id del mensaje> <texto confirmado>
+"acbedit <id del chat> <id del mensaje> <texto confirmado>
 
 Sustituye el texto de un mensaje del usuario por <texto confirmado>, con la misma acción que usa Discord al
 editar. Se publica al momento y la otra persona ve "(editado)": úsalo solo tras enseñarle al usuario el mensaje
@@ -39,7 +39,7 @@ usuario y cargados (read --fetch). Devuelve "editado": true si Discord lo confir
 `;
 
 exports[`help: general and per command > list 1`] = `
-"discord-mod list [dm|grupo|canal|hilo ...] [--server <nombre>] [--since <fecha>] [--until <fecha>]
+"acblist [dm|grupo|canal|hilo ...] [--server <nombre>] [--since <fecha>] [--until <fecha>]
 
 Lista id, tipo y nombre de los chats de los tipos dados (todos si no se dan).
   --server <nombre>   solo canales e hilos de servidores cuyo nombre contenga <nombre>
@@ -50,7 +50,7 @@ Fechas (--since, --until): hoy, ayer, semana (desde el lunes), AAAA-MM-DD o AAAA
 `;
 
 exports[`help: general and per command > react 1`] = `
-"discord-mod react <id del chat> <id del mensaje> <emoji> [--remove]
+"acbreact <id del chat> <id del mensaje> <emoji> [--remove]
 
 Añade la reacción del usuario a un mensaje con un emoji Unicode (por ejemplo 👍), con la misma acción que
 usa Discord al reaccionar. Se publica al momento: úsalo solo tras decirle al usuario a qué mensaje y con qué emoji,
@@ -63,7 +63,7 @@ Comparte el límite de ritmo de send."
 `;
 
 exports[`help: general and per command > read 1`] = `
-"discord-mod read <id> [--unread] [--limit <n>] [--fetch] [--more | --older <n>] [--since <fecha>] [--until <fecha>]
+"acbread <id> [--unread] [--limit <n>] [--fetch] [--more | --older <n>] [--since <fecha>] [--until <fecha>]
 
 Devuelve de los últimos mensajes de un chat:
   id (para draft --reply), autor, fecha, "editado" (fecha de la última edición, si la hay),
@@ -94,7 +94,7 @@ Fechas (--since, --until): hoy, ayer, semana (desde el lunes), AAAA-MM-DD o AAAA
 `;
 
 exports[`help: general and per command > send 1`] = `
-"discord-mod send <id> <texto confirmado> [--direct [--reply <id>]]
+"acbsend <id> <texto confirmado> [--direct [--reply <id>]]
 
 Sin --direct: envía lo que hay en la caja del chat <id> (con su respuesta y adjuntos), pulsando Enter como lo
 haría el usuario. Solo si el chat está abierto y el texto de la caja es exactamente <texto confirmado>; si no, no
@@ -110,7 +110,7 @@ y react un límite de ritmo: 5 s entre acciones en el mismo chat y 30 por hora."
 `;
 
 exports[`help: general and per command > unread 1`] = `
-"discord-mod unread [dm|grupo|canal|hilo ...] [--server <nombre>] [--since <fecha>] [--until <fecha>]
+"acbunread [dm|grupo|canal|hilo ...] [--server <nombre>] [--since <fecha>] [--until <fecha>]
 
 Lista los chats con mensajes sin leer de los tipos dados (todos si no se dan) y sus recuentos, sin
 contenido. Los silenciados llevan "silenciado": true. En canales de servidor los recuentos suelen salir a 0: lee el
@@ -123,7 +123,7 @@ Fechas (--since, --until): hoy, ayer, semana (desde el lunes), AAAA-MM-DD o AAAA
 `;
 
 exports[`help: general and per command > watch 1`] = `
-"discord-mod watch <id> [<id>...]
+"acbwatch <id> [<id>...]
 
 Mantiene la conexión abierta y escribe una línea JSON por cada cambio en esos chats (hasta 10), incluidos
 los mensajes del usuario ("yo": true). Los mensajes tienen el mismo formato que read:
@@ -131,11 +131,11 @@ los mensajes del usuario ("yo": true). Los mensajes tienen el mismo formato que 
   {"evento":"editado","chat":{…},"mensaje":{…}}   mensaje editado, con su texto nuevo
   {"evento":"borrado","chat":{…},"id":"…"}         mensaje borrado
 La primera línea confirma qué chats escucha. Termina al cerrar Discord o con Ctrl+C.
-Para contestar automáticamente, sigue las reglas de «Auto-reply» de la skill discord-mod."
+Para contestar automáticamente, sigue las reglas de «Auto-reply» de la skill agent-chat-bridge."
 `;
 
 exports[`help: general and per command 1`] = `
-"discord-mod: usa el Discord parcheado desde la terminal.
+"acb: usa el Discord parcheado desde la terminal.
 Solo send, edit, delete y react publican algo, y solo con confirmación explícita del usuario.
 
 Comandos:
@@ -149,6 +149,6 @@ Comandos:
   unread  lista los chats con mensajes sin leer, silenciados incluidos
   read    devuelve los últimos mensajes de un chat
 
-Ayuda de cada uno: discord-mod <comando> --help
+Ayuda de cada uno: acb<comando> --help
 Responde en JSON; sale con 1 si "ok" es false y con 2 si los argumentos no son válidos."
 `;

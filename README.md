@@ -2,7 +2,7 @@
 
 A bridge between an AI agent and your Discord, with you confirming everything it publishes. A minimal patch of the
 official Discord desktop app for macOS adds two plugins backed by a local `claude -p`: Corrector (spelling fixes) and
-Autorespuesta (reply drafts in the user's tone), plus the `discord-mod` CLI to use Discord from Claude Code.
+Autorespuesta (reply drafts in the user's tone), plus the `acb` CLI to use Discord from Claude Code.
 
 ## Before you install
 - **Discord's terms:** modifying the client breaks Discord's Terms of Service, so your account is at risk.
@@ -26,7 +26,7 @@ From a clone of this repo, at its latest release tag:
 ```sh
 pnpm setup      # hooks, dependencies, build
 pnpm inject     # with Discord closed
-pnpm links      # optional: the discord-mod CLI and its Claude Code skill
+pnpm links      # optional: the acb CLI and its Claude Code skill
 ```
 After a Discord update, run `pnpm inject` again.
 
@@ -34,8 +34,8 @@ After a Discord update, run `pnpm inject` again.
 - Each plugin adds a button to the chat box, left of the gift icon.
 - Right-click one of those buttons to open the settings of both plugins. Each feature has its own setting to turn it
   off.
-- Settings are saved in `~/Library/Application Support/discord-mod/settings.json`. If that file can't be read, it is
-  moved aside as `settings.json.unreadable-<ms>` and a dialog says so.
+- Settings are saved in `~/Library/Application Support/agent-chat-bridge/settings.json`. If that file can't be read, it
+  is moved aside as `settings.json.unreadable-<ms>` and a dialog says so.
 
 ## Develop
 ```sh
@@ -47,7 +47,7 @@ pnpm smoke      # read-only checks against the running Discord
 ## Read next
 - `AGENTS.md`: structure, commands, rules and the mandatory review.
 - `docs/debugging.md`: how to verify a failure in the running Discord.
-- `discord-mod --help`: the CLI.
+- `acb --help`: the CLI.
 - `CHANGELOG.md`: what changed in each release.
 - `SECURITY.md`: how to report a vulnerability.
 

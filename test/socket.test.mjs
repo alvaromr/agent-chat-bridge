@@ -53,7 +53,7 @@ test("the CLI hanging up is normal; any other connection error is logged by its 
     conn.emit("error", Object.assign(new Error("timed out"), { code: "ETIMEDOUT" }));
     conn.emit("error", new Error("no code"));
     assert.deepEqual(error.mock.calls, [
-        ["[discord-mod] CLI connection failed: ETIMEDOUT"], ["[discord-mod] CLI connection failed: no code"]
+        ["[agent-chat-bridge] CLI connection failed: ETIMEDOUT"], ["[agent-chat-bridge] CLI connection failed: no code"]
     ]);
 });
 
@@ -71,7 +71,7 @@ test("a request that fails inside Discord still gets an answer, so the CLI never
     const conn = connect();
     conn.emit("data", JSON.stringify({ list: true }) + "\n");
     assert.deepEqual(await answer(conn), { ok: false, error: "Discord no pudo atender la petición" });
-    assert.deepEqual(error.mock.calls, [["[discord-mod] CLI request failed: the renderer is gone"]]);
+    assert.deepEqual(error.mock.calls, [["[agent-chat-bridge] CLI request failed: the renderer is gone"]]);
 });
 
 test("without Discord's main window the request is refused, saying why", async () => {

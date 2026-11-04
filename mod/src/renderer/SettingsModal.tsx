@@ -20,7 +20,7 @@ const currentValues = (): Values => Object.fromEntries(configurable().map(({ nam
 
 /** What the modal and its toasts say. */
 const TEXT = {
-    title: "Ajustes de discord-mod",
+    title: "Ajustes de agent-chat-bridge",
     patches: (list: string) => `Parches: ${list}`,
     patchStatus: { ok: "✓", failed: "✗ falló", pending: "pendiente" },
     reset: "Restablecer",

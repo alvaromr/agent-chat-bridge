@@ -28,5 +28,5 @@ test("a patched module that fails falls back to the original, and its patch is s
     const { patch, result } = runPatched("breaks", "(() => { throw new Error(\"boom\"); })()");
     assert.equal(result, "breaks", "the original module ran");
     assert.equal(patch.status, "failed");
-    assert.equal(error.mock.calls[0]?.[0], "[discord-mod] A patched module failed; using the original, without breaks");
+    assert.equal(error.mock.calls[0]?.[0], "[agent-chat-bridge] A patched module failed; using the original, without breaks");
 });

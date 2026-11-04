@@ -9,8 +9,8 @@ import { before, test } from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
 import { promisify } from "node:util";
 
-const CLI = new URL("../scripts/discord-mod.mjs", import.meta.url).pathname;
-const SOCKET = join(homedir(), "Library", "Application Support", "discord-mod", "compose.sock");
+const CLI = new URL("../scripts/acb.mjs", import.meta.url).pathname;
+const SOCKET = join(homedir(), "Library", "Application Support", "agent-chat-bridge", "compose.sock");
 const KINDS = ["dm", "grupo", "canal", "hilo"];
 // Over the 10 s that mod/src/compose.ts waits for the renderer, so a Discord that hangs fails the check, not blocks it.
 const ANSWER_MS = 15_000;
