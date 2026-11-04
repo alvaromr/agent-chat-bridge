@@ -2,6 +2,8 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import { dirname } from "path";
 
+import { log } from "./plugin-api/log";
+
 const MAX_BYTES = 256 * 1024;
 
 /** What the user sees: the dialog on an unreadable file, and the errors of a save. */
@@ -26,10 +28,10 @@ export function settingsFile(file: string) {
             renameSync(file, copy);
         } catch (err: any) {
             blocked = true;
-            console.error(`[discord-mod] Unreadable settings, using the defaults: ${file}: ${reason}; not moved: ${err.message}`);
+            log.error(`Unreadable settings, using the defaults: ${file}: ${reason}; not moved: ${err.message}`);
             return TEXT.notMoved(reason, file);
         }
-        console.error(`[discord-mod] Unreadable settings, using the defaults: ${file}: ${reason}; moved to ${copy}`);
+        log.error(`Unreadable settings, using the defaults: ${file}: ${reason}; moved to ${copy}`);
         return TEXT.movedAside(reason, copy);
     }
 

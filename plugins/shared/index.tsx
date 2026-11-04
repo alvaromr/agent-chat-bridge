@@ -1,5 +1,6 @@
 // Renderer side shared by every plugin that talks to Claude.
 import { showToast } from "@plugin-api/discord";
+import { log } from "@plugin-api/log";
 import type { IconComponent } from "@plugin-api/plugin";
 
 /** The toasts the user sees while Claude answers. */
@@ -15,7 +16,7 @@ const TEXT = {
  */
 export function reportFailure(err: unknown) {
     const text = err instanceof Error ? err.message : String(err);
-    console.error(`[discord-mod] A plugin action failed: ${err instanceof Error ? err.name : typeof err}: ${text}`);
+    log.error(`A plugin action failed: ${err instanceof Error ? err.name : typeof err}: ${text}`);
     showToast({ text: TEXT.actionFailed(text), variant: "critical" });
 }
 

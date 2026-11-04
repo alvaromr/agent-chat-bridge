@@ -14,9 +14,10 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   - `mod/src/renderer/`: webpack hook, plugin registry, the CLI's request handling and the settings modal
     (README, «Use»).
   - `mod/src/plugin-api/`: what the plugins import as `@plugin-api/…`: plugin definition, settings, chat box and
-    message toolbar buttons, the chat box's text (`chatInput.ts`), the wait for Discord's stores (`wait.ts`), and the
-    Discord pieces they use (`discord.ts`) with their types (`discordTypes.ts`). The CLI's request handling uses the
-    same pieces; `mod/` imports nothing from `plugins/` but the registration and `run.ts`.
+    message toolbar buttons, the chat box's text (`chatInput.ts`), the wait for Discord's stores (`wait.ts`), the log
+    that all of `mod/` and the plugins write through (`log.ts`, enforced by the lint), and the Discord pieces they use
+    (`discord.ts`) with their types (`discordTypes.ts`). The CLI's request handling uses the same pieces; `mod/`
+    imports nothing from `plugins/` but the registration and `run.ts`.
   - `mod/src/electron.d.ts`: types of the Electron APIs `mod/` calls.
   - Settings: where they live and what happens to a file that can't be read are in the README («Use»). The file is
     keyed by plugin name and holds only the values that differ from the default; if an unreadable file can't be

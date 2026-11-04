@@ -72,5 +72,11 @@ export default tseslint.config(
                 }]
             }]
         }
+    },
+    {
+        // Logs go through plugin-api/log.ts, the one place that owns their prefix and rule 5.
+        files: ["mod/src/**/*.{ts,tsx}", "plugins/**/*.{ts,tsx}"],
+        ignores: ["mod/src/plugin-api/log.ts"],
+        rules: { "no-console": "error" }
     }
 );

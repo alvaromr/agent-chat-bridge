@@ -2,6 +2,7 @@
 import type { ComponentType, ReactNode } from "react";
 
 import { React, showToast } from "./discord";
+import { log } from "./log";
 
 /** The toast that says a plugin's button is missing because it failed. */
 const TEXT = {
@@ -15,7 +16,7 @@ const reported = new Set<string>();
  * failing on every render or hover doesn't flood the toasts.
  */
 export function reportRenderFailure(name: string, error: unknown) {
-    console.error(`[discord-mod] ${name} failed`, error);
+    log.error(`${name} failed`, error);
     if (reported.has(name)) return;
     reported.add(name);
     // Outside React's render and commit, so the toast's own state update never runs inside them.

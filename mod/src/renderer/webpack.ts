@@ -2,6 +2,7 @@
 // Discord instance, lazy patching (on first run of each module) and lookups by filter (regexes in ./regex.ts).
 // Derived from Vencord (https://github.com/Vendicated/Vencord), Copyright (c) Vendicated and contributors; modified
 // since 2026-10-29. GPL-3.0-or-later (LICENSE).
+import { log } from "../plugin-api/log";
 import { canonicalize, classNameRegex } from "./regex";
 
 export interface Patch {
@@ -53,7 +54,7 @@ define(Function.prototype, "m", {
                 // eslint-disable-next-line @typescript-eslint/no-this-alias
                 wreq = this;
                 hookFactories(this, modules);
-                console.log("[discord-mod] Hooked into Discord's webpack");
+                log.info("Hooked into Discord's webpack");
             }
         });
         const timeout = setTimeout(() => Reflect.deleteProperty(this, "p"), 0);
@@ -87,7 +88,7 @@ export function wrapFactory(modules: Record<PropertyKey, any>, id: PropertyKey, 
             if (patched === factory) throw err;
             // The original runs instead, so the settings modal must not show these patches as applied.
             for (const patch of applied) patch.status = "failed";
-            console.error(`[discord-mod] A patched module failed; using the original, without ${applied.map(p => p.name).join(", ")}`, err);
+            log.error(`A patched module failed; using the original, without ${applied.map(p => p.name).join(", ")}`, err);
             return factory.apply(this, args);
         }
     };
@@ -117,10 +118,10 @@ function patchFactory(id: PropertyKey, factory: any): { patched: any; applied: P
             code = next;
             patch.status = "ok";
             applied.push(patch);
-            console.log(`[discord-mod] Patch applied: ${patch.name}`);
+            log.info(`Patch applied: ${patch.name}`);
         } catch (err) {
             patch.status = "failed";
-            console.error(`[discord-mod] Patch failed: ${patch.name}`, err);
+            log.error(`Patch failed: ${patch.name}`, err);
         }
     }
     return { patched, applied };

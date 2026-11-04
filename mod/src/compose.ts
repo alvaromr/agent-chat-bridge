@@ -8,6 +8,7 @@ import { join } from "path";
 
 import { readAttachments } from "./attachments";
 import { type ComposeEvent, type ComposeRequest, type ComposeResult, IPC } from "./ipc";
+import { log } from "./plugin-api/log";
 import { isValid, watchRequest } from "./validate";
 
 const SOCKET = join(app.getPath("appData"), "discord-mod", "compose.sock");
@@ -108,7 +109,7 @@ export function startComposeServer() {
             // Every request gets an answer, so a failure never leaves the CLI waiting for one.
             handle(line)
                 .catch((err: unknown): ComposeResult => {
-                    console.error(`[discord-mod] CLI request failed: ${err instanceof Error ? err.message : err}`);
+                    log.error(`CLI request failed: ${err instanceof Error ? err.message : err}`);
                     return { ok: false, error: TEXT.failed };
                 })
                 .then(r => conn.end(JSON.stringify(r) + "\n"));
@@ -116,7 +117,7 @@ export function startComposeServer() {
         // Without a listener a socket error would crash the main process. The CLI hanging up (Ctrl+C on watch, a closed
         // pipe) is normal; anything else is logged, by code only.
         conn.on("error", (err: NodeJS.ErrnoException) => {
-            if (err.code !== "EPIPE" && err.code !== "ECONNRESET") console.error(`[discord-mod] CLI connection failed: ${err.code ?? err.message}`);
+            if (err.code !== "EPIPE" && err.code !== "ECONNRESET") log.error(`CLI connection failed: ${err.code ?? err.message}`);
         });
     });
     server.listen(SOCKET, () => chmodSync(SOCKET, 0o600));
