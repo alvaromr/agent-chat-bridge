@@ -31,7 +31,7 @@ function nameScore(name: string, q: string) {
     if (n.startsWith(q)) return 60;
     // Stryker disable next-line Regex: the empty words between repeated separators never start or share a prefix with the query, which is not empty here.
     const words = n.split(/[\s\-_.,·#]+/);
-    if (words.some(word => word.startsWith(q))) return 40;
+    if (words.some(word => word.startsWith(q))) return STRONG_MATCH;
     if (n.includes(q)) return 20;
     // Short forms of a name ("alex" for "alejandro"): nearly the whole query starts one of its words.
     const fuzzy = Math.max(0, ...words.map(word => commonPrefix(word, q)));

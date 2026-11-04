@@ -6,6 +6,10 @@ import { type Command, commandOf, type ComposeRequest } from "./ipc";
 import { MAX_ATTACHMENTS, MAX_EXTRA_PAGES, MAX_READ_LIMIT, MAX_WATCHED_CHATS } from "./limits.mts";
 
 const KINDS = ["dm", "grupo", "canal", "hilo"];
+/** The longest message text Discord takes, with Nitro. */
+const MAX_TEXT = 4000;
+/** The longest chat name a draft can search for. */
+const MAX_QUERY = 200;
 
 const isId = (v: unknown) => typeof v === "string" && /^\d{1,20}$/.test(v);
 const isTime = (v: unknown) => v === undefined || (Number.isSafeInteger(v) && (v as number) >= 0);
@@ -13,7 +17,7 @@ const isServer = (v: unknown) => v === undefined || (typeof v === "string" && v.
 const isKinds = (v: unknown) => v === undefined || (Array.isArray(v) && v.every(k => KINDS.includes(k as string)));
 const isFlag = (v: unknown) => v === undefined || typeof v === "boolean";
 /** The text the user confirmed for a send. */
-const isConfirmed = (v: unknown) => typeof v === "string" && v.length <= 4000;
+const isConfirmed = (v: unknown) => typeof v === "string" && v.length <= MAX_TEXT;
 /** A Unicode emoji, never a custom one (`:name:` or `<:name:id>`), on a message given by ids. */
 const isReaction = (r: any) => isId(r?.chatId) && isId(r.messageId)
     && typeof r.emoji === "string" && r.emoji.length > 0 && r.emoji.length <= 32 && !/[\s:<>]/.test(r.emoji);
@@ -22,7 +26,7 @@ function isDraft(req: any) {
     if (req.files !== undefined) return false; // only the main process fills it in
     if (req.clear !== undefined)
         return req.clear === true && req.text === undefined && req.attach === undefined && req.replyTo === undefined
-            && (req.channelId === undefined ? typeof req.query === "string" && req.query.length <= 200 : isId(req.channelId))
+            && (req.channelId === undefined ? typeof req.query === "string" && req.query.length <= MAX_QUERY : isId(req.channelId))
             && isFlag(req.dryRun);
     const attach = req.attach === undefined
         || (Array.isArray(req.attach) && req.attach.length <= MAX_ATTACHMENTS
@@ -30,9 +34,9 @@ function isDraft(req: any) {
     const hasText = typeof req.text === "string" && req.text.trim() !== "";
     // Past the first line, req.text is a string or undefined.
     return attach && (hasText || (!!req.attach?.length && (req.text === undefined || req.text === "")))
-        && (req.text === undefined || req.text.length <= 4000)
+        && (req.text === undefined || req.text.length <= MAX_TEXT)
         && (req.replyTo === undefined || isId(req.replyTo))
-        && (typeof req.query === "string" ? req.query.length <= 200 : req.query === undefined)
+        && (typeof req.query === "string" ? req.query.length <= MAX_QUERY : req.query === undefined)
         && (req.channelId === undefined || isId(req.channelId))
         && (req.query !== undefined || req.channelId !== undefined)
         && isFlag(req.replace) && isFlag(req.dryRun) && isFlag(req.background);
@@ -51,7 +55,7 @@ const CHECKS: Record<Command, (req: any) => boolean> = {
     react: req => isReaction(req.react),
     unreact: req => isReaction(req.unreact),
     edit: ({ edit: e }) => isId(e?.chatId) && isId(e.messageId)
-        && typeof e.text === "string" && e.text.trim() !== "" && e.text.length <= 4000,
+        && typeof e.text === "string" && e.text.trim() !== "" && e.text.length <= MAX_TEXT,
     delete: ({ delete: d }) => isId(d?.chatId) && isId(d.messageId),
     draft: isDraft
 };
