@@ -38,6 +38,9 @@ try {
     }
 
     writeFileSync("package.json", JSON.stringify({ ...pkg, version }, null, 2) + "\n");
+    // pnpm checks the install against package.json before every script, the pre-push hook's included, and a new
+    // version counts as a change: refresh it from the lockfile, which the version doesn't touch.
+    run("pnpm", ["install", "--frozen-lockfile", "--offline"]);
     writeFileSync("CHANGELOG.md", changelog);
     run("git", ["add", "package.json", "CHANGELOG.md"]);
     run("git", ["commit", "--quiet", "--message", `Release ${version}`]);
