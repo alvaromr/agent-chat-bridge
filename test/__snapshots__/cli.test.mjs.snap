@@ -149,6 +149,6 @@ Comandos:
   unread  lista los chats con mensajes sin leer, silenciados incluidos
   read    devuelve los últimos mensajes de un chat
 
-Ayuda de cada uno: acb<comando> --help
+Ayuda de cada uno: acb <comando> --help
 Responde en JSON; sale con 1 si "ok" es false y con 2 si los argumentos no son válidos."
 `;

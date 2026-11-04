@@ -201,7 +201,7 @@ Solo send, edit, delete y react publican algo, y solo con confirmación explíci
 Comandos:
 ${Object.entries(COMMANDS).map(([name, c]) => `  ${name.padEnd(7)} ${c.summary}`).join("\n")}
 
-Ayuda de cada uno: acb<comando> --help
+Ayuda de cada uno: acb <comando> --help
 Responde en JSON; sale con 1 si "ok" es false y con 2 si los argumentos no son válidos.`;
 
 /** The CLI's own errors; each command's help and checks live in its entry of COMMANDS. */
