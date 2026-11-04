@@ -5,7 +5,7 @@ Report it privately with GitHub's private vulnerability reporting: the repositor
 vulnerability**. Please don't open a public issue for it.
 
 ## What counts
-discord-mod runs inside Discord, next to the session token and the chats. Anything that lets a web page, another app
+agent-chat-bridge runs inside Discord, next to the session token and the chats. Anything that lets a web page, another app
 or a chat message do one of these is in scope:
 - Read the token, or chats beyond what the user asked for.
 - Run code or start a process.

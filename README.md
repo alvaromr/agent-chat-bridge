@@ -1,18 +1,18 @@
-# discord-mod
+# agent-chat-bridge
 
-The official Discord desktop app for macOS with a minimal own patch that adds two plugins backed by a local
-`claude -p`: Corrector (spelling fixes) and Autorespuesta (reply drafts in the user's tone), plus the `discord-mod`
-CLI to use Discord from Claude Code.
+A bridge between an AI agent and your Discord, with you confirming everything it publishes. A minimal patch of the
+official Discord desktop app for macOS adds two plugins backed by a local `claude -p`: Corrector (spelling fixes) and
+Autorespuesta (reply drafts in the user's tone), plus the `discord-mod` CLI to use Discord from Claude Code.
 
 ## Before you install
 - **Discord's terms:** modifying the client breaks Discord's Terms of Service, so your account is at risk.
-  discord-mod keeps the risk low by never automating sends or edits (`AGENTS.md`, rule 3), but it can't remove it.
+  agent-chat-bridge keeps the risk low by never automating sends or edits (`AGENTS.md`, rule 3), but it can't remove it.
 - **What leaves your machine:** the plugins send the message or the chat lines they work on to your local Claude Code
   (`claude -p`, on your subscription), which processes them on Anthropic's servers. The CLI hands what it reads to the
   Claude Code session that runs it. Nothing else sends chat content anywhere (`AGENTS.md`, rule 4).
 - **Spanish:** the interface and the default prompts are in Spanish, and the Corrector's prompt targets Spanish
   spelling. Both prompts can be changed in the settings modal.
-- discord-mod is not affiliated with or endorsed by Discord or Anthropic.
+- agent-chat-bridge is not affiliated with or endorsed by Discord or Anthropic.
 
 ## Requirements
 - macOS with Discord (stable) in `/Applications`.

@@ -1,7 +1,7 @@
-# discord-mod
+# agent-chat-bridge
 
-The official Discord app (macOS, stable channel) with a minimal own patch (`mod/`) that loads own plugins.
-Everything is managed from this repo: install, re-patch and plugins.
+A bridge between an AI agent and the user's Discord: the official Discord app (macOS, stable channel) with a minimal
+own patch (`mod/`) that loads own plugins. Everything is managed from this repo: install, re-patch and plugins.
 
 ## Guiding principle
 Discord handles private conversations, and the patch runs inside the app with access to the session token.
@@ -65,7 +65,8 @@ Defined in `package.json`.
 - `pnpm mutation`: Stryker on the pure modules, with a 100 % score, run by the `.githooks/` pre-push hook instead of
   the pre-commit one. Run it after changing one of them or their tests. It is incremental and re-tests only what
   changed, but it can keep a stale survivor after a test change: before committing, confirm with
-  `pnpm mutation --force` (about 2 min). Every surviving mutant gets a test, or an inline `// Stryker disable next-line <mutator>: <reason>` when it is equivalent.
+  `pnpm mutation --force` (about 2 min). Every surviving mutant gets a test, or an inline
+  `// Stryker disable next-line <mutator>: <reason>` when it is equivalent.
 - `pnpm audit`: known advisories in the dependencies; part of the review of any dependency change, and run by the
   pre-push hook and `pnpm release`.
 - `pnpm smoke`: read-only checks with Discord open and patched.
