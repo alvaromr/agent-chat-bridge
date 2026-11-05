@@ -1,17 +1,20 @@
 // The Electron APIs mod/ calls, as Discord's own Electron provides them at run time. Declared here because Electron's
 // published types come with its binary package, which nothing here needs.
 declare module "electron" {
-    interface IpcMainEvent {
-        /** The answer to an `ipcRenderer.sendSync`. */
-        returnValue: unknown;
-    }
-    type IpcMainInvokeEvent = object;
-    type IpcRendererEvent = object;
-
     interface WebContents {
         getURL(): string;
         send(channel: string, ...args: unknown[]): void;
     }
+
+    interface IpcMainInvokeEvent {
+        /** The page that sent the message. */
+        sender: WebContents;
+    }
+    interface IpcMainEvent extends IpcMainInvokeEvent {
+        /** The answer to an `ipcRenderer.sendSync`. */
+        returnValue: unknown;
+    }
+    type IpcRendererEvent = object;
 
     interface BrowserWindowInstance {
         webContents: WebContents;
@@ -53,5 +56,5 @@ declare module "electron" {
 
     export const webFrame: { executeJavaScript(code: string): Promise<unknown>; };
 
-    export type { IpcMainInvokeEvent };
+    export type { IpcMainEvent, IpcMainInvokeEvent, WebContents };
 }

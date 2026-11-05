@@ -14,7 +14,7 @@ export default defineConfig({
         jsxInject: 'import { AgentChatBridgeCreateElement, AgentChatBridgeFragment } from "@plugin-api/jsx";'
     },
     test: {
-        include: ["test/*.test.mjs"],
+        include: ["test/*.test.mjs", "dictation/test/*.test.mjs"],
         setupFiles: ["test/setup.mjs"],
         // A zone with daylight saving time, so local-date tests give the same result on every machine.
         env: { TZ: "Europe/Madrid" },

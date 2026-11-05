@@ -1,21 +1,52 @@
-.dm-settings section + section {
-    margin-top: 24px;
+.dm-settings .dm-tabs {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--text-muted);
 }
 
-.dm-settings h3 {
-    color: var(--text-strong, var(--header-primary));
+.dm-settings [role="tab"] {
+    padding: 0 0 6px;
+    margin-bottom: -1px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--text-muted);
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.dm-settings [role="tab"]:hover,
+.dm-settings [role="tab"][aria-selected="true"] {
+    color: var(--text-strong, var(--header-primary));
+}
+
+.dm-settings [role="tab"][aria-selected="true"] {
+    border-bottom-color: var(--text-link);
 }
 
 .dm-settings .dm-muted {
     color: var(--text-muted);
     font-size: 13px;
-    margin: 2px 0 8px;
+    margin: 0 0 4px;
 }
 
 .dm-settings .dm-field {
     margin-top: 12px;
+}
+
+/* A checkbox sits left of its label, on one line. */
+.dm-settings .dm-check label {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+}
+
+.dm-settings .dm-check .dm-label {
+    margin-bottom: 0;
 }
 
 .dm-settings label {
@@ -29,7 +60,8 @@
     margin-bottom: 6px;
 }
 
-.dm-settings input[type="number"] {
+.dm-settings input[type="number"],
+.dm-settings select {
     width: 96px;
     padding: 6px 8px;
     /* Discord's border variables stay under the 3:1 a field's edge needs against the modal; --text-muted reaches it. */
@@ -37,6 +69,11 @@
     border-radius: 4px;
     background: var(--input-background-default, var(--background-secondary));
     color: var(--text-default, var(--text-normal));
+}
+
+.dm-settings select {
+    width: auto;
+    max-width: 100%;
 }
 
 .dm-settings .dm-reset {

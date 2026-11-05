@@ -1,6 +1,7 @@
 # Dependencies and build output
 node_modules/
 mod/dist/
+dictation/worker/.venv/
 
 # Test and mutation reports
 coverage/

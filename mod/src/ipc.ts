@@ -12,7 +12,15 @@ export const IPC = {
     watchSet: `${APP_NAME}:watch-set`,
     watchGet: `${APP_NAME}:watch-get`,
     /** renderer → main: a new, edited or deleted message in a watched chat. */
-    watchEvent: `${APP_NAME}:watch-event`
+    watchEvent: `${APP_NAME}:watch-event`,
+    /** The Dictation plugin (plugins/dictation/main.ts): models (sync), start (invoke), audio, stop and cancel. */
+    dictationModels: `${APP_NAME}:dictation-models`,
+    dictationStart: `${APP_NAME}:dictation-start`,
+    dictationAudio: `${APP_NAME}:dictation-audio`,
+    dictationStop: `${APP_NAME}:dictation-stop`,
+    dictationCancel: `${APP_NAME}:dictation-cancel`,
+    /** main → renderer: the dictation's texts, its end and its failure. */
+    dictationEvent: `${APP_NAME}:dictation-event`
 } as const;
 
 /** The keys that name a request's command, in the order they are told apart; a request with none is a draft. */

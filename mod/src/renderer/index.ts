@@ -3,6 +3,7 @@ import "./webpack"; // installs the webpack hook first
 
 import autorespuesta from "../../../plugins/autorespuesta";
 import corrector from "../../../plugins/corrector";
+import dictation from "../../../plugins/dictation";
 import { APP_NAME } from "../name.mts";
 import { _injectButtons } from "../plugin-api/chatButtons";
 import { _buildPopoverElements } from "../plugin-api/messagePopover";
@@ -24,7 +25,7 @@ function addStyle(css: string) {
 
 addStyle(baseStyle);
 
-for (const plugin of [corrector, autorespuesta] as PluginDef[]) {
+for (const plugin of [corrector, autorespuesta, dictation] as PluginDef[]) {
     plugins.push(plugin);
     if (plugin.settings) plugin.settings.pluginName = plugin.name;
     if (plugin.chatBarButton) chatBarButtons.set(plugin.name, plugin.chatBarButton.render);

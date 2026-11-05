@@ -29,6 +29,7 @@ function lazyComponent<T extends ComponentType<any>>(name: string, get: () => an
 
 export const React: typeof import("react") = lazyObject("React", () => find(filters.byProps("createElement", "useEffect")));
 export const useState = ((...args: any[]) => (React.useState as any)(...args)) as typeof React.useState;
+export const useEffect: typeof React.useEffect = (...args) => React.useEffect(...args);
 
 const store = <N extends keyof t.Stores>(name: N) => lazyObject<t.Stores[N]>(name, () => find(filters.byStoreName(name)));
 export const ActiveJoinedThreadsStore = store("ActiveJoinedThreadsStore");

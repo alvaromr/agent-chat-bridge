@@ -9,5 +9,7 @@
   it. The CLI's socket side is excluded in place, with that reason. The scripts that are only I/O stay out and are
   checked by running them: `scripts/inject.mjs` (`pnpm inject`), `scripts/release.mjs` (`pnpm release`),
   `scripts/secrets.mjs` (`pnpm check`), `scripts/cdp.mjs`, `scripts/a11y.mjs` and `scripts/devtools.mjs`
-  (`docs/debugging.md`) and `mod/build.mjs` (`pnpm build`).
-- **Decided by:** the owner, 2026-10-29.
+  (`docs/debugging.md`) and `mod/build.mjs` (`pnpm build`). So does the dictation worker, `dictation/worker/worker.py`,
+  a loop that hands each request to `mlx-whisper`, checked by `pnpm smoke-dictation`; the module that starts it,
+  `dictation/src/worker.ts`, is covered like the pure modules, on a faked child process.
+- **Decided by:** the owner, 2026-10-29; the dictation worker, 2026-11-05.

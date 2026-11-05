@@ -1,12 +1,12 @@
 // Buttons left of the gift icon in the chat box: the patch that makes room for them, and the button component.
 // Derived from Vencord (https://github.com/Vendicated/Vencord), Copyright (c) Vendicated and contributors; modified
 // since 2026-10-29. GPL-3.0-or-later (LICENSE).
-import type { JSX, MouseEventHandler, ReactNode } from "react";
+import type { Context, JSX, MouseEventHandler, ReactNode } from "react";
 
 import { API_REF, chatBarButtons } from "../renderer/registry";
 import { openSettingsModal } from "../renderer/SettingsModal";
 import { findCssClasses, patches } from "../renderer/webpack";
-import { Clickable, Tooltip } from "./discord";
+import { Clickable, React, Tooltip } from "./discord";
 import type { Channel } from "./discordTypes";
 import { ErrorBoundary } from "./ErrorBoundary";
 
@@ -26,13 +26,21 @@ patches.push({
     replace: `(${API_REF}._injectButtons($1,arguments[0]),$&)`
 });
 
+// The plugin whose button renders inside, so a right click opens the settings at its tab. Created on first render:
+// Discord's React is only found once its webpack modules load.
+let pluginContext: Context<string | undefined> | undefined;
+const PluginContext = () => pluginContext ??= React.createContext<string | undefined>(undefined);
+
 function ChatBarButtons(props: ChatBarProps) {
     const { analyticsName } = props.type;
+    const { Provider } = PluginContext();
     return (
         <>
             {Array.from(chatBarButtons, ([key, Button]) => (
                 <ErrorBoundary key={key} name={key}>
-                    <Button {...props} isMainChat={analyticsName === "normal"} isAnyChat={["normal", "sidebar"].includes(analyticsName)} />
+                    <Provider value={key}>
+                        <Button {...props} isMainChat={analyticsName === "normal"} isAnyChat={["normal", "sidebar"].includes(analyticsName)} />
+                    </Provider>
                 </ErrorBoundary>
             ))}
         </>
@@ -54,18 +62,19 @@ export interface ChatBarButtonProps {
     children: ReactNode;
     tooltip: string;
     onClick: MouseEventHandler;
-    /** Defaults to opening the mod settings. */
+    /** Defaults to opening the mod settings at the plugin's tab. */
     onContextMenu?: MouseEventHandler;
 }
 
 let classes: { wrapper: Record<"button" | "buttonWrapper" | "notificationDot", string>; textArea: Record<"buttonContainer" | "channelTextArea" | "button", string>; } | undefined;
 
-export function ChatBarButton({ children, tooltip, onClick, onContextMenu = openSettingsModal }: ChatBarButtonProps) {
+export function ChatBarButton({ children, tooltip, onClick, onContextMenu }: ChatBarButtonProps) {
+    const plugin = React.useContext(PluginContext());
     const { wrapper, textArea } = classes ??= {
         wrapper: findCssClasses("button", "buttonWrapper", "notificationDot"),
         textArea: findCssClasses("buttonContainer", "channelTextArea", "button")
     };
-    const text = onContextMenu === openSettingsModal ? TEXT.withSettings(tooltip) : tooltip;
+    const text = onContextMenu ? tooltip : TEXT.withSettings(tooltip);
 
     return (
         <ErrorBoundary name={tooltip}>
@@ -78,7 +87,7 @@ export function ChatBarButton({ children, tooltip, onClick, onContextMenu = open
                             onMouseLeave={onMouseLeave}
                             className={`${wrapper.button} ${textArea.button}`}
                             onClick={onClick}
-                            onContextMenu={onContextMenu}
+                            onContextMenu={onContextMenu ?? (() => openSettingsModal(plugin))}
                         >
                             <div className={wrapper.buttonWrapper}>{children}</div>
                         </Clickable>

@@ -22,7 +22,8 @@ try {
     const changelog = releaseChangelog(readFileSync("CHANGELOG.md", "utf8"), version, pkg.version, date);
 
     run("pnpm", ["check"]);
-    run("pnpm", ["audit"]);
+    // `run`: pnpm's own audit command would shadow the script, which also audits the dictation worker's packages.
+    run("pnpm", ["run", "audit"]);
     run("pnpm", ["mutation", "--force"]);
     run("pnpm", ["check-discord"]);
 
@@ -31,8 +32,10 @@ try {
     try {
         run("git", ["clone", "--quiet", "--no-hardlinks", ".", clone]);
         run("pnpm", ["install", "--frozen-lockfile"], clone);
+        run("uv", ["sync", "--frozen", "--project", "dictation/worker"], clone);
         run("pnpm", ["build"], clone);
         run("pnpm", ["test"], clone);
+        run("pnpm", ["smoke-dictation"], clone);
     } finally {
         rmSync(clone, { recursive: true, force: true });
     }

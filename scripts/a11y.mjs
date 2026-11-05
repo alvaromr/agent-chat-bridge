@@ -1,11 +1,12 @@
 // Accessibility checks of what mod/ adds to Discord (`pnpm a11y`), in the running Discord over the DevTools port, as
 // docs/debugging.md (method 4) explains: names, keyboard paths and contrast, in the dark and the light theme.
 // Prints only check names and measures, never chat names or messages. It needs an open chat with an empty box, and
-// presses only Tab and Shift+Tab, Enter and Space on the Autorespuesta button, Shift+F10 and Escape. It leaves Discord
+// presses only Tab and Shift+Tab, Enter and Space on the Autorespuesta button, Shift+F10, the right arrow on the
+// settings tabs and Escape. It leaves Discord
 // as it found it: selection mode off, the settings modal closed, the theme Discord had.
 import { connectToDiscord } from "./devtools.mjs";
 
-const CHAT_BUTTONS = ["Corregir ortografía", "Generar respuesta"];
+const CHAT_BUTTONS = ["Corregir ortografía", "Generar respuesta", "Dictar (o mantén Espacio)"];
 const MESSAGE_BUTTONS = ["Corregir ortografía", "Generar respuesta desde aquí"];
 const TEXT_RATIO = 4.5;
 const EDGE_RATIO = 3;
@@ -20,7 +21,7 @@ async function evaluate(expression) {
     return result.value;
 }
 
-const KEY_CODES = { Tab: 9, Enter: 13, Escape: 27, " ": 32, F10: 121 };
+const KEY_CODES = { Tab: 9, Enter: 13, Escape: 27, " ": 32, ArrowRight: 39, F10: 121 };
 const SHIFT = 8;
 /** A real key press, as the keyboard sends it. @param {keyof typeof KEY_CODES} key */
 async function press(key, modifiers = 0) {
@@ -149,12 +150,15 @@ try {
         await press("Escape");
         check(`${label}: the selection outline stands out from the message`, outline >= EDGE_RATIO, outline);
 
-        // Settings modal: opened from the keyboard, every field named, contrast, and Escape back to the button.
+        // Settings modal: opened from the keyboard at the button's tab, every field named, contrast, the tabs' arrow keys,
+        // and Escape back to the button.
         await evaluate(`${chatButton(CHAT_BUTTONS[1])}.focus()`);
         await press("F10", SHIFT);
         await sleep(400);
         check(`${label}: Shift+F10 opens the settings with the focus inside`,
             await evaluate(`!!${MODAL} && !!document.activeElement.closest('[role=dialog]')`));
+        const SELECTED_TAB = "document.querySelector('.dm-settings [role=tab][aria-selected=true]')";
+        check(`${label}: the settings open at the button's plugin`, await evaluate(`${SELECTED_TAB}?.textContent`) === "Autorespuesta");
         const FIELDS = "document.querySelectorAll('.dm-settings input, .dm-settings textarea')";
         const fields = await evaluate(`${FIELDS}.length`);
         const unnamed = [];
@@ -163,13 +167,22 @@ try {
         check(`${label}: the ${fields} fields have a name`, fields > 0 && unnamed.length === 0, unnamed.length ? { unnamed } : undefined);
         const ratios = await evaluate(`(() => { ${CONTRAST}
             const at = sel => document.querySelector(".dm-settings " + sel);
-            const text = Object.fromEntries([["heading", "h3"], ["description", ".dm-muted"], ["label", ".dm-label"], ["reset", ".dm-reset"], ["number", "input[type=number]"]]
+            const text = Object.fromEntries([["tab", "[role=tab][aria-selected=true]"], ["other tab", "[role=tab][aria-selected=false]"], ["description", ".dm-muted"], ["label", ".dm-label"], ["reset", ".dm-reset"], ["number", "input[type=number]"]]
                 .filter(([, sel]) => at(sel)).map(([name, sel]) => [name, ratio(getComputedStyle(at(sel)).color, at(sel))]));
             const number = at("input[type=number]");
-            return { text, edge: number ? ratio(getComputedStyle(number).borderTopColor, number.parentElement) : null };
+            const tab = at("[role=tab][aria-selected=true]");
+            return { text, edge: number ? ratio(getComputedStyle(number).borderTopColor, number.parentElement) : null,
+                tab: ratio(getComputedStyle(tab).borderBottomColor, tab) };
         })()`);
         check(`${label}: the settings text reaches ${TEXT_RATIO}:1`, Object.values(ratios.text).every(r => r >= TEXT_RATIO), ratios.text);
         check(`${label}: the number field's edge reaches ${EDGE_RATIO}:1`, ratios.edge === null || ratios.edge >= EDGE_RATIO, ratios.edge);
+        check(`${label}: the selected tab's underline reaches ${EDGE_RATIO}:1`, ratios.tab >= EDGE_RATIO, ratios.tab);
+        await evaluate(`${SELECTED_TAB}.focus()`);
+        await press("ArrowRight");
+        const moved = await evaluate(`(() => { const t = ${SELECTED_TAB}; return { tab: t?.textContent, focused: document.activeElement === t,
+            panel: document.getElementById(t?.getAttribute("aria-controls"))?.getAttribute("aria-labelledby") === t?.id }; })()`);
+        check(`${label}: the right arrow selects and focuses the next tab, with its panel`,
+            moved.tab !== "Autorespuesta" && moved.focused && moved.panel, moved);
         await press("Escape");
         await sleep(300);
         check(`${label}: Escape closes the settings and the focus goes back to the button`,

@@ -18,16 +18,21 @@ No new code reaches Discord without a review first (see «Review»). When in dou
     message toolbar buttons, the chat box's text (`chatInput.ts`), the wait for Discord's stores (`wait.ts`), the log
     that all of `mod/` and the plugins write through (`log.ts`, enforced by the lint), and the Discord pieces they use
     (`discord.ts`) with their types (`discordTypes.ts`). The CLI's request handling uses the same pieces; `mod/`
-    imports nothing from `plugins/` but the registration and `run.ts`.
+    imports nothing from `plugins/` but the registration, `run.ts` and `plugins/dictation/main.ts`.
   - `mod/src/electron.d.ts`: types of the Electron APIs `mod/` calls.
   - Settings: where they live and what happens to a file that can't be read are in the README («Use»). The file is
     keyed by plugin name and holds only the values that differ from the default; if an unreadable file can't be
-    moved aside, saving stays blocked. There is no switch to disable a plugin: with both disabled, their buttons and
+    moved aside, saving stays blocked. There is no switch to disable a plugin: with all disabled, their buttons and
     with them the access to the modal would disappear.
 - `plugins/`: own plugins, registered in `mod/src/renderer/index.ts`. They import only from `@plugin-api/` and
   `plugins/shared/`, a rule the lint enforces.
   - `plugins/shared/`: code common to the plugins; `run.ts` runs `claude -p` in the main process.
   - `plugins/corrector/`, `plugins/autorespuesta/`.
+  - `plugins/dictation/`: dictation into the chat box, on `dictation/`. `main.ts` runs it in the main process; the
+    rest of the plugin may also import `dictation/`'s pure modules.
+- `dictation/`: the dictation engine (its README): audio in, text out phrase by phrase, with a local Whisper model run
+  by a Python worker without network. Kept apart so it can leave this repo: it imports only its own files and Node's
+  modules, a rule the lint enforces, and its imports carry their extensions so plain Node runs it.
 - `scripts/acb.mjs`: the `acb` CLI, to use Discord from the terminal: leave drafts (with a reply and
   attachments), list and read chats, listen for changes (`watch`) and, with confirmation (rule 3), send, edit and
   delete own messages and react. Its documentation is its `--help`. `mod/src/compose.ts` serves it over a local
@@ -39,13 +44,15 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   `pnpm links` links the skill into `~/.claude/skills/` and the CLI into `~/.local/bin/`.
 - `scripts/inject.mjs`: the patcher. Renames `app.asar` to `_app.asar` and writes a loader `app.asar`, built by
   `scripts/asar.mjs`.
-- `test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test the pure logic without Discord, and without
-  network (`test/setup.mjs` refuses every connection): logic exported by the CLI, `scripts/asar.mjs` or
-  `scripts/changelog.mjs`, or in `mod/` and `plugins/` modules with no Discord or Electron imports except types
-  (`import type`). New pure logic goes into one of those modules, with its test, and into the `mutate` list of
-  `stryker.config.mjs`, which is also the list the coverage counts. A fix in Discord-side code gets a regression test
-  on a fake Discord (`test/fake-discord.mjs`, or a `vi.mock` of Electron or `net`) that fails without the fix.
-  `smoke.mjs` and `discord-code.mjs` run on `node --test` instead, so neither Vitest nor Stryker runs them.
+- `test/` and `dictation/test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test the pure logic without
+  Discord, and without network (`test/setup.mjs` refuses every connection): logic exported by the CLI,
+  `scripts/asar.mjs` or `scripts/changelog.mjs`, or in `mod/`, `plugins/` and `dictation/` modules with no Discord or
+  Electron imports except types (`import type`), nor processes, except `dictation/src/worker.ts`, whose child process
+  its test fakes with a `vi.mock` of `child_process`. New pure logic goes into one of those modules, with its
+  test, and into the `mutate` list of `stryker.config.mjs`, which is also the list the coverage counts. A fix in
+  Discord-side code gets a regression test on a fake Discord (`test/fake-discord.mjs`, or a `vi.mock` of Electron or
+  `net`) that fails without the fix. `smoke.mjs`, `discord-code.mjs` and `dictation/test/worker.mjs` run on
+  `node --test` instead, so neither Vitest nor Stryker runs them; the last runs the real dictation worker.
   `smoke.mjs` tests in the running Discord only what publishes nothing and asks nothing of the API, and shows no
   content. `discord-code.mjs` finds the patches and the pieces of `mod/` in the Discord code of its HTTP cache, without
   running it or reading the API responses the cache also holds.
@@ -54,31 +61,35 @@ No new code reaches Discord without a review first (see «Review»). When in dou
 
 ## Commands
 Defined in `package.json`.
-- `pnpm setup`: hooks path, dependencies and build.
+- `pnpm setup`: hooks path, dependencies (the dictation worker's too, with `uv`) and build.
 - `pnpm check`: the gate before each commit, run by the `.githooks/` pre-commit hook on the staged files: `pnpm lint`
-  (`eslint.config.mjs`, formatting included), `pnpm typecheck`, `pnpm knip` (unused files, exports and dependencies,
-  `knip.json`), `pnpm secrets` (gitleaks on the history and the tree) and `pnpm test`. `pnpm fix` applies the
-  automatic fixes and runs the gate.
+  (`eslint.config.mjs`, formatting included, and Ruff on the dictation worker, `dictation/worker/pyproject.toml`),
+  `pnpm typecheck`, `pnpm knip` (unused files, exports and dependencies, `knip.json`), `pnpm secrets` (gitleaks on the
+  history and the tree) and `pnpm test`. `pnpm fix` applies the automatic fixes and runs the gate.
 - `pnpm build`: builds `mod/dist/` (`mod/tsconfig.json`). `pnpm typecheck`: types of the whole repo, the plain JS
-  files through JSDoc (`tsconfig.json`).
+  files through JSDoc (`tsconfig.json`), and the worker's with ty.
 - `pnpm test`: tests without Discord, with 100 % line, branch, function and statement coverage.
 - `pnpm mutation`: Stryker on the pure modules, with a 100 % score, run by the `.githooks/` pre-push hook instead of
   the pre-commit one. Run it after changing one of them or their tests. It is incremental and re-tests only what
   changed, but it can keep a stale survivor after a test change: before committing, confirm with
   `pnpm mutation --force` (about 2 min). Every surviving mutant gets a test, or an inline
   `// Stryker disable next-line <mutator>: <reason>` when it is equivalent.
-- `pnpm audit`: known advisories in the dependencies; part of the review of any dependency change, and run by the
-  pre-push hook and `pnpm release`.
+- `pnpm run audit`: known advisories in the dependencies, the worker's Python packages included (`uv audit`); part of
+  the review of any dependency change, and run by the pre-push hook and `pnpm release`. Plain `pnpm audit` is pnpm's
+  own command, which checks only the Node packages.
 - `pnpm smoke`: read-only checks with Discord open and patched.
+- `pnpm smoke-dictation`: the real dictation worker on a phrase that `say` speaks; Discord need not be open. Run it
+  after a change to `dictation/src/worker.ts`, `dictation/worker/` or its packages.
 - `pnpm check-discord`: patches and pieces against the last Discord version the app loaded; Discord need not be open.
 - `pnpm a11y`: names, keyboard paths and contrast of what `mod/` adds, in both themes, through the debugging port
   (`docs/debugging.md`, method 4). Run it after a change to what `mod/` or the plugins show.
 - `pnpm inject` / `pnpm uninject`: patch (or re-patch) Discord with `mod/`, or remove the patch. Discord closed.
   After `pnpm build`, restarting Discord is enough: the loader reads `mod/dist/` on every start.
 - `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,
-  `pnpm check-discord` and a fresh clone installed and tested, then the version in `package.json`, the dated
-  `CHANGELOG.md`, the commit and the `v<x.y.z>` tag. A user-visible change adds its entry under `[Unreleased]` in the
-  same commit. The pre-push hook also refuses to move or delete a tag the remote has.
+  `pnpm check-discord` and a fresh clone installed and tested, the worker and `pnpm smoke-dictation` included, then
+  the version in `package.json`, the dated `CHANGELOG.md`, the commit and the `v<x.y.z>` tag. A user-visible change
+  adds its entry under `[Unreleased]` in the same commit. The pre-push hook also refuses to move or delete a tag the
+  remote has.
 
 ## Rules
 1. **As close to Discord as possible**: `mod/` contains only what the own plugins use: no themes, custom CSS or
@@ -104,29 +115,38 @@ Defined in `package.json`.
      - `acb read --older <n>`: for the context of a message the user asks to write, n older pages up to the same
        limit, read or not, the same request as `--more`.
      - Between pages, `mod/` waits like someone scrolling up (`PAGE_PAUSE_MS` in `mod/src/renderer/read.ts`).
-4. **LLM**: the plugins only use the local `claude -p` (the user's subscription). The `acb` CLI hands chat
-   content to the Claude Code session that runs it, at the user's request. No other network destination for chat
-   content. `mod/` makes no network requests of its own, except the Discord API calls rule 3 allows.
-5. **Privacy in own plugins**: never record message content or the token in logs or persistent files. If a plugin
-   needs to dump a chat (Claude session), only the minimum, outside the repo, deleted at the end.
+4. **Models**: the plugins only use the local `claude -p` (the user's subscription) and, for dictation, a Whisper model
+   on disk, run by `dictation/`'s worker under a macOS sandbox profile that denies it the network and every write
+   outside the user's temporary folder (`dictation/src/worker.ts`). The `acb` CLI hands
+   chat content to the Claude Code session that runs it, at the user's request. No other network destination for chat
+   content or the user's voice. `mod/` makes no network requests of its own, except the Discord API calls rule 3
+   allows.
+5. **Privacy in own plugins**: never record message content, the token or the dictation's audio or text in logs or
+   persistent files; the audio stays in memory. If a plugin needs to dump a chat (Claude session), only the minimum,
+   outside the repo, deleted at the end.
 6. **Dependencies**: development tools only; nothing from `node_modules` reaches Discord except what esbuild bundles
    from this repo. Exact versions, no install scripts (`allowBuilds` in `pnpm-workspace.yaml`), and a `trustPolicy`
-   exception only for an exact, reviewed version, with its reason next to it.
+   exception only for an exact, reviewed version, with its reason next to it. The dictation worker's Python packages
+   (`dictation/worker/uv.lock`) run on this machine, outside Discord, the worker's without network and its `dev`
+   group's (Ruff and ty, the gate's) as development tools: exact versions with their hashes, wheels only (no build
+   code runs on install), and at least 7 days old when locked (`exclude-newer`). uv and Python are pinned as well
+   (`required-version` and `dictation/worker/.python-version`).
 
 ## Review
-Mandatory before each `pnpm inject`, and before committing any change in `plugins/`, `mod/`, `scripts/`, `skills/` or
-the dependencies. The commit message states what was reviewed and the result. If something fails the review: do not
-patch, and ask the user.
+Mandatory before each `pnpm inject`, and before committing any change in `plugins/`, `mod/`, `dictation/`, `scripts/`,
+`skills/` or the dependencies. The commit message states what was reviewed and the result. If something fails the
+review: do not patch, and ask the user.
 
 **What gets reviewed**, by change:
-- **Own code** (`mod/`, `plugins/`, `scripts/`, `skills/`): the whole diff, against rules 3, 4 and 5.
-- **Dependencies**: each new or updated package in `pnpm-lock.yaml`: publisher, provenance, install scripts and the
-  changelog since the previous version. They run on this machine.
+- **Own code** (`mod/`, `plugins/`, `dictation/`, `scripts/`, `skills/`): the whole diff, against rules 3, 4 and 5.
+- **Dependencies**: each new or updated package in `pnpm-lock.yaml` or `dictation/worker/uv.lock`: publisher,
+  provenance, install scripts and the changelog since the previous version. They run on this machine.
 - **Re-patch without changes**: that `mod/dist/` is rebuilt from the reviewed commit, with a clean tree.
 
 **What to look for**:
 - Network exits: `fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `<img>`/`<iframe>`/CSS to external hosts, CSP
-  changes, IPC handlers in `mod/src/main.ts` that do network or start processes.
+  changes, IPC handlers in `mod/src/main.ts` that do network or start processes, and a dictation worker started
+  without its sandbox profile.
 - Access to the token, to `MessageStore`/`ChannelStore` or to message content outside its declared purpose.
 - `eval`, `new Function`, obfuscated, minified or base64-encoded code.
 

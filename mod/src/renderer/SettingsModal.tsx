@@ -1,5 +1,7 @@
-// Settings of every plugin in one modal, opened by right-clicking a plugin button in the chat box, built from each
-// plugin's settings definition.
+// Settings of every plugin in one modal, one tab each, opened by right-clicking a plugin button in the chat box at that
+// plugin's tab, built from each plugin's settings definition.
+import type { KeyboardEvent } from "react";
+
 import { APP_NAME } from "../name.mts";
 import { Modal, openModal, showToast, TextArea, useState } from "../plugin-api/discord";
 import type { RenderModalProps } from "../plugin-api/discordTypes";
@@ -37,13 +39,43 @@ function Field({ def, value, onChange }: { def: SettingDef; value: SettingDef["d
             return <input type="checkbox" checked={value as boolean} onChange={e => onChange(e.currentTarget.checked)} />;
         case OptionType.NUMBER:
             return <input type="number" min={0} value={value as number} onChange={e => onChange(e.currentTarget.valueAsNumber || 0)} />;
-        case OptionType.STRING:
-            return <TextArea value={value as string} onChange={onChange} rows={def.multiline ? 6 : 1} autosize />;
+        case OptionType.STRING: {
+            if (!def.options) return <TextArea value={value as string} onChange={onChange} rows={def.multiline ? 6 : 1} autosize />;
+            // The saved value stays selectable when it is no longer offered, so opening the modal doesn't change it.
+            const options = [...new Set([...def.options(), value as string])];
+            return (
+                <select value={value as string} onChange={e => onChange(e.currentTarget.value)}>
+                    {options.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+            );
+        }
     }
 }
 
-function SettingsModal({ rootProps }: { rootProps: RenderModalProps; }) {
+/** The tab after a key, as in WAI-ARIA's tabs pattern: arrows wrap around, Home and End go to the ends. */
+function nextTab(key: string, at: number, count: number) {
+    switch (key) {
+        case "ArrowRight": return (at + 1) % count;
+        case "ArrowLeft": return (at - 1 + count) % count;
+        case "Home": return 0;
+        case "End": return count - 1;
+        default: return null;
+    }
+}
+
+function SettingsModal({ rootProps, plugin }: { rootProps: RenderModalProps; plugin: string | undefined; }) {
     const [values, setValues] = useState(currentValues);
+    const names = configurable().map(p => p.name);
+    // The selected tab's index: the given plugin's, or the first.
+    const [tab, setTab] = useState(() => Math.max(0, names.findIndex(name => name === plugin)));
+
+    function onTabKey(e: KeyboardEvent<HTMLElement>) {
+        const next = nextTab(e.key, tab, names.length);
+        if (next === null) return;
+        e.preventDefault();
+        setTab(next);
+        (e.currentTarget.children[next] as HTMLElement).focus();
+    }
 
     const set = (plugin: string, key: string, value: SettingDef["default"]) =>
         setValues(v => ({ ...v, [plugin]: { ...v[plugin], [key]: value } }));
@@ -79,12 +111,27 @@ function SettingsModal({ rootProps }: { rootProps: RenderModalProps; }) {
             ]}
         >
             <div className="dm-settings">
-                {configurable().map(({ name, description, settings }) => (
-                    <section key={name}>
-                        <h3>{name}</h3>
+                <div role="tablist" className="dm-tabs" onKeyDown={onTabKey}>
+                    {names.map((name, i) => (
+                        <button
+                            key={name}
+                            type="button"
+                            role="tab"
+                            id={`dm-tab-${name}`}
+                            aria-controls={`dm-panel-${name}`}
+                            aria-selected={i === tab}
+                            tabIndex={i === tab ? 0 : -1}
+                            onClick={() => setTab(i)}
+                        >
+                            {name}
+                        </button>
+                    ))}
+                </div>
+                {configurable().filter((_, i) => i === tab).map(({ name, description, settings }) => (
+                    <section key={name} role="tabpanel" id={`dm-panel-${name}`} aria-labelledby={`dm-tab-${name}`}>
                         <p className="dm-muted">{description}</p>
                         {Object.entries(settings.def).map(([key, def]) => (
-                            <div key={key} className="dm-field">
+                            <div key={key} className={def.type === OptionType.BOOLEAN ? "dm-field dm-check" : "dm-field"}>
                                 {/* The label wraps the field, which takes its name from it whether it is a native input or Discord's TextArea. */}
                                 <label>
                                     <span className="dm-label">{def.description}</span>
@@ -102,6 +149,7 @@ function SettingsModal({ rootProps }: { rootProps: RenderModalProps; }) {
     );
 }
 
-export function openSettingsModal() {
-    openModal(props => <SettingsModal rootProps={props} />);
+/** Opens the settings at the given plugin's tab, or at the first one. */
+export function openSettingsModal(plugin?: string) {
+    openModal(props => <SettingsModal rootProps={props} plugin={plugin} />);
 }

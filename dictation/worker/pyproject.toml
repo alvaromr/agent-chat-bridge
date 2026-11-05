@@ -1,0 +1,36 @@
+# The transcription worker that dictation/src/worker.ts starts: mlx-whisper on Apple Silicon. uv.lock pins every
+# package with its hash; `pnpm setup` installs them into .venv/ with `uv sync --frozen`.
+[project]
+name = "dictation-worker"
+# uv requires one; the worker is released with agent-chat-bridge, whose one version is package.json's, so this stays.
+version = "0.0.0"
+requires-python = "==3.12.*"
+dependencies = ["mlx-whisper==0.4.3"]
+
+# The worker's gate in `pnpm check`: Ruff formats and lints, ty checks the types.
+[dependency-groups]
+dev = ["ruff==0.17.3", "ty==0.0.92"]
+
+[tool.uv]
+# The uv that wrote uv.lock; .python-version pins the interpreter the same way.
+required-version = "==0.13.6"
+package = false
+# Wheels only: no package runs build code on this machine when installed.
+no-build = true
+# Only releases at least 7 days old when locking (the pnpm minimumReleaseAge of the repo). Move it forward, keeping
+# that age, when upgrading.
+exclude-newer = "2026-10-28T00:00:00Z"
+# mlx-whisper lists torch only to convert models; transcribing never imports it, and it is 1 GB of code to review.
+override-dependencies = ["torch; sys_platform == 'never'"]
+
+# The repo's width, and every rule set but the ones that only restate the code (docstrings everywhere, copyright).
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["ALL"]
+# COM812 fights the formatter, as Ruff's own docs say.
+ignore = ["D", "CPY", "COM812"]
+
+[tool.ty.terminal]
+error-on-warning = true

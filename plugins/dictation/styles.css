@@ -1,0 +1,12 @@
+/* The microphone button's phases: opening, recording, and the last phrases on their way. */
+.dm-dictation-warming {
+    color: var(--status-warning);
+}
+
+.dm-dictation-listening {
+    color: var(--status-danger);
+}
+
+.dm-dictation-finishing {
+    opacity: 0.6;
+}

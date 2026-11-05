@@ -8,5 +8,5 @@
         "scripts/*.mjs"
     ],
     "ignoreDependencies": ["electron"],
-    "ignoreBinaries": ["pgrep", "brew"]
+    "ignoreBinaries": ["pgrep", "brew", "uv", "say"]
 }

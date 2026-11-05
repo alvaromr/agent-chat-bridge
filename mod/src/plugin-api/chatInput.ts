@@ -11,7 +11,7 @@ export const pressEnter = (editor: HTMLElement) =>
     editor.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true, cancelable: true }));
 
 /** Inserts the text at the box's cursor, or over its selection. */
-function insertTextIntoChatInputBox(text: string) {
+export function insertTextIntoChatInputBox(text: string) {
     ComponentDispatch.dispatchToLastSubscribed("INSERT_TEXT", {
         rawText: text,
         plainText: text

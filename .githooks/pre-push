@@ -16,4 +16,5 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     esac
 done
 pnpm mutation
-pnpm audit
+# `run`: pnpm's own audit command would shadow the script, which also audits the dictation worker's packages.
+pnpm run audit

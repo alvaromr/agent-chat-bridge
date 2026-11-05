@@ -7,6 +7,6 @@
         "checkJs": true,
         "types": ["node"]
     },
-    "include": ["mod/src/**/*", "plugins/**/*", "scripts/*.mjs", "test/*.mjs", "mod/build.mjs", "*.config.mjs"],
+    "include": ["mod/src/**/*", "plugins/**/*", "dictation/src/**/*", "dictation/test/*.mjs", "scripts/*.mjs", "test/*.mjs", "mod/build.mjs", "*.config.mjs"],
     "exclude": ["eslint.config.mjs"]
 }

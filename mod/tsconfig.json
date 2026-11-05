@@ -25,5 +25,5 @@
             "@plugin-api/*": ["./src/plugin-api/*"]
         }
     },
-    "include": ["src/**/*", "../plugins/**/*"]
+    "include": ["src/**/*", "../plugins/**/*", "../dictation/src/**/*"]
 }

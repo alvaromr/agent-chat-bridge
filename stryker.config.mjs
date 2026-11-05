@@ -8,6 +8,13 @@ export default {
     checkers: ["typescript"],
     tsconfigFile: "tsconfig.json",
     mutate: [
+        "dictation/src/engine.ts",
+        "dictation/src/models.ts",
+        "dictation/src/protocol.ts",
+        "dictation/src/segmenter.ts",
+        "dictation/src/style.ts",
+        "dictation/src/vocabulary.ts",
+        "dictation/src/worker.ts",
         "mod/src/attachments.ts",
         "mod/src/ipc.ts",
         "mod/src/limits.mts",
@@ -22,6 +29,8 @@ export default {
         "plugins/autorespuesta/transcript.ts",
         "plugins/corrector/list.ts",
         "plugins/corrector/text.ts",
+        "plugins/dictation/space.ts",
+        "plugins/dictation/text.ts",
         "scripts/asar.mjs",
         "scripts/changelog.mjs",
         "scripts/acb.mjs"

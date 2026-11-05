@@ -5,6 +5,15 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+### Added
+- Dictation: dictate into the chat box with a local Whisper model, with the microphone button or by holding Space as
+  in Claude Code. The text appears phrase by phrase and is never sent. Its settings pick the model among the ones on
+  disk, the words it should know, replacements for what it still mishears, and whether to drop the final period, the
+  capital that opens each sentence and the opening `¿` and `¡` (dropped by default).
+
+### Changed
+- The settings modal has one tab per plugin, and right-clicking a plugin's button opens it at that plugin's tab.
+
 ## [0.1.1] - 2026-11-04
 
 ### Fixed

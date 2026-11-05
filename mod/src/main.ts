@@ -4,6 +4,7 @@ import { app, dialog, ipcMain, session } from "electron";
 import { readFileSync } from "fs";
 import { dirname, join } from "path";
 
+import { cancelDictation, dictationAudio, dictationModels, startDictation, stopDictation } from "../../plugins/dictation/main";
 import { runClaude } from "../../plugins/shared/run";
 import { startComposeServer } from "./compose";
 import { IPC } from "./ipc";
@@ -31,6 +32,11 @@ ipcMain.on(IPC.getSettings, e => {
 });
 ipcMain.handle(IPC.setSettings, (_, saved) => settings.write(saved));
 ipcMain.handle(IPC.runClaude, runClaude);
+ipcMain.on(IPC.dictationModels, dictationModels);
+ipcMain.handle(IPC.dictationStart, startDictation);
+ipcMain.on(IPC.dictationAudio, dictationAudio);
+ipcMain.on(IPC.dictationStop, stopDictation);
+ipcMain.on(IPC.dictationCancel, cancelDictation);
 
 // Registered before Discord's own "ready" listener, so it is in place before Discord opens any window.
 // A session preload runs before the window's preload, which keeps being Discord's.

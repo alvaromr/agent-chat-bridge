@@ -66,15 +66,40 @@ export default tseslint.config(
         }
     },
     {
-        // Plugins reach mod/ only through @plugin-api/ and each other only through plugins/shared/. run.ts is the
-        // exception: it runs in the main process, on Node's modules.
+        // Plugins reach mod/ only through @plugin-api/ and each other only through plugins/shared/. run.ts and
+        // dictation/main.ts are the exceptions: they run in the main process, on Node's modules.
         files: ["plugins/**/*.{ts,tsx}"],
-        ignores: ["plugins/shared/run.ts"],
+        ignores: ["plugins/shared/run.ts", "plugins/dictation/main.ts", "plugins/dictation/**"],
         rules: {
             "no-restricted-imports": ["error", {
                 patterns: [{
                     regex: "^(?!@plugin-api/[^.]|\\./[^.]|\\.\\./shared(?:/[^.]|$))",
                     message: "Plugins import only from @plugin-api/, plugins/shared/ and their own folder."
+                }]
+            }]
+        }
+    },
+    {
+        // The same for the Dictation plugin, which also reaches its engine, dictation/, through its pure modules.
+        files: ["plugins/dictation/**/*.{ts,tsx}"],
+        ignores: ["plugins/dictation/main.ts"],
+        rules: {
+            "no-restricted-imports": ["error", {
+                patterns: [{
+                    regex: "^(?!@plugin-api/[^.]|\\./[^.]|\\.\\./shared(?:/[^.]|$)|\\.\\./\\.\\./dictation/src/(?:segmenter|style|vocabulary)$)",
+                    message: "The Dictation plugin imports only from @plugin-api/, plugins/shared/, its own folder and dictation/'s pure modules."
+                }]
+            }]
+        }
+    },
+    {
+        // dictation/ is the engine, kept apart so it can leave this repo: it imports nothing from outside its folder.
+        files: ["dictation/**/*.{ts,mjs}"],
+        rules: {
+            "no-restricted-imports": ["error", {
+                patterns: [{
+                    regex: "^(?:\\.\\./\\.\\./|@plugin-api/|electron$)",
+                    message: "dictation/ imports only its own files and Node's modules."
                 }]
             }]
         }
