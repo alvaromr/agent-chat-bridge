@@ -102,6 +102,7 @@ export function wrapFactory(modules: Record<PropertyKey, any>, id: PropertyKey, 
 function patchFactory(id: PropertyKey, factory: any): { patched: any; applied: Patch[]; } {
     const pending = patches.filter(p => !p.status);
     const applied: Patch[] = [];
+    // Stryker disable next-line ConditionalExpression: only a shortcut; with no patch pending, the loop below changes nothing.
     if (!pending.length) return { patched: factory, applied };
 
     const source = String(factory);
@@ -133,6 +134,7 @@ const TypedArray = Object.getPrototypeOf(Int8Array);
 
 /** Exports that would match any props filter or are unsafe to inspect. */
 function shouldIgnore(value: any) {
+    // Stryker disable next-line ConditionalExpression: without it, reading a property of null throws, which matches() takes as no match.
     if (value == null || value === window || value === document || value === document.documentElement) return true;
     if (value[Symbol.toStringTag] === "DOMTokenList" || value[Symbol.toStringTag] === "IntlMessagesProxy") return true;
     if (value[PROXY_CHECK] !== void 0) {
@@ -156,7 +158,8 @@ function matches(filter: Filter, value: any) {
 export function find(filter: Filter, { topLevelOnly = false } = {}) {
     for (const id in wreq?.c) {
         const mod = wreq.c[id];
-        if (!mod?.loaded || mod.exports == null) continue;
+        // Exports that are null match nothing, and have nothing nested.
+        if (!mod?.loaded) continue;
         if (matches(filter, mod.exports)) return mod.exports;
         if (typeof mod.exports !== "object" || topLevelOnly) continue;
 
@@ -165,7 +168,7 @@ export function find(filter: Filter, { topLevelOnly = false } = {}) {
             try {
                 nested = mod.exports[key];
             } catch {
-                continue; // not initialized yet because of a circular import
+                // Not initialized yet because of a circular import: it stays undefined, which matches nothing.
             }
             if (matches(filter, nested)) return nested;
         }
@@ -190,6 +193,7 @@ export const filters = {
         const source = Function.prototype.toString.call(m);
         return code.every(c => source.includes(c));
     },
+    // Stryker disable next-line OptionalChaining: without it, an export with no constructor throws, which matches() takes as no match.
     byStoreName: (name: string): Filter => m => m.constructor?.displayName === name,
     /** Also looks inside memo and forwardRef wrappers. */
     componentByCode: (...code: string[]): Filter => {
@@ -208,6 +212,7 @@ export const filters = {
 export function findCssClasses<S extends string>(...names: S[]): Record<S, string> {
     const regexes = names.map(name => ({ name, re: classNameRegex(name) }));
     const mod = find(m => typeof m === "object" && regexes.every(({ re }) => Object.values(m).some(v => typeof v === "string" && re.test(v))), { topLevelOnly: true });
+    // Stryker disable next-line ArrayDeclaration: with no module, any other values hold no Discord class name either.
     const values = mod ? Object.values(mod) : [];
     return Object.fromEntries(regexes.map(({ name, re }) => [name, values.find(v => typeof v === "string" && re.test(v)) ?? ""])) as Record<S, string>;
 }

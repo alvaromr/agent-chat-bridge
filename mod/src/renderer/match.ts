@@ -8,8 +8,9 @@ export interface Candidate extends ComposeCandidate {
     names: string[];
     weak?: string[];
     lastMessageId: string;
-    /** Server channels and threads only. */
+    /** Server channels and threads only: the server's id and name. */
     guildId?: string;
+    server?: string;
 }
 
 const MAX_CANDIDATES = 30;

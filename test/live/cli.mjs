@@ -1,5 +1,6 @@
-// Read-only checks against the running, patched Discord. Run with `pnpm smoke`.
-// Publishes nothing, loads nothing from Discord's API and only prints check names: no chat names or messages.
+// Live checks of the CLI against the running, patched Discord (`pnpm live`): that Discord's real stores answer in the
+// shape the unit tests fake. Publishes nothing, loads nothing from Discord's API and only prints check names: no chat
+// names or messages. What the CLI does with those answers is in the unit tests (test/chats.test.mjs, read, write).
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { connect } from "node:net";
@@ -9,9 +10,9 @@ import { before, test } from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
 import { promisify } from "node:util";
 
-import { APP_NAME, SOCKET_FILE } from "../mod/src/name.mts";
+import { APP_NAME, SOCKET_FILE } from "../../mod/src/name.mts";
 
-const CLI = new URL("../scripts/acb.mjs", import.meta.url).pathname;
+const CLI = new URL("../../scripts/acb.mjs", import.meta.url).pathname;
 const SOCKET = join(homedir(), "Library", "Application Support", APP_NAME, SOCKET_FILE);
 const KINDS = ["dm", "grupo", "canal", "hilo"];
 // Over the 10 s that mod/src/compose.ts waits for the renderer, so a Discord that hangs fails the check, not blocks it.
@@ -60,27 +61,27 @@ before(async () => {
     }
 });
 
-test("list returns chats with id, kind and name", async () => {
+test("live cli: list returns chats with id, kind and name", async () => {
     const { result } = await cli("list", "--since", "semana");
     assert.equal(result.ok, true);
     assert.ok(Array.isArray(result.chats) && result.chats.every(isCandidate), "shape of the chats");
 });
 
-test("unread returns counts and whether each chat is muted", async () => {
+test("live cli: unread returns counts and whether each chat is muted", async () => {
     const { result } = await cli("unread");
     assert.equal(result.ok, true);
     assert.ok(result.sinLeer.every(c => isCandidate(c) && Number.isInteger(c.mensajes)
         && Number.isInteger(c.menciones) && typeof c.silenciado === "boolean"), "shape of the unread chats");
 });
 
-test("draft --dry-run resolves the chat without touching it", async () => {
+test("live cli: draft --dry-run resolves the chat without touching it", async () => {
     const { result } = await cli("draft", first.id, "prueba", "--id", "--dry-run");
     assert.equal(result.ok, true);
     assert.equal(result.chat.id, first.id);
     assert.equal(result.borradorCargado, false);
 });
 
-test("read returns messages in their shape, or asks for --fetch", async () => {
+test("live cli: read returns messages in their shape, or asks for --fetch", async () => {
     const { result } = await cli("read", first.id, "--limit", "5");
     if (!result.ok) return assert.match(result.error, /--fetch/);
     assert.ok(Number.isInteger(result.cargados) && typeof result.rangoCompleto === "boolean", "counts");
@@ -89,31 +90,6 @@ test("read returns messages in their shape, or asks for --fetch", async () => {
     "shape of the messages");
 });
 
-test("send to a chat that doesn't exist sends nothing", async () => {
-    const { code, result } = await cli("send", "1", "prueba", "--direct");
-    assert.equal(code, 1);
-    assert.equal(result.error, "No encuentro ese chat");
-});
-
-test("draft --clear --dry-run resolves the chat without emptying it", async () => {
-    const { result } = await cli("draft", first.id, "--clear", "--id", "--dry-run");
-    assert.equal(result.ok, true);
-    assert.equal(result.vaciado, undefined);
-});
-
-test("edit, delete and react --remove in a chat that doesn't exist touch nothing", async () => {
-    for (const args of [["edit", "1", "2", "prueba"], ["delete", "1", "2"], ["react", "1", "2", "👍", "--remove"]]) {
-        const { code, result } = await cli(...args);
-        assert.equal(code, 1);
-        assert.equal(result.error, "No encuentro ese chat");
-    }
-});
-
-test("the socket refuses invalid requests", async () => {
-    for (const line of ["not json", '{"send":"1","expect":"x","replyTo":"2"}', '{"query":"x","text":"x","files":[]}'])
-        assert.deepEqual(await raw(line), { ok: false, error: "Petición no válida" }, "request refused");
-});
-
-test("watch confirms which chats it listens to", async () => {
+test("live cli: watch confirms which chats it listens to", async () => {
     assert.deepEqual(await raw(JSON.stringify({ watch: [first.id] })), { ok: true, escuchando: [first.id] });
 });

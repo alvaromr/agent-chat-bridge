@@ -25,7 +25,8 @@ function addStyle(css: string) {
 
 addStyle(baseStyle);
 
-for (const plugin of [corrector, autorespuesta, dictation] as PluginDef[]) {
+/** Registers a plugin with what it declares, and starts it. Exported for its test. */
+export function registerPlugin(plugin: PluginDef) {
     plugins.push(plugin);
     if (plugin.settings) plugin.settings.pluginName = plugin.name;
     if (plugin.chatBarButton) chatBarButtons.set(plugin.name, plugin.chatBarButton.render);
@@ -33,3 +34,5 @@ for (const plugin of [corrector, autorespuesta, dictation] as PluginDef[]) {
     if (plugin.style) addStyle(plugin.style);
     plugin.start?.();
 }
+
+for (const plugin of [corrector, autorespuesta, dictation] as PluginDef[]) registerPlugin(plugin);

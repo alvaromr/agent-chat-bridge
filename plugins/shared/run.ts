@@ -60,7 +60,8 @@ export async function runClaude(_: IpcMainInvokeEvent, systemPrompt: string, inp
         });
         return text ? { ok: true, text } : { ok: false, text: TEXT.empty };
     } catch (e) {
-        return { ok: false, text: e instanceof Error ? e.message : String(e) };
+        // Everything rejected above is an Error: execFile's, or the missing pipe's.
+        return { ok: false, text: (e as Error).message };
     } finally {
         await rm(cwd, { recursive: true, force: true });
     }

@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 // Regression tests of a plugin component's failure (mod/src/plugin-api/ErrorBoundary.tsx) on a fake Discord. Run with
 // `pnpm test`.
 import assert from "node:assert/strict";

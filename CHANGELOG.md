@@ -13,6 +13,11 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ### Changed
 - The settings modal has one tab per plugin, and right-clicking a plugin's button opens it at that plugin's tab.
+- `pnpm live` replaces `pnpm smoke` and `pnpm a11y`: the unit tests now cover all of `mod/` and the plugins on a fake
+  Discord, and the live checks keep only what the real Discord decides.
+
+### Fixed
+- `acb watch` no longer fails inside Discord on a new-message event that carries no message.
 
 ## [0.1.1] - 2026-11-04
 

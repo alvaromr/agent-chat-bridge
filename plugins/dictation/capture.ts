@@ -37,6 +37,7 @@ export async function startCapture(onSamples: (samples: Float32Array) => void, o
             value.copyTo(samples, { planeIndex: 0, format: "f32-planar" });
             value.close();
             // The microphone gives digital silence while it opens (~0.8 s, measured in Discord).
+            // Stryker disable next-line EqualityOperator: > and >= part ways only on a frame at exactly -100 dB, which no microphone gives.
             if (!heard && levelDb(samples) > DIGITAL_SILENCE_DB) {
                 heard = true;
                 onSound();

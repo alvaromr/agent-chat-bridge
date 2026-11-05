@@ -5,21 +5,29 @@ import type { KeyboardEvent } from "react";
 import { APP_NAME } from "../name.mts";
 import { Modal, openModal, showToast, TextArea, useState } from "../plugin-api/discord";
 import type { RenderModalProps } from "../plugin-api/discordTypes";
-import { OptionType, type PluginDef } from "../plugin-api/plugin";
+import { OptionType } from "../plugin-api/plugin";
 import type { SettingDef } from "../plugin-api/settings";
 import { plugins } from "./registry";
 import { savedSettings, saveSettings } from "./settings";
 import { patches } from "./webpack";
 
-type Values = Record<string, Record<string, SettingDef["default"]>>;
+interface Field {
+    key: string;
+    def: SettingDef;
+    value: SettingDef["default"];
+}
 
-const configurable = () => plugins.filter((p): p is PluginDef & Required<Pick<PluginDef, "settings">> => p.settings != null);
-
-const currentValues = (): Values => Object.fromEntries(configurable().map(({ name, settings }) => [
+/** A tab per plugin with settings, with its fields' current values. */
+const currentTabs = () => plugins.flatMap(({ name, description, settings }) => settings ? [{
     name,
-    // The store already falls back to the default; its generic type can't say so.
-    Object.fromEntries(Object.entries(settings.def).map(([key, def]) => [key, settings.store[key] ?? def.default]))
-]));
+    description,
+    fields: Object.entries(settings.def).map(([key, def]): Field => ({
+        key,
+        def,
+        // The store already falls back to the default; its generic type can't say so.
+        value: settings.store[key] as SettingDef["default"]
+    }))
+}] : []);
 
 /** What the modal and its toasts say. */
 const TEXT = {
@@ -33,7 +41,7 @@ const TEXT = {
     saveFailed: (err: unknown) => `No se pudieron guardar los ajustes: ${err}`
 } as const;
 
-function Field({ def, value, onChange }: { def: SettingDef; value: SettingDef["default"]; onChange(value: SettingDef["default"]): void; }) {
+function Input({ def, value, onChange }: { def: SettingDef; value: SettingDef["default"]; onChange(value: SettingDef["default"]): void; }) {
     switch (def.type) {
         case OptionType.BOOLEAN:
             return <input type="checkbox" checked={value as boolean} onChange={e => onChange(e.currentTarget.checked)} />;
@@ -64,30 +72,27 @@ function nextTab(key: string, at: number, count: number) {
 }
 
 function SettingsModal({ rootProps, plugin }: { rootProps: RenderModalProps; plugin: string | undefined; }) {
-    const [values, setValues] = useState(currentValues);
-    const names = configurable().map(p => p.name);
+    const [tabs, setTabs] = useState(currentTabs);
     // The selected tab's index: the given plugin's, or the first.
-    const [tab, setTab] = useState(() => Math.max(0, names.findIndex(name => name === plugin)));
+    const [tab, setTab] = useState(() => Math.max(0, tabs.findIndex(({ name }) => name === plugin)));
 
     function onTabKey(e: KeyboardEvent<HTMLElement>) {
-        const next = nextTab(e.key, tab, names.length);
+        const next = nextTab(e.key, tab, tabs.length);
         if (next === null) return;
         e.preventDefault();
         setTab(next);
         (e.currentTarget.children[next] as HTMLElement).focus();
     }
 
-    const set = (plugin: string, key: string, value: SettingDef["default"]) =>
-        setValues(v => ({ ...v, [plugin]: { ...v[plugin], [key]: value } }));
-    const valueOf = (plugin: string, key: string, def: SettingDef) => values[plugin]?.[key] ?? def.default;
+    const set = (name: string, key: string, value: SettingDef["default"]) => setTabs(all => all.map(t => t.name !== name ? t : {
+        ...t,
+        fields: t.fields.map(f => f.key === key ? { ...f, value } : f)
+    }));
 
     async function save() {
-        for (const { name, settings } of configurable()) {
-            const changed = Object.entries(settings.def).flatMap(([key, def]) => {
-                const value = valueOf(name, key, def);
-                return value === def.default ? [] : [[key, value] as const];
-            });
-            if (changed.length) savedSettings[name] = Object.fromEntries(changed);
+        for (const { name, fields } of tabs) {
+            const changed = fields.filter(({ def, value }) => value !== def.default);
+            if (changed.length) savedSettings[name] = Object.fromEntries(changed.map(({ key, value }) => [key, value]));
             else delete savedSettings[name];
         }
         try {
@@ -112,7 +117,7 @@ function SettingsModal({ rootProps, plugin }: { rootProps: RenderModalProps; plu
         >
             <div className="dm-settings">
                 <div role="tablist" className="dm-tabs" onKeyDown={onTabKey}>
-                    {names.map((name, i) => (
+                    {tabs.map(({ name }, i) => (
                         <button
                             key={name}
                             type="button"
@@ -127,17 +132,17 @@ function SettingsModal({ rootProps, plugin }: { rootProps: RenderModalProps; plu
                         </button>
                     ))}
                 </div>
-                {configurable().filter((_, i) => i === tab).map(({ name, description, settings }) => (
+                {tabs.filter((_, i) => i === tab).map(({ name, description, fields }) => (
                     <section key={name} role="tabpanel" id={`dm-panel-${name}`} aria-labelledby={`dm-tab-${name}`}>
                         <p className="dm-muted">{description}</p>
-                        {Object.entries(settings.def).map(([key, def]) => (
+                        {fields.map(({ key, def, value }) => (
                             <div key={key} className={def.type === OptionType.BOOLEAN ? "dm-field dm-check" : "dm-field"}>
                                 {/* The label wraps the field, which takes its name from it whether it is a native input or Discord's TextArea. */}
                                 <label>
                                     <span className="dm-label">{def.description}</span>
-                                    <Field def={def} value={valueOf(name, key, def)} onChange={value => set(name, key, value)} />
+                                    <Input def={def} value={value} onChange={next => set(name, key, next)} />
                                 </label>
-                                {valueOf(name, key, def) !== def.default && (
+                                {value !== def.default && (
                                     <button type="button" className="dm-reset" onClick={() => set(name, key, def.default)}>{TEXT.reset}</button>
                                 )}
                             </div>

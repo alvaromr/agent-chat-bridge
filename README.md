@@ -52,7 +52,7 @@ After a Discord update, run `pnpm inject` again.
 ```sh
 pnpm check      # the gate before each commit (AGENTS.md, «Commands»)
 pnpm build      # then restart Discord
-pnpm smoke      # read-only checks against the running Discord
+pnpm live       # what only the running Discord can show (docs/debugging.md, method 4)
 ```
 
 ## Read next

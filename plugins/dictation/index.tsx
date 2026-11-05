@@ -137,10 +137,10 @@ async function write(a: Active) {
     const text = compose(a.before, restyle(said, style, parseWords(vocabulary)));
     if (text === a.written) return;
     if (SelectedChannelStore.getChannelId() !== a.channelId) return end(a, TEXT.chatChanged);
-    if ((getDraft(a.channelId) ?? "") !== a.written) return end(a, TEXT.boxChanged);
+    if (getDraft(a.channelId) !== a.written) return end(a, TEXT.boxChanged);
     await replaceChatInput(text);
     await waitFor(() => getDraft(a.channelId) === text, 500);
-    a.written = getDraft(a.channelId) ?? "";
+    a.written = getDraft(a.channelId);
 }
 
 function onEvent(event: DictationEvent) {
@@ -172,7 +172,11 @@ function onEvent(event: DictationEvent) {
  */
 async function begin(channelId: string, from: "button" | "space") {
     if (active) return;
-    const a: Active = { channelId, before: null, written: "", phrases: [], partial: "", capture: null, heard: false, stopping: false };
+    const a: Active = {
+        channelId, before: null, phrases: [], partial: "", capture: null, heard: false, stopping: false,
+        // Stryker disable next-line StringLiteral: nothing reads it before confirm() sets it.
+        written: ""
+    };
     active = a;
     setPhase("warming");
     const { model, language, vocabulary, replacements } = settings.store;
@@ -197,16 +201,16 @@ async function begin(channelId: string, from: "button" | "space") {
 
 /** From here on the dictated text goes into the box, after the draft minus the spaces holding Space typed. */
 function confirm(a: Active, typedSpaces: number) {
-    const draft = getDraft(a.channelId) ?? "";
+    const draft = getDraft(a.channelId);
     a.before = withoutTypedSpaces(draft, typedSpaces);
     a.written = draft;
     if (!a.stopping) setPhase(a.heard ? "listening" : "warming");
     render(a);
 }
 
-/** Ends the audio; the last phrases still arrive. */
+/** Ends the audio of the active dictation; the last phrases still arrive. */
 function stopAudio(a: Active) {
-    if (active !== a || a.stopping) return;
+    if (a.stopping) return;
     a.stopping = true;
     a.capture?.stop();
     native().stop();
@@ -217,7 +221,7 @@ function stopAudio(a: Active) {
 function cancel(a: Active) {
     const { before, written, channelId } = a;
     end(a);
-    if (before == null || (getDraft(channelId) ?? "") !== written) return;
+    if (before == null || getDraft(channelId) !== written) return;
     writing = writing.then(() => replaceChatInput(before)).catch(reportFailure);
 }
 
@@ -267,12 +271,11 @@ function onKeyDown(e: KeyboardEvent) {
         const [next, action] = spaceDown(space, e.repeat);
         space = next;
         apply(action, e);
-    } else if (space.presses) release(e);
+    } else release(e);
 }
 
-/** The Space keyup, another key, or the window losing focus: the hold ends. */
+/** The Space keyup, another key, or the window losing focus: the hold ends, if there is one. */
 function release(e: KeyboardEvent | FocusEvent) {
-    if (!space.presses) return;
     const [next, action] = spaceUp(space);
     space = next;
     if (e instanceof KeyboardEvent) apply(action, e);
@@ -280,13 +283,18 @@ function release(e: KeyboardEvent | FocusEvent) {
     else if (action.kind === "abort" && active?.before === null) end(active);
 }
 
+/** Keeps a button's phase current; returns how to stop, once the button is off screen. */
+function followPhase(set: (phase: Phase) => void) {
+    const listener = () => set(phase);
+    phaseListeners.add(listener);
+    // Stryker disable next-line ArrowFunction: it only stops updating a button no longer on screen, which React ignores.
+    return () => void phaseListeners.delete(listener);
+}
+
 function usePhase() {
     const [current, setCurrent] = useState(phase);
-    useEffect(() => {
-        const listener = () => setCurrent(phase);
-        phaseListeners.add(listener);
-        return () => void phaseListeners.delete(listener);
-    }, []);
+    // Stryker disable next-line ArrayDeclaration: any list that never changes runs the effect once, as this empty one.
+    useEffect(() => followPhase(setCurrent), []);
     return current;
 }
 

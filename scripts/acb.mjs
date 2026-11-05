@@ -210,7 +210,6 @@ const TEXT = {
     unknownCommand: name => `Comando desconocido: ${name}\n\n${MAIN_HELP}`,
     usage: usage => `Uso: ${usage}`,
     limitNotNumber: "--limit debe ser un número",
-    // Stryker disable next-line StringLiteral: only the socket side shows it, and test/smoke.mjs covers that side.
     noSocket: "Discord no está abierto con el parche (falta el socket)"
 };
 
@@ -270,23 +269,21 @@ export function buildRequest(argv) {
     return { request: JSON.parse(JSON.stringify(command.request(positionals, values))) }; // drops undefined flags
 }
 
-// The socket side needs the running Discord: test/smoke.mjs covers it end to end, so unit coverage and mutation skip
-// it.
-/* v8 ignore start */
-// Stryker disable all
 const SOCKET = join(homedir(), "Library", "Application Support", APP_NAME, SOCKET_FILE);
 
-function main() {
+/** The CLI: the request to Discord's socket, and its answer, or each event of a `watch`, on stdout. Exported for its test. */
+export function main(argv = process.argv.slice(2)) {
     let built;
     try {
-        built = buildRequest(process.argv.slice(2));
+        built = buildRequest(argv);
     } catch (err) {
-        console.error(err instanceof Error ? err.message : err);
-        process.exit(2);
+        // buildRequest and parseArgs throw only Errors.
+        console.error(/** @type {Error} */ (err).message);
+        return process.exit(2);
     }
     if (built.help) {
         console.log(built.help);
-        process.exit(0);
+        return process.exit(0);
     }
 
     const conn = connect(SOCKET, () => conn.write(JSON.stringify(built.request) + "\n"));
@@ -316,6 +313,5 @@ function main() {
 }
 
 // Run as the CLI, not when test/ imports it.
-if (import.meta.main) main();
-// Stryker restore all
-/* v8 ignore stop */
+// Stryker disable next-line all: only a run of the CLI reaches it, never the tests (and, for that, not the coverage).
+/* v8 ignore next */ if (import.meta.main) main();

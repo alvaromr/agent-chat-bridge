@@ -73,7 +73,7 @@ async function generateFrom(channelId: string, messageId: string) {
         ? messages.slice(0, start).filter(m => m.author.id === me.id && m.content).slice(-examples)
         : [];
     const draft = getDraft(channelId);
-    const input = buildInput({ conversation: messages.slice(start), me, examples: ownBefore.map(m => m.content), guide: draft ?? "" });
+    const input = buildInput({ conversation: messages.slice(start), me, examples: ownBefore.map(m => m.content), guide: draft });
 
     const reply = await askClaude(systemPrompt, input, model);
     if (reply == null) return;

@@ -74,7 +74,7 @@ async function correct(text: string) {
 /** Corrects the draft in the box, unless it changes meanwhile. */
 async function correctDraft(channelId: string) {
     const draft = getDraft(channelId);
-    if (!draft?.trim()) return;
+    if (!draft.trim()) return;
 
     const fixed = await correct(draft);
     if (fixed == null) return;
@@ -108,6 +108,7 @@ async function correctSentMessage(message: Message) {
 
 /** Corrects the last own message. Triggered by Enter on an empty box, which Discord ignores. */
 async function correctLastMessage(channelId: string) {
+    // Discord has no current user until the session is up.
     const myId = UserStore.getCurrentUser()?.id;
     const last = MessageStore.getMessages(channelId)._array.findLast((m: Message) => m.author.id === myId && m.content);
     if (last) await correctSentMessage(last);
@@ -145,14 +146,14 @@ async function onKeyDown(e: KeyboardEvent) {
     let task: Promise<void>;
 
     if (e.ctrlKey) {
-        if (!draft?.trim()) return;
+        if (!draft.trim()) return;
         // Stop Discord from handling Ctrl+Enter before the correction lands.
         e.preventDefault();
         e.stopImmediatePropagation();
         if (busy) return;
         task = correctAndSend(channelId, draft, editor);
     } else {
-        if (busy || !settings.store.enterCorrectsLast || draft?.trim()) return;
+        if (busy || !settings.store.enterCorrectsLast || draft.trim()) return;
         if (UploadAttachmentStore.getUploadCount(channelId, DraftType.ChannelMessage)) return;
         task = correctLastMessage(channelId);
     }

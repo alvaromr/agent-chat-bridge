@@ -73,7 +73,7 @@ export async function draft(req: ComposeRequest): Promise<ComposeResult> {
         DraftActions.saveDraft(chat.id, text, DraftType.ChannelMessage);
         ChannelRouter.transitionToChannel(chat.id);
     }
-    const draftReady = () => SelectedChannelStore.getChannelId() === chat.id && (getDraft(chat.id) ?? "") === text;
+    const draftReady = () => SelectedChannelStore.getChannelId() === chat.id && getDraft(chat.id) === text;
     await waitFor(draftReady, BOX_UPDATE_MS);
 
     if (replyTo) {
@@ -97,7 +97,7 @@ export async function draft(req: ComposeRequest): Promise<ComposeResult> {
         chat: pick(chat),
         abierto: SelectedChannelStore.getChannelId() === chat.id,
         borradorCargado: draftReady(),
-        ...(replyTo ? { respondiendo: PendingReplyStore.getPendingReply(chat.id)?.message?.id === replyTo.id } : {}),
+        ...(replyTo ? { respondiendo: PendingReplyStore.getPendingReply(chat.id)?.message.id === replyTo.id } : {}),
         ...(req.files?.length ? { adjuntos: UploadAttachmentStore.getUploadCount(chat.id, DraftType.ChannelMessage) } : {})
     };
 }
@@ -233,7 +233,7 @@ export async function send(req: ComposeRequest): Promise<ComposeResult> {
     if (SelectedChannelStore.getChannelId() !== chat.id)
         return { ok: false, error: TEXT.notOpen };
 
-    const text = getDraft(chat.id) ?? "";
+    const text = getDraft(chat.id);
     const uploads = UploadAttachmentStore.getUploadCount(chat.id, DraftType.ChannelMessage);
     if (text !== req.expect) return { ok: false, error: TEXT.draftMismatch };
     if (!text.trim() && !uploads) return { ok: false, error: TEXT.nothingToSend };
@@ -243,13 +243,13 @@ export async function send(req: ComposeRequest): Promise<ComposeResult> {
     if (!editor) return { ok: false, error: TEXT.noEditor };
     rateLimit.record(chat.id);
 
-    const before = MessageStore.getMessages(chat.id)?._array?.at(-1)?.id;
+    const before = MessageStore.getMessages(chat.id)._array.at(-1)?.id;
     editor.focus();
     pressEnter(editor);
     const me = UserStore.getCurrentUser().id;
     // Discord first shows a local copy ("SENDING", with a temporary id) and swaps in the server's once accepted.
     const sentMessage = () => {
-        const last = MessageStore.getMessages(chat.id)?._array?.at(-1);
+        const last = MessageStore.getMessages(chat.id)._array.at(-1);
         return last && last.id !== before && last.author.id === me ? last : null;
     };
     await waitFor(() => sentMessage()?.state === "SENT" || sentMessage()?.state === "SEND_FAILED", CONFIRM_MS);

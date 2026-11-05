@@ -1,5 +1,6 @@
-// Mutation testing of the pure modules (`pnpm mutation`), outside the pre-commit hook: each mutant runs only the unit
-// tests that cover it (vitest.config.mjs), and mutants that don't compile are discarded first.
+// Mutation testing of the code (`pnpm mutation`), outside the pre-commit hook: each mutant runs only the unit tests that
+// cover it (vitest.config.mjs), and mutants that don't compile are discarded first. What stays out, and why:
+// docs/decisions/coverage-io-scripts-and-worker.md.
 /** @type {import("@stryker-mutator/api/core").PartialStrykerOptions} */
 export default {
     // pnpm doesn't place the plugins next to Stryker, where it looks for them by default.
@@ -7,30 +8,12 @@ export default {
     testRunner: "vitest",
     checkers: ["typescript"],
     tsconfigFile: "tsconfig.json",
+    // Also what the coverage counts; a `!` entry leaves files out of both.
     mutate: [
-        "dictation/src/engine.ts",
-        "dictation/src/models.ts",
-        "dictation/src/protocol.ts",
-        "dictation/src/segmenter.ts",
-        "dictation/src/style.ts",
-        "dictation/src/vocabulary.ts",
-        "dictation/src/worker.ts",
-        "mod/src/attachments.ts",
-        "mod/src/ipc.ts",
-        "mod/src/limits.mts",
-        "mod/src/settingsFile.ts",
-        "mod/src/validate.ts",
-        "mod/src/plugin-api/wait.ts",
-        "mod/src/renderer/dedupe.ts",
-        "mod/src/renderer/format.ts",
-        "mod/src/renderer/match.ts",
-        "mod/src/renderer/rateLimit.ts",
-        "mod/src/renderer/regex.ts",
-        "plugins/autorespuesta/transcript.ts",
-        "plugins/corrector/list.ts",
-        "plugins/corrector/text.ts",
-        "plugins/dictation/space.ts",
-        "plugins/dictation/text.ts",
+        "dictation/src/*.ts",
+        "mod/src/**/*.{ts,tsx,mts}",
+        "!mod/src/**/*.d.ts",
+        "plugins/**/*.{ts,tsx}",
         "scripts/asar.mjs",
         "scripts/changelog.mjs",
         "scripts/acb.mjs"

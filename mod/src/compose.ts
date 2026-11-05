@@ -61,7 +61,7 @@ async function handle(raw: string): Promise<ComposeResult> {
     try {
         req = JSON.parse(raw);
     } catch {
-        return { ok: false, error: TEXT.invalid };
+        // Not JSON: it stays undefined, which isValid() refuses.
     }
     if (!isValid(req)) return { ok: false, error: TEXT.invalid };
 
@@ -74,15 +74,18 @@ async function handle(raw: string): Promise<ComposeResult> {
         req = { ...req, attach: undefined, files };
     }
 
+    // Stryker disable next-line UpdateOperator: counting down gives unique ids too.
     const id = nextId++;
-    const result = await new Promise<ComposeResult>(resolve => {
+    const answered = new Promise<ComposeResult>(resolve => {
         const timer = setTimeout(() => resolve({ ok: false, error: TEXT.noAnswer }), TIMEOUT_MS);
         pending.set(id, r => {
             clearTimeout(timer);
             resolve(r);
         });
         win.webContents.send(IPC.composeRequest, id, req);
-    }).finally(() => pending.delete(id));
+    });
+    // Stryker disable next-line ArrowFunction: it only frees the entry; a late answer to an answered request changes nothing.
+    const result = await answered.finally(() => pending.delete(id));
 
     // Only a loaded draft brings Discord to the front; listing and reading stay in the background.
     if (result.ok && "borradorCargado" in result && !(req as ComposeRequest).dryRun && !(req as ComposeRequest).background) {

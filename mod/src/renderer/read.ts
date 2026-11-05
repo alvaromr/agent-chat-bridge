@@ -44,11 +44,13 @@ const isUnread = (chatId: string) => {
  */
 function formatMessage(m: any, chat: Candidate) {
     const me = UserStore.getCurrentUser().id;
+    // Stryker disable ArrayDeclaration: an empty list stands for none, and any other text is no role id, mention or embed.
     const myRoles = chat.guildId ? GuildMemberStore.getMember(chat.guildId, me)?.roles ?? [] : [];
     const names = namesIn(chat.guildId);
     const embeds = embedTexts(m.embeds ?? [], names);
     const mentions: string[] = (m.mentions ?? []).map((u: any) => typeof u === "string" ? u : u.id);
     const roles: string[] = m.mentionRoles ?? m.mention_roles ?? [];
+    // Stryker restore ArrayDeclaration
     const edited = m.editedTimestamp ?? m.edited_timestamp;
     const reference = m.messageReference ?? m.message_reference;
     const replied = reference?.message_id
@@ -81,7 +83,7 @@ export async function readChat(req: ComposeRequest): Promise<ComposeResult> {
 
     // Discord first fills the chat from its local cache (`cached`), then replaces it with the page from the network.
     const store = () => MessageStore.getMessages(chat.id);
-    const fromNetwork = () => store()?.ready && !store().cached && !store().loadingMore;
+    const fromNetwork = () => store().ready && !store().cached && !store().loadingMore;
     if (!fromNetwork()) {
         if (!req.fetch) return { ok: false, error: TEXT.notFetched };
         // Exactly what Discord runs on opening a chat (rule 3): one request for its usual first page of messages.
@@ -137,7 +139,7 @@ export function forwardWatchedMessages() {
         // fires MESSAGE_DELETE twice (seen in watch output).
         const firstTime = firstTimeChecker();
         FluxDispatcher.subscribe("MESSAGE_CREATE", ({ channelId, message }: any) => {
-            const chat = message?.state !== "SENDING" && watchedChat(channelId);
+            const chat = message && message.state !== "SENDING" && watchedChat(channelId);
             if (chat && firstTime(`mensaje:${message.id}`))
                 emit({ evento: "mensaje", chat: pick(chat), mensaje: formatMessage(message, chat) });
         });

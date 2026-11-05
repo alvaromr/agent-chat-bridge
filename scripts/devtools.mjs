@@ -1,4 +1,4 @@
-// Client for Discord's main page over the local DevTools port, shared by scripts/cdp.mjs and scripts/a11y.mjs.
+// Client for Discord's main page over the local DevTools port, shared by scripts/cdp.mjs and test/live/a11y.mjs.
 // Discord must have been started with the port, as docs/debugging.md explains.
 
 /** Connects to Discord's main page; `send` runs a DevTools command and resolves with its result. */

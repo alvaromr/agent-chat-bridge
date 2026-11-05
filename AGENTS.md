@@ -44,20 +44,20 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   `pnpm links` links the skill into `~/.claude/skills/` and the CLI into `~/.local/bin/`.
 - `scripts/inject.mjs`: the patcher. Renames `app.asar` to `_app.asar` and writes a loader `app.asar`, built by
   `scripts/asar.mjs`.
-- `test/` and `dictation/test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test the pure logic without
-  Discord, and without network (`test/setup.mjs` refuses every connection): logic exported by the CLI,
-  `scripts/asar.mjs` or `scripts/changelog.mjs`, or in `mod/`, `plugins/` and `dictation/` modules with no Discord or
-  Electron imports except types (`import type`), nor processes, except `dictation/src/worker.ts`, whose child process
-  its test fakes with a `vi.mock` of `child_process`. New pure logic goes into one of those modules, with its
-  test, and into the `mutate` list of `stryker.config.mjs`, which is also the list the coverage counts. A fix in
-  Discord-side code gets a regression test on a fake Discord (`test/fake-discord.mjs`, or a `vi.mock` of Electron or
-  `net`) that fails without the fix. `smoke.mjs`, `discord-code.mjs` and `dictation/test/worker.mjs` run on
-  `node --test` instead, so neither Vitest nor Stryker runs them; the last runs the real dictation worker.
-  `smoke.mjs` tests in the running Discord only what publishes nothing and asks nothing of the API, and shows no
-  content. `discord-code.mjs` finds the patches and the pieces of `mod/` in the Discord code of its HTTP cache, without
-  running it or reading the API responses the cache also holds.
+- `test/` and `dictation/test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test all of `mod/`, `plugins/`
+  and `dictation/src/`, and the CLI, without Discord and without network (`test/setup.mjs` refuses every
+  connection). What touches Discord runs on a fake one: `test/fake-discord.mjs` for `mod/src/plugin-api/discord.ts`,
+  with the React Discord ships, `test/fake-native.mjs` for what the preload exposes, `test/fake-webpack.mjs` for
+  Discord's webpack runtime, and happy-dom for the page (`@vitest-environment happy-dom`, `test/dom.mjs`); Electron,
+  the system and the worker's process on `vi.mock`s. New code gets its test in the same change; the coverage counts
+  the `mutate` list of `stryker.config.mjs`, and what stays out is in `docs/decisions/coverage-io-scripts-and-worker.md`. A fix
+  gets a regression test that fails without it. `test/live/`, `discord-code.mjs` and `dictation/test/worker.mjs` run
+  on `node --test` instead, so neither Vitest nor Stryker runs them: `test/live/` checks in the running Discord only
+  what Discord itself decides (`pnpm live`), publishing nothing, asking nothing of the API and showing no content;
+  `discord-code.mjs` finds the patches and the pieces of `mod/` in the Discord code of its HTTP cache, without running
+  it or reading the API responses the cache also holds; the last runs the real dictation worker.
 - `docs/debugging.md`: how to verify a failure in the running Discord. Read it before diagnosing any failure of
-  `mod/` or the plugins. `scripts/cdp.mjs` and `scripts/a11y.mjs` are its tools, over `scripts/devtools.mjs`.
+  `mod/` or the plugins. `scripts/cdp.mjs` and `test/live/a11y.mjs` are its tools, over `scripts/devtools.mjs`.
 
 ## Commands
 Defined in `package.json`.
@@ -69,7 +69,7 @@ Defined in `package.json`.
 - `pnpm build`: builds `mod/dist/` (`mod/tsconfig.json`). `pnpm typecheck`: types of the whole repo, the plain JS
   files through JSDoc (`tsconfig.json`), and the worker's with ty.
 - `pnpm test`: tests without Discord, with 100 % line, branch, function and statement coverage.
-- `pnpm mutation`: Stryker on the pure modules, with a 100 % score, run by the `.githooks/` pre-push hook instead of
+- `pnpm mutation`: Stryker on the code the coverage counts, with a 100 % score, run by the `.githooks/` pre-push hook instead of
   the pre-commit one. Run it after changing one of them or their tests. It is incremental and re-tests only what
   changed, but it can keep a stale survivor after a test change: before committing, confirm with
   `pnpm mutation --force` (about 2 min). Every surviving mutant gets a test, or an inline
@@ -77,12 +77,14 @@ Defined in `package.json`.
 - `pnpm run audit`: known advisories in the dependencies, the worker's Python packages included (`uv audit`); part of
   the review of any dependency change, and run by the pre-push hook and `pnpm release`. Plain `pnpm audit` is pnpm's
   own command, which checks only the Node packages.
-- `pnpm smoke`: read-only checks with Discord open and patched.
+- `pnpm live`: the live checks (`test/live/`), in the running, patched Discord with the debugging port open
+  (`docs/debugging.md`, method 4): that its real stores answer the CLI in the shape the unit tests fake, and, in both
+  themes, the roles, keyboard paths, focus and contrast that Discord's own components and colours give what `mod/`
+  adds. Outside the gate (`docs/decisions/accessibility-outside-gate.md`). Run it after a change to what `mod/` or
+  the plugins show, or to how they read Discord.
 - `pnpm smoke-dictation`: the real dictation worker on a phrase that `say` speaks; Discord need not be open. Run it
   after a change to `dictation/src/worker.ts`, `dictation/worker/` or its packages.
 - `pnpm check-discord`: patches and pieces against the last Discord version the app loaded; Discord need not be open.
-- `pnpm a11y`: names, keyboard paths and contrast of what `mod/` adds, in both themes, through the debugging port
-  (`docs/debugging.md`, method 4). Run it after a change to what `mod/` or the plugins show.
 - `pnpm inject` / `pnpm uninject`: patch (or re-patch) Discord with `mod/`, or remove the patch. Discord closed.
   After `pnpm build`, restarting Discord is enough: the loader reads `mod/dist/` on every start.
 - `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,

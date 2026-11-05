@@ -37,12 +37,12 @@ export function allCandidates(): Candidate[] {
             const ch = ChannelStore.getChannel(id);
             // Discord also knows the channels the user can't see (named "___hidden___"); skip those.
             if (!ch || !TEXT_CHANNEL_TYPES.has(ch.type) || !PermissionStore.can(VIEW_CHANNEL, ch)) continue;
-            list.push({ id, kind: "canal", label: `#${ch.name} · ${guild.name}`, names: [ch.name, `${guild.name} ${ch.name}`], lastMessageId: ch.lastMessageId ?? "0", guildId: guild.id });
+            list.push({ id, kind: "canal", label: `#${ch.name} · ${guild.name}`, names: [ch.name, `${guild.name} ${ch.name}`], lastMessageId: ch.lastMessageId ?? "0", guildId: guild.id, server: guild.name });
         }
         for (const threads of Object.values(ActiveJoinedThreadsStore.getActiveJoinedThreadsForGuild(guild.id)))
             for (const { channel: th } of Object.values(threads)) {
                 const parent = (th.parent_id && ChannelStore.getChannel(th.parent_id)?.name) ?? "";
-                list.push({ id: th.id, kind: "hilo", label: `${th.name} · #${parent} · ${guild.name}`, names: [th.name, `${guild.name} ${th.name}`], lastMessageId: th.lastMessageId ?? "0", guildId: guild.id });
+                list.push({ id: th.id, kind: "hilo", label: `${th.name} · #${parent} · ${guild.name}`, names: [th.name, `${guild.name} ${th.name}`], lastMessageId: th.lastMessageId ?? "0", guildId: guild.id, server: guild.name });
             }
     }
     return list;
@@ -70,7 +70,7 @@ const activeIn = (c: Candidate, req: ComposeRequest) =>
 /** Kinds, server name (folded substring) and activity range, as `list` and `unread` filter them. */
 const wanted = (c: Candidate, req: ComposeRequest) =>
     (!req.kinds?.length || req.kinds.includes(c.kind))
-    && (!req.server || (c.guildId != null && fold(GuildStore.getGuild(c.guildId)?.name ?? "").includes(fold(req.server))))
+    && (!req.server || (c.server != null && fold(c.server).includes(fold(req.server))))
     && activeIn(c, req);
 
 /** Every wanted chat, most recent first. */

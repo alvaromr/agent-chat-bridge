@@ -51,6 +51,7 @@ export const UserStore = store("UserStore");
 export const DraftType: { ChannelMessage: number; } = lazyObject("DraftType", () => find(filters.byProps("ChannelMessage", "SlashCommand")));
 // Discord has a second instance, for popout windows, that the chat box doesn't listen to; only the main one has a logger.
 // The first instance found is not always the main one, so the lookup checks for the logger.
+// Stryker disable next-line OptionalChaining: without it, an export with no options throws, and find() takes that as no match.
 export const ComponentDispatch: any = lazyObject("ComponentDispatch", () => find(m => m.dispatchToLastSubscribed !== undefined && m.options?.logger != null));
 export const MessageActions: any = lazyObject("MessageActions", () => find(filters.byProps("editMessage", "sendMessage")));
 /** Discord's message manager; its fetchMessages is what CHANNEL_SELECT runs when the user opens a chat. */
@@ -80,5 +81,6 @@ export const openModal = lazyFunction<(render: (props: t.RenderModalProps) => Re
 
 export const Modal = lazyComponent<t.ModalComponent>("Modal", () => find(filters.byCode("leadingLayout:", "actions:", ".message")));
 export const TextArea = lazyComponent<t.TextAreaComponent>("TextArea", () => find(filters.componentByCode("!0,rows:", "showRemainingCharacterCount:")));
+// Stryker disable next-line OptionalChaining: without it, an export with no prototype throws, and find() takes that as no match.
 export const Tooltip = lazyComponent<t.TooltipComponent>("Tooltip", () => find(m => m.prototype?.shouldShowTooltip && m.prototype.render));
 export const Clickable = lazyComponent<t.ClickableComponent>("Clickable", () => find(filters.componentByCode("this.context?this.renderNonInteractive():")));
