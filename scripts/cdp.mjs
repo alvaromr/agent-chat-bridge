@@ -2,7 +2,33 @@
 // Usage: node scripts/cdp.mjs <file.js> | --reload. Discord must have been started as docs/debugging.md explains.
 import { readFileSync } from "fs";
 
-import { connectToDiscord } from "./devtools.mjs";
+/** Connects to Discord's main page; `send` runs a DevTools command and resolves with its result. */
+async function connectToDiscord() {
+    const targets = await (await fetch("http://127.0.0.1:9229/json")).json();
+    const page = targets.find(t => t.type === "page" && t.url.startsWith("https://discord.com/") && !t.url.startsWith("https://discord.com/popout"));
+    if (!page) throw new Error("Discord's page is not among the DevTools targets");
+
+    const ws = new WebSocket(page.webSocketDebuggerUrl);
+    await new Promise((resolve, reject) => {
+        ws.onopen = resolve;
+        ws.onerror = reject;
+    });
+    let lastId = 0;
+    /** @type {Map<number, (msg: any) => void>} */
+    const waiting = new Map();
+    ws.onmessage = e => {
+        const msg = JSON.parse(e.data);
+        waiting.get(msg.id)?.(msg);
+        waiting.delete(msg.id);
+    };
+    /** @param {string} method @param {object} [params] @returns {Promise<any>} */
+    const send = (method, params = {}) => new Promise((resolve, reject) => {
+        const id = ++lastId;
+        waiting.set(id, msg => msg.error ? reject(new Error(`${method}: ${msg.error.message}`)) : resolve(msg.result));
+        ws.send(JSON.stringify({ id, method, params }));
+    });
+    return { send, close: () => ws.close() };
+}
 
 const [arg] = process.argv.slice(2);
 if (!arg) {

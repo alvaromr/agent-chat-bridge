@@ -53,13 +53,13 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   the `mutate` list of `stryker.config.mjs`, and what stays out is in `docs/decisions/coverage-io-scripts-and-worker.md`. A fix
   gets a regression test that fails without it. `test/live/`, `pnpm check-discord`'s files and
   `dictation/test/worker.mjs` run on `node --test` instead, so neither Vitest nor Stryker runs them: `test/live/`
-  checks in the running Discord only what Discord's running code decides (`pnpm live`), publishing nothing, asking
-  nothing of the API and showing no content; `discord-code.mjs` finds the patches and the pieces of `mod/` in the
+  checks in the running Discord that its real stores answer the CLI in the shape faked (`pnpm live`), publishing
+  nothing, asking nothing of the API and showing no content; `discord-code.mjs` finds the patches and the pieces of `mod/` in the
   Discord code of its HTTP cache (`discord-cache.mjs`), without running it or reading the API responses the cache also
   holds, and `discord-css.mjs` measures there the contrast of what `mod/` colours in every Discord theme; the last runs
   the real dictation worker.
 - `docs/debugging.md`: how to verify a failure in the running Discord. Read it before diagnosing any failure of
-  `mod/` or the plugins. `scripts/cdp.mjs` and `test/live/a11y.mjs` are its tools, over `scripts/devtools.mjs`.
+  `mod/` or the plugins. `scripts/cdp.mjs` is its tool.
 
 ## Commands
 Defined in `package.json`.
@@ -80,12 +80,11 @@ Defined in `package.json`.
 - `pnpm run audit`: known advisories in the dependencies, the worker's Python packages included (`uv audit`); part of
   the review of any dependency change, and run by the pre-push hook and `pnpm release`. Plain `pnpm audit` is pnpm's
   own command, which checks only the Node packages.
-- `pnpm live`: the live checks (`test/live/`), in the running, patched Discord (`docs/debugging.md`, method 4): that
-  its real stores answer the CLI in the shape the unit tests fake, and, only with the debugging port open, the roles,
-  keyboard paths and focus that Discord's own components give what `mod/` adds, and the backgrounds behind it. Outside
-  the gate (`docs/decisions/accessibility-outside-gate.md`), and in the user's own Discord
-  (`docs/decisions/live-checks-in-users-discord.md`). Run it only after a Discord update, or after a change to what
-  `mod/` or the plugins show or to how they read Discord.
+- `pnpm live`: the live checks (`test/live/`), in the running, patched Discord, read-only through the CLI's socket
+  (`docs/debugging.md`, method 4): that its real stores answer the CLI in the shape the unit tests fake. Outside the
+  gate, in the user's own Discord (`docs/decisions/live-checks-in-users-discord.md`). Run it only after a Discord
+  update, or after a change to how `mod/` reads Discord. Keyboard and focus aren't checked live
+  (`docs/decisions/accessibility-outside-gate.md`).
 - `pnpm smoke-dictation`: the real dictation worker on a phrase that `say` speaks; Discord need not be open. Run it
   after a change to `dictation/src/worker.ts`, `dictation/worker/` or its packages.
 - `pnpm check-discord`: patches, pieces and the contrast of what `mod/` colours, in every theme, against the last
@@ -159,7 +158,7 @@ review: do not patch, and ask the user.
 
 ## When Discord updates
 macOS replaces the whole app and the patch disappears; `pnpm inject` restores it. Then run `pnpm check-discord` and
-`pnpm live`, the debugging port open with the user's permission (`docs/debugging.md`, method 4).
+`pnpm live`.
 If a patch or piece is no longer found (`pnpm check-discord`, or the settings modal with Discord open), find what
 changed in Discord's code (`docs/debugging.md`, method 3) and adapt `mod/`. `mod/` was first derived from Vencord
 (<https://github.com/Vendicated/Vencord>): when the cause is unclear, see how its repo solved the same change, and

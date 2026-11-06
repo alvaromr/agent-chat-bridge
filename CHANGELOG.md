@@ -16,8 +16,8 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 ### Changed
 - The settings modal has one tab per plugin, and right-clicking a plugin's button opens it at that plugin's tab.
 - `pnpm live` replaces `pnpm smoke` and `pnpm a11y`: the unit tests now cover all of `mod/` and the plugins on a fake
-  Discord, and the live checks keep only what the running Discord decides. `pnpm check-discord` measures the contrast
-  of what `mod/` colours in every Discord theme, without opening Discord.
+  Discord, and the live checks keep only the read-only CLI checks, with no debugging port or key presses.
+  `pnpm check-discord` measures the contrast of what `mod/` colours in every Discord theme, without opening Discord.
 
 ### Fixed
 - `acb watch` no longer fails inside Discord on a new-message event that carries no message.

@@ -1,8 +1,9 @@
 // A fake of mod/src/plugin-api/discord.ts, the one module through which mod/ and the plugins reach Discord: its React
 // is the real one, of the version Discord ships; its stores read `state`, which each test fills; its actions are mocks
 // that change `state` as Discord would once the server accepts them; its components render plain elements with the
-// props they get. What Discord itself does with them (its focus rings, its modal's Escape, its colours, the stores'
-// real shapes) is checked by `pnpm live`.
+// props they get. The stores' real shapes are checked by `pnpm live`, the contrast against Discord's colours by
+// `pnpm check-discord`; what Discord's components do with the props (focus, Escape) isn't checked
+// (docs/decisions/accessibility-outside-gate.md).
 import * as ReactModule from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";

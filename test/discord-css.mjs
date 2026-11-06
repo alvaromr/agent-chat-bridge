@@ -1,16 +1,21 @@
 // The contrast of what mod/ colours in every Discord theme, from the CSS of the version the app last loaded
 // (test/discord-cache.mjs), without opening Discord: the colours mod/'s stylesheets ask for, as each theme's variables
-// resolve them, over the backgrounds Discord paints behind them. Run with `pnpm check-discord`. That those backgrounds
-// are the ones behind them in the running Discord is checked by `pnpm live` (test/live/a11y.mjs).
+// resolve them, over the backgrounds Discord paints behind them. Run with `pnpm check-discord`. That the message's
+// background is one of these was checked once in the running Discord, on 2026-11-06; the modal's never was, and nothing
+// checks either again (docs/decisions/accessibility-outside-gate.md).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { CHAT_BACKGROUNDS, MESSAGE_HOVER, MODAL_BACKGROUND } from "./discord-backgrounds.mjs";
 import { cacheBody, indexCache } from "./discord-cache.mjs";
 
 const TEXT_RATIO = 4.5;
 const EDGE_RATIO = 3;
+/** Behind the settings: Discord's modal. */
+const MODAL_BACKGROUND = "var(--modal-background)";
+/** Behind a message: the chat's background, either of these, with the hover tint over it or without. */
+const CHAT_BACKGROUNDS = ["var(--background-base-lower)", "var(--chat-background-default)"];
+const MESSAGE_HOVER = "var(--message-background-hover)";
 
 /** Every `selector { declarations }` block, as [selectors, declarations]; at-rule wrappers are dropped. */
 function rulesOf(css) {

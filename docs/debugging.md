@@ -47,14 +47,13 @@ files. The cache also holds API responses with private messages: read only the s
 
 ## 4. Live checks
 `pnpm live` (`test/live/`) checks what neither the fake Discord of the unit tests nor `pnpm check-discord` can: that
-the real stores answer the CLI in the shape faked (`cli.mjs`), through the CLI's socket of the Discord already open,
-and that Discord's running code gives what `mod/` adds its roles and names, keyboard paths and focus rings, modal
-focus, and the backgrounds the contrast is measured against (`a11y.mjs`, skipped while the port is closed).
-1. For `a11y.mjs`, open the debugging port as method 2 says, with its permission.
-2. Open a chat whose box is empty, and leave Discord alone while the checks run: they press keys in Discord.
-3. Run `pnpm live`. It prints only check names and measures, and exits with 1 if one fails.
-4. When done, close the port as method 2 says.
+the real stores answer the CLI in the shape faked (`cli.mjs`), through the CLI's socket of the Discord already open.
+It needs no debugging port and presses no keys; it prints only check names, and exits with 1 if one fails.
 
-A second Discord in the same macOS account doesn't keep them apart from the user's: one started with `--multi-instance`
+Keyboard paths, focus and the backgrounds behind what `mod/` colours were checked live until 2026-11-06, with the
+debugging port and key presses in the user's Discord; they interrupted the user, and a use of Discord meanwhile made
+them fail (`docs/decisions/accessibility-outside-gate.md`). To look at one of them again, use method 2.
+
+A second Discord in the same macOS account doesn't keep the live checks apart from the user's: one started with `--multi-instance`
 and its own `DISCORD_USER_DATA_DIR` opened signed in to the user's account (tried on 2026-11-06), so its session
 doesn't live in that folder.
