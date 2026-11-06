@@ -1,5 +1,5 @@
 import { ChatBarButton, type ChatBarButtonFactory } from "@plugin-api/chatButtons";
-import { getDraft, pressEnter, replaceChatInput } from "@plugin-api/chatInput";
+import { DRAFT_SHOWN_MS, getDraft, pressEnter, replaceChatInput } from "@plugin-api/chatInput";
 import { DraftType, MessageActions, MessageStore, SelectedChannelStore, showToast, UploadAttachmentStore, UserStore } from "@plugin-api/discord";
 import type { Message } from "@plugin-api/discordTypes";
 import definePlugin, { OptionType } from "@plugin-api/plugin";
@@ -125,7 +125,7 @@ async function correctAndSend(channelId: string, draft: string, editor: HTMLElem
     }
     if (fixed != null) {
         await replaceChatInput(fixed);
-        await waitFor(() => getDraft(channelId) === fixed, 500);
+        await waitFor(() => getDraft(channelId) === fixed, DRAFT_SHOWN_MS);
     }
     pressEnter(editor);
 }

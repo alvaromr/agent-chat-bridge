@@ -1,7 +1,7 @@
 // Dictation into the chat box with a local Whisper model (dictation/): the microphone button, or holding Space in the
 // box as in Claude Code. The text appears phrase by phrase and is never sent: the user sends it with Enter.
 import { ChatBarButton, type ChatBarButtonFactory } from "@plugin-api/chatButtons";
-import { getDraft, insertTextIntoChatInputBox, replaceChatInput } from "@plugin-api/chatInput";
+import { DRAFT_SHOWN_MS, getDraft, insertTextIntoChatInputBox, replaceChatInput } from "@plugin-api/chatInput";
 import { SelectedChannelStore, showToast, useEffect, useState } from "@plugin-api/discord";
 import { log } from "@plugin-api/log";
 import definePlugin, { type IconComponent, OptionType } from "@plugin-api/plugin";
@@ -139,7 +139,7 @@ async function write(a: Active) {
     if (SelectedChannelStore.getChannelId() !== a.channelId) return end(a, TEXT.chatChanged);
     if (getDraft(a.channelId) !== a.written) return end(a, TEXT.boxChanged);
     await replaceChatInput(text);
-    await waitFor(() => getDraft(a.channelId) === text, 500);
+    await waitFor(() => getDraft(a.channelId) === text, DRAFT_SHOWN_MS);
     a.written = getDraft(a.channelId);
 }
 

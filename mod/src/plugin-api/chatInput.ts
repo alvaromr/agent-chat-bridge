@@ -18,6 +18,9 @@ export function insertTextIntoChatInputBox(text: string) {
     });
 }
 
+/** How long the stored draft gets to show the text written into the box. */
+export const DRAFT_SHOWN_MS = 500;
+
 /**
  * Replaces the whole chat box text: selects everything in the editor and inserts over it, as pasting would.
  * CLEAR_TEXT only empties the stored draft now, not the editor, so the insert landed at the cursor.
