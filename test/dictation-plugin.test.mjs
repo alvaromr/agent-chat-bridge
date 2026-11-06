@@ -422,8 +422,9 @@ test("dictation: while the last phrases come, a new hold waits for them; once do
     assert.equal(native.dictation.start.mock.calls.length, 2);
 });
 
-test("dictation: the settings offer the models on disk, and its icon takes the size given, 20 px by default", () => {
+test("dictation: the settings offer the models on disk, with no notice, and its icon takes the size given, 20 px by default", () => {
     assert.deepEqual(/** @type {any} */ (dictation.settings.def).model.options(), ["mlx-community/whisper-large-v3-turbo"]);
+    assert.equal(dictation.notice?.(), null);
     const Icon = /** @type {any} */ (dictation.chatBarButton?.icon);
     const { container } = render(React.createElement(React.Fragment, null, React.createElement(Icon), React.createElement(Icon, { height: 16, width: 18 })));
     assert.deepEqual([...container.querySelectorAll("svg")].map(svg => [svg.getAttribute("height"), svg.getAttribute("width")]), [["20", "20"], ["16", "18"]]);

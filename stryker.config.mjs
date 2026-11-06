@@ -16,7 +16,8 @@ export default {
         "plugins/**/*.{ts,tsx}",
         "scripts/asar.mjs",
         "scripts/changelog.mjs",
-        "scripts/acb.mjs"
+        "scripts/acb.mjs",
+        "scripts/setup-dictation.mjs"
     ],
     incremental: true,
     // Safety limits: few processes at once, and a mutant that loops is cut close to the suite's real time.

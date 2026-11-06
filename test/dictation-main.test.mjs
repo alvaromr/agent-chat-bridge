@@ -11,7 +11,8 @@ import { afterAll, beforeEach, test, vi } from "vitest";
 
 /** The workers started. @type {any} */
 const fake = vi.hoisted(() => ({ workers: [], venv: true }));
-vi.mock("../dictation/src/worker.ts", () => ({
+vi.mock("../dictation/src/worker.ts", async original => ({
+    workerPython: /** @type {any} */ (await original()).workerPython,
     startWorker: (dir, modelPath, language) => {
         /** Each transcription asked for: its samples' length and prompt; the test answers or fails it. @type {any[]} */
         const calls = [];
@@ -86,10 +87,15 @@ beforeEach(() => {
     main.cancelDictation(tab);
 });
 
-test("dictation main: the models on disk, by id", () => {
-    const event = { returnValue: undefined };
-    main.dictationModels(/** @type {any} */ (event));
-    assert.deepEqual(event.returnValue, ["mlx-community/whisper-large-v3-turbo", "mlx-community/whisper-small"]);
+test("dictation main: the models on disk, by id; none without the worker installed", () => {
+    const models = () => {
+        const event = { returnValue: undefined };
+        main.dictationModels(/** @type {any} */ (event));
+        return event.returnValue;
+    };
+    assert.deepEqual(models(), ["mlx-community/whisper-large-v3-turbo", "mlx-community/whisper-small"]);
+    fake.venv = false;
+    assert.deepEqual(models(), []);
 });
 
 test("dictation main: a request outside its shape, or too long, starts nothing", () => {

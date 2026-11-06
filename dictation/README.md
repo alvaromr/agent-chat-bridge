@@ -21,12 +21,14 @@ imports only its own files and Node's modules (the lint enforces it), so it can 
 - `src/models.ts`: the Whisper models in the Hugging Face cache (`HF_HUB_CACHE`, `HF_HOME` or
   `~/.cache/huggingface/hub`) whose current snapshot holds `config.json` and the weights.
 - `src/worker.ts`: starts the worker as a `Transcriber`.
+- `src/platform.ts`: whether the worker's packages exist for this machine: Apple Silicon and macOS 14 or later.
 - `worker/worker.py`: the worker, on `mlx-whisper`.
 
 ## Install
 Needs [uv](https://docs.astral.sh/uv/). `uv sync --frozen --project dictation/worker` installs the worker's
-packages, pinned with their hashes in `worker/uv.lock`, into `worker/.venv/`; agent-chat-bridge's `pnpm setup` does it.
-Then download a model, for example `mlx-community/whisper-large-v3-turbo`, with the Hugging Face CLI.
+packages, pinned with their hashes in `worker/uv.lock`, into `worker/.venv/`; agent-chat-bridge's `pnpm setup` does it
+where `src/platform.ts` says they exist. Then download a model with the Hugging Face CLI those packages include:
+`worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo`.
 
 ## Use
 ```ts

@@ -18,9 +18,10 @@ interface Field {
 }
 
 /** A tab per plugin with settings, with its fields' current values. */
-const currentTabs = () => plugins.flatMap(({ name, description, settings }) => settings ? [{
+const currentTabs = () => plugins.flatMap(({ name, description, settings, notice }) => settings ? [{
     name,
     description,
+    notice: notice?.() ?? null,
     fields: Object.entries(settings.def).map(([key, def]): Field => ({
         key,
         def,
@@ -132,8 +133,9 @@ function SettingsModal({ rootProps, plugin }: { rootProps: RenderModalProps; plu
                         </button>
                     ))}
                 </div>
-                {tabs.filter((_, i) => i === tab).map(({ name, description, fields }) => (
+                {tabs.filter((_, i) => i === tab).map(({ name, description, notice, fields }) => (
                     <section key={name} role="tabpanel" id={`dm-panel-${name}`} aria-labelledby={`dm-tab-${name}`}>
+                        {notice && <p className="dm-notice">{notice}</p>}
                         <p className="dm-muted">{description}</p>
                         {fields.map(({ key, def, value }) => (
                             <div key={key} className={def.type === OptionType.BOOLEAN ? "dm-field dm-check" : "dm-field"}>

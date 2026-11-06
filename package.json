@@ -8,7 +8,7 @@
     "node": ">=26"
   },
   "scripts": {
-    "setup": "git config core.hooksPath .githooks && pnpm install --frozen-lockfile && uv sync --frozen --project dictation/worker && pnpm build",
+    "setup": "git config core.hooksPath .githooks && pnpm install --frozen-lockfile && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/setup-dictation.mjs && pnpm build",
     "build": "node mod/build.mjs",
     "typecheck": "tsc -p . && uv run --frozen --project dictation/worker ty check dictation/worker",
     "lint": "eslint --max-warnings=0 . && uv run --frozen --project dictation/worker ruff format --check dictation/worker && uv run --frozen --project dictation/worker ruff check dictation/worker",

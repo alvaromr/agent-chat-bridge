@@ -103,6 +103,19 @@ test("settings: a click selects a tab", () => {
     assert.equal(selected().textContent, "Tres");
 });
 
+test("settings: a plugin that can't work here says why atop its tab, above its description; one that can, nothing", () => {
+    const [uno, , dos] = /** @type {any[]} */ (plugins);
+    uno.notice = () => null;
+    dos.notice = () => "No funciona aquí: instala lo que falta";
+    openSettingsModal("Uno");
+    assert.equal($(".dm-notice", panel()), null);
+    mouse(tabs()[1]);
+    assert.deepEqual([...panel().querySelectorAll("p")].map(p => [p.className, p.textContent]),
+        [["dm-notice", "No funciona aquí: instala lo que falta"], ["dm-muted", "Qué hace Dos"]]);
+    mouse(tabs()[2]);
+    assert.equal($(".dm-notice", panel()), null, "without a notice() at all");
+});
+
 test("settings: each setting is a field named by its description, checkbox, number, text or a list of options", () => {
     openSettingsModal("Uno");
     assert.equal(field("Activado").type, "checkbox");

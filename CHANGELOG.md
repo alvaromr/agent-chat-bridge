@@ -9,7 +9,9 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 - Dictation: dictate into the chat box with a local Whisper model, with the microphone button or by holding Space as
   in Claude Code. The text appears phrase by phrase and is never sent. Its settings pick the model among the ones on
   disk, the words it should know, replacements for what it still mishears, and whether to drop the final period, the
-  capital that opens each sentence and the opening `¿` and `¡` (dropped by default).
+  capital that opens each sentence and the opening `¿` and `¡` (dropped by default). It needs an Apple Silicon Mac
+  with macOS 14 or later, uv and a downloaded model (README, «Install»): `pnpm setup` installs its engine only there
+  and says why elsewhere, and without engine or model Dictation shows no button and its settings tab says what is missing.
 
 ### Changed
 - The settings modal has one tab per plugin, and right-clicking a plugin's button opens it at that plugin's tab.

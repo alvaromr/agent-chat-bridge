@@ -26,6 +26,8 @@ export interface PluginDef {
     chatBarButton?: { icon: IconComponent; render: ChatBarButtonFactory; };
     messagePopoverButton?: { icon: IconComponent; render: MessagePopoverButtonFactory; };
     start?(): void;
+    /** Why the plugin can't work on this machine and how to fix it, shown atop its settings tab; null when it can. */
+    notice?(): string | null;
 }
 
 export default function definePlugin<P extends PluginDef>(plugin: P) {

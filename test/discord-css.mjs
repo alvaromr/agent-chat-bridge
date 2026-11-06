@@ -150,6 +150,7 @@ const TEXTS = {
     "selected tab": [`${SETTINGS} [role="tab"][aria-selected="true"]`, "color"],
     description: [`${SETTINGS} .dm-muted`, "color"],
     label: [`${SETTINGS} .dm-label`, "color"],
+    notice: [`${SETTINGS} .dm-notice`, "color"],
     reset: [`${SETTINGS} .dm-reset`, "color"]
 };
 const NUMBER = `${SETTINGS} input[type="number"]`;

@@ -10,11 +10,13 @@ import { Dictation } from "../../dictation/src/engine";
 import { findModels, hubDir } from "../../dictation/src/models";
 import { SAMPLE_RATE } from "../../dictation/src/segmenter";
 import { parseReplacements, parseWords, promptFor } from "../../dictation/src/vocabulary";
-import { startWorker, type Worker } from "../../dictation/src/worker";
+import { startWorker, type Worker, workerPython } from "../../dictation/src/worker";
 import { IPC } from "../../mod/src/ipc";
 
 /** main.js runs from mod/dist/. */
 const DICTATION_DIR = join(__dirname, "../../dictation");
+/** There once `pnpm setup` installed the worker, where it can run (scripts/setup-dictation.mjs). */
+const WORKER_PYTHON = workerPython(DICTATION_DIR);
 /** A worker with no dictation for this long is closed: it holds the model, ~1.6 GB. */
 const IDLE_MS = 60_000;
 /** The longest audio chunk the page may send: 1 s. It sends 0.1 s. */
@@ -40,8 +42,9 @@ export type DictationStart = { ok: true; } | { ok: false; error: string; };
 
 export type DictationEvent = { type: "partial" | "final"; text: string; } | { type: "error"; error: string; } | { type: "done"; };
 
+/** The models on disk the worker can run: none without the worker, and then the page shows no Dictation. */
 export const dictationModels = (e: IpcMainEvent) => {
-    e.returnValue = findModels(hubDir(process.env, homedir())).map(m => m.id);
+    e.returnValue = existsSync(WORKER_PYTHON) ? findModels(hubDir(process.env, homedir())).map(m => m.id) : [];
 };
 
 let loaded: { key: string; worker: Promise<Worker>; idle: ReturnType<typeof setTimeout> | null; } | null = null;
@@ -85,7 +88,7 @@ export function startDictation(e: IpcMainInvokeEvent, req: DictationRequest): Di
         || typeof vocabulary !== "string" || vocabulary.length > MAX_SETTING
         || typeof replacements !== "string" || replacements.length > MAX_SETTING)
         return { ok: false, error: TEXT.invalid };
-    if (!existsSync(join(DICTATION_DIR, "worker/.venv/bin/python"))) return { ok: false, error: TEXT.notInstalled };
+    if (!existsSync(WORKER_PYTHON)) return { ok: false, error: TEXT.notInstalled };
     const model = findModels(hubDir(process.env, homedir())).find(m => m.id === id);
     if (!model) return { ok: false, error: TEXT.noModel(id) };
     const { pairs, invalid } = parseReplacements(replacements);

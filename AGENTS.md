@@ -63,7 +63,8 @@ No new code reaches Discord without a review first (see «Review»). When in dou
 
 ## Commands
 Defined in `package.json`.
-- `pnpm setup`: hooks path, dependencies (the dictation worker's too, with `uv`) and build.
+- `pnpm setup`: hooks path, dependencies and build; the dictation worker's packages, with `uv`, only where they can
+  run (`scripts/setup-dictation.mjs`).
 - `pnpm check`: the gate before each commit, run by the `.githooks/` pre-commit hook on the staged files: `pnpm lint`
   (`eslint.config.mjs`, formatting included, and Ruff on the dictation worker, `dictation/worker/pyproject.toml`),
   `pnpm typecheck`, `pnpm knip` (unused files, exports and dependencies, `knip.json`), `pnpm secrets` (gitleaks on the

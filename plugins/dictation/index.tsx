@@ -80,7 +80,8 @@ const TEXT = {
     failed: (error: string) => `Dictado: ${error}`,
     noMicrophone: (error: string) => `Dictado: no se pudo abrir el micrófono: ${error}`,
     boxChanged: "El texto de la caja cambió durante el dictado; lo paro",
-    chatChanged: "Cambiaste de chat durante el dictado; lo paro"
+    chatChanged: "Cambiaste de chat durante el dictado; lo paro",
+    unavailable: "Dictado no disponible: necesita su motor, que `pnpm setup` instala en un Mac con Apple Silicon y macOS 14 o posterior, y un modelo descargado (`dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo`). Después, reinicia Discord."
 } as const;
 
 const MicIcon: IconComponent = ({ height = 20, width = 20, className }) => (
@@ -298,9 +299,13 @@ function usePhase() {
     return current;
 }
 
+/** Whether this machine can dictate, as it stood when Discord started: the worker installed and a model on disk. */
+// Stryker disable next-line BooleanLiteral: start() sets it when the plugin registers, before Discord renders a button.
+let available = false;
+
 const DictationButton: ChatBarButtonFactory = ({ isMainChat, channel }) => {
     const current = usePhase();
-    if (!isMainChat) return null;
+    if (!isMainChat || !available) return null;
     const onClick = () => {
         if (!active) begin(channel.id, "button").catch(reportFailure);
         else stopAudio(active);
@@ -323,7 +328,12 @@ export default definePlugin({
         render: DictationButton
     },
 
+    notice: () => available ? null : TEXT.unavailable,
+
     start() {
+        // Without it, Dictation shows no button, leaves Space alone and says why in its settings tab.
+        available = native().models().length > 0;
+        if (!available) return;
         native().onEvent(onEvent);
         document.addEventListener("keydown", onKeyDown, true);
         document.addEventListener("keyup", e => {

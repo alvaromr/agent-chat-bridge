@@ -25,12 +25,15 @@ export interface Worker extends Transcriber {
     close(): void;
 }
 
+/** The worker's Python in the dictation/ folder, there once its packages are installed (README, «Install»). */
+export const workerPython = (dir: string) => join(dir, "worker/.venv/bin/python");
+
 /**
  * Resolves once the model is loaded. `dir` is the dictation/ folder, which a bundler can't know from this file.
  * Answers come back in the order of the requests: the worker handles one at a time.
  */
 export function startWorker(dir: string, modelPath: string, language: string): Promise<Worker> {
-    const python = join(dir, "worker/.venv/bin/python"), script = join(dir, "worker/worker.py");
+    const python = workerPython(dir), script = join(dir, "worker/worker.py");
     // The sandbox matches real paths, and TMPDIR goes through the /var link.
     const user = dirname(realpathSync(tmpdir()));
     const child = spawn("/usr/bin/sandbox-exec", ["-D", `USER=${user}`, "-p", SANDBOX, python, "-I", script, modelPath, language], {

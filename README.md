@@ -22,23 +22,31 @@ Whisper model; and the `acb` CLI to use Discord from Claude Code.
 - Homebrew's `gitleaks`, at the version in `scripts/secrets.mjs`, for the secret scan of the gate
   (`brew install gitleaks`).
 - Claude Code installed as `~/.local/bin/claude`, for the plugins.
-- For Dictation: Apple Silicon, [uv](https://docs.astral.sh/uv/) (version in `dictation/worker/pyproject.toml`), a
-  Whisper model in MLX format in the Hugging Face cache (`mlx-community/whisper-large-v3-turbo` by default, ~1.6 GB),
-  and the microphone allowed for Discord in macOS's Privacy settings.
+- Optional, for Dictation: a Mac with Apple Silicon and macOS 14 or later, the only ones its model's runtime
+  (`mlx`) ships for; [uv](https://docs.astral.sh/uv/) (version in `dictation/worker/pyproject.toml`); a Whisper model
+  in MLX format (Install); and the microphone allowed for Discord in macOS's Privacy settings. Without them the rest
+  works, and Dictation shows no button.
+- To work on the repo (`pnpm check`), uv on that Mac too: the gate also lints and type-checks the dictation worker.
 
 ## Install
 From a clone of this repo, at its latest release tag:
 ```sh
-pnpm setup      # hooks, dependencies, build
+pnpm setup      # hooks, dependencies, build; Dictation's engine where it can run, or it says why not
 pnpm inject     # with Discord closed
 pnpm links      # optional: the acb CLI and its Claude Code skill
+```
+For Dictation, download its model (~1.6 GB) into the Hugging Face cache with the CLI that `pnpm setup` installed, then
+restart Discord: Dictation looks for its engine and models when Discord starts.
+```sh
+dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo
 ```
 After a Discord update, run `pnpm inject` again.
 
 ## Use
 - Each plugin adds a button to the chat box, left of the gift icon.
-- Right-click one of those buttons to open the settings at that plugin's tab. Each feature has its own setting to turn
-  it off.
+- Right-click one of those buttons to open the settings at that plugin's tab. The keyboard shortcuts (Corrector's
+  Enter on an empty box, Dictation's Space) each have a setting to turn them off; the buttons stay. Dictation's
+  button shows only where its engine and a model are installed; elsewhere its settings tab says what is missing.
 - Dictation: click the microphone, or hold Space in the chat box, as in Claude Code: the first two spaces are typed,
   and the dictation starts at the fifth press and stops when you let go. Click again, or tap Space, to stop a
   dictation started with the button; Escape drops it and puts the box back as it was. The text appears phrase by
