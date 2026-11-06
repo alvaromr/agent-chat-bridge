@@ -72,7 +72,7 @@ Defined in `package.json`.
 - `pnpm mutation`: Stryker on the code the coverage counts, with a 100 % score, run by the `.githooks/` pre-push hook instead of
   the pre-commit one. Run it after changing one of them or their tests. It is incremental and re-tests only what
   changed, but it can keep a stale survivor after a test change: before committing, confirm with
-  `pnpm mutation --force` (about 2 min). Every surviving mutant gets a test, or an inline
+  `pnpm mutation --force`. Every surviving mutant gets a test, or an inline
   `// Stryker disable next-line <mutator>: <reason>` when it is equivalent.
 - `pnpm run audit`: known advisories in the dependencies, the worker's Python packages included (`uv audit`); part of
   the review of any dependency change, and run by the pre-push hook and `pnpm release`. Plain `pnpm audit` is pnpm's
