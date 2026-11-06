@@ -1,60 +1,17 @@
-// Checks the patches and lookups of mod/ against the Discord code in its HTTP cache, the version the app last loaded.
-// Run with `pnpm check-discord`; Discord doesn't need to be open. Discord's code is only parsed, never run.
-// Reads only the cache entries of the app page and its scripts (https://discord.com/app and /assets/*.js), never the
-// cached API answers, and prints only the names of the patches and lookups.
+// Checks the patches and lookups of mod/ against the Discord code in its HTTP cache (test/discord-cache.mjs), the
+// version the app last loaded. Run with `pnpm check-discord`; Discord doesn't need to be open. Discord's code is only
+// parsed, never run, and only the names of the patches and lookups are printed.
 import assert from "node:assert/strict";
-import { closeSync, openSync, readdirSync, readFileSync, readSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { brotliDecompressSync } from "node:zlib";
 
 import { canonicalize } from "../mod/src/renderer/regex.ts";
+import { cacheBody, indexCache } from "./discord-cache.mjs";
 
 const ts = createRequire(import.meta.url)("typescript");
-const CACHE = join(homedir(), "Library", "Application Support", "discord", "Cache", "Cache_Data");
 const SOURCES = [new URL("../mod/src/", import.meta.url), new URL("../plugins/", import.meta.url)];
-
-// Chromium's simple cache: `<hash>_0` holds a 24-byte header, the key (the URL), the body, an end record, the HTTP
-// headers, an optional SHA-256 of the key and a last end record.
-const END_MAGIC = 0xf4fa6f45970d41d8n;
-const HEADER_BYTES = 24, END_BYTES = 24;
-
-function cacheKey(file) {
-    const head = Buffer.alloc(HEADER_BYTES + 300);
-    const fd = openSync(join(CACHE, file), "r");
-    readSync(fd, head, 0, head.length, 0);
-    closeSync(fd);
-    return head.subarray(HEADER_BYTES, HEADER_BYTES + Math.min(head.readUInt32LE(12), 300)).toString("latin1");
-}
-
-function cacheBody(file) {
-    const b = readFileSync(join(CACHE, file));
-    const end0 = b.length - END_BYTES;
-    const flags = b.readUInt32LE(end0 + 8), headersSize = b.readUInt32LE(end0 + 16);
-    const headersStart = end0 - (flags & 2 ? 32 : 0) - headersSize, end1 = headersStart - END_BYTES;
-    if (b.readBigUInt64LE(end0) !== END_MAGIC || b.readBigUInt64LE(end1) !== END_MAGIC) return null;
-    const body = b.subarray(HEADER_BYTES + b.readUInt32LE(12), end1);
-    // Bodies sent with a compression dictionary ("dcb") are stored already decoded.
-    const brotli = /content-encoding:\s*br\b/i.test(b.subarray(headersStart, headersStart + headersSize).toString("latin1"));
-    return (brotli ? brotliDecompressSync(body) : body).toString();
-}
-
-/** Cached scripts by file name, and the newest cached app page. */
-function indexCache() {
-    const scripts = new Map();
-    let page;
-    for (const file of readdirSync(CACHE)) {
-        if (!file.endsWith("_0")) continue;
-        const key = cacheKey(file);
-        const script = key.match(/^1\/0\/https:\/\/discord\.com\/assets\/([\w.-]+\.js)(?:\?cdt=1)?$/)?.[1];
-        if (script) scripts.set(script, file);
-        const time = key.match(/^1\/0\/https:\/\/discord\.com\/app\?_=(\d+)$/)?.[1];
-        if (time && (!page || +time > page.time)) page = { time: +time, file };
-    }
-    return { scripts, page };
-}
 
 /** File names of the page's scripts and of every chunk its webpack runtime can load (`__webpack_require__.u`). */
 function currentFiles(page, readScript) {

@@ -1,9 +1,12 @@
 // Client for Discord's main page over the local DevTools port, shared by scripts/cdp.mjs and test/live/a11y.mjs.
 // Discord must have been started with the port, as docs/debugging.md explains.
 
+/** The port's list of pages; it answers only while Discord runs with the port open. */
+export const DEVTOOLS_TARGETS = "http://127.0.0.1:9229/json";
+
 /** Connects to Discord's main page; `send` runs a DevTools command and resolves with its result. */
 export async function connectToDiscord() {
-    const targets = await (await fetch("http://127.0.0.1:9229/json")).json();
+    const targets = await (await fetch(DEVTOOLS_TARGETS)).json();
     const page = targets.find(t => t.type === "page" && t.url.startsWith("https://discord.com/") && !t.url.startsWith("https://discord.com/popout"));
     if (!page) throw new Error("Discord's page is not among the DevTools targets");
 

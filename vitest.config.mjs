@@ -1,6 +1,6 @@
 // The unit suite (`pnpm test`, and `pnpm mutation` through Stryker), with 100 % coverage: the code that touches
-// Discord runs on a fake Discord (test/fake-discord.mjs), Electron's and the system's sides on mocks. test/live.mjs and
-// test/discord-code.mjs stay on `node --test`, so neither run can reach Discord.
+// Discord runs on a fake Discord (test/fake-discord.mjs), Electron's and the system's sides on mocks. test/live/ and
+// `pnpm check-discord`'s files stay on `node --test`, so neither run can reach Discord or its cache.
 import { readFile } from "fs/promises";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";

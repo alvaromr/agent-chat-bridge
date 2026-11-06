@@ -1,7 +1,8 @@
 # Debugging the patch in Discord
 
 Failures of `mod/` and of the plugins that depend on Discord only show in the running Discord. `pnpm test` runs all
-their code on a fake Discord, and `pnpm live` checks what only the real one decides (method 4).
+their code on a fake Discord, `pnpm check-discord` checks what Discord's cached code and styles show without running
+them (method 3), and `pnpm live` what only the running one decides (method 4).
 
 ## Rule
 Before stating a cause or accepting a fix, verify it in the real Discord with one of the methods below.
@@ -38,16 +39,22 @@ Ask for permission first: while the port is open, any program on the machine can
    is closed (`curl -s -m 2 http://127.0.0.1:9229/json` must fail).
 
 ## 3. Discord's code
-`pnpm check-discord` checks the patches and pieces of `mod/` against it. To see how a piece of Discord works, search
+`pnpm check-discord` checks the patches and pieces of `mod/` against it, and the contrast of what `mod/` colours in
+each of its themes against its stylesheets. To see how a piece of Discord works, search
 the JS files its HTTP cache already holds: `~/Library/Application Support/discord/Cache/Cache_Data/`. Use
 `grep -l -a "<text>"`, then extract the context with `python3 -I`; `grep -o` with a long context fails on these
-files. The cache also holds API responses with private messages: read only the script files.
+files. The cache also holds API responses with private messages: read only the script and style files.
 
 ## 4. Live checks
-`pnpm live` (`test/live/`) checks what the fake Discord of the unit tests can't: that the real stores answer the CLI
-in the shape faked (`cli.mjs`), and, in both themes, that Discord's own components and colours give what `mod/` adds
-its roles and names, keyboard paths and focus rings, modal focus and contrast (`a11y.mjs`).
-1. Open the debugging port as method 2 says, with its permission.
+`pnpm live` (`test/live/`) checks what neither the fake Discord of the unit tests nor `pnpm check-discord` can: that
+the real stores answer the CLI in the shape faked (`cli.mjs`), through the CLI's socket of the Discord already open,
+and that Discord's running code gives what `mod/` adds its roles and names, keyboard paths and focus rings, modal
+focus, and the backgrounds the contrast is measured against (`a11y.mjs`, skipped while the port is closed).
+1. For `a11y.mjs`, open the debugging port as method 2 says, with its permission.
 2. Open a chat whose box is empty, and leave Discord alone while the checks run: they press keys in Discord.
 3. Run `pnpm live`. It prints only check names and measures, and exits with 1 if one fails.
 4. When done, close the port as method 2 says.
+
+A second Discord in the same macOS account doesn't keep them apart from the user's: one started with `--multi-instance`
+and its own `DISCORD_USER_DATA_DIR` opened signed in to the user's account (tried on 2026-11-06), so its session
+doesn't live in that folder.
