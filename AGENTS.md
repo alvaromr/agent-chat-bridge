@@ -90,8 +90,8 @@ Defined in `package.json`.
 - `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,
   `pnpm check-discord` and a fresh clone installed and tested, the worker and `pnpm smoke-dictation` included, then
   the version in `package.json`, the dated `CHANGELOG.md`, the commit and the `v<x.y.z>` tag. A user-visible change
-  adds its entry under `[Unreleased]` in the same commit. The pre-push hook also refuses to move or delete a tag the
-  remote has.
+  adds its entry under `[Unreleased]` in the same commit. Tags are never moved or deleted: the `.githooks/`
+  reference-transaction hook refuses it here, and the pre-push hook on the remote.
 
 ## Rules
 1. **As close to Discord as possible**: `mod/` contains only what the own plugins use: no themes, custom CSS or

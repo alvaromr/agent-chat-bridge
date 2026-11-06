@@ -1,0 +1,19 @@
+#!/bin/sh
+# Refuses to move or delete a tag here, as pre-push does on the remote: a released version identifies one commit
+# forever. Installed by `pnpm setup`. Git passes the transaction's state, then one line per ref: old value, new value,
+# name; an old value of zeros means a forced update. Packing (`git pack-refs`, also run by `git gc`) rewrites each tag
+# into packed-refs with its own value and then deletes the loose copy by its value, and `git update-ref -d <tag>
+# <value>` looks the same, so that form goes through; `git tag -d`, `git tag -f` and the other updates don't.
+[ "$1" = prepared ] || exit 0
+zero=0000000000000000000000000000000000000000
+while read -r old new ref; do
+    case "$ref" in
+        refs/tags/*)
+            current=$(git rev-parse -q --verify "$ref") || continue
+            if { [ "$new" = "$zero" ] && [ "$old" = "$zero" ]; } || { [ "$new" != "$zero" ] && [ "$new" != "$current" ]; }; then
+                echo "reference-transaction: ${ref#refs/tags/} already exists; tags are never moved or deleted" >&2
+                exit 1
+            fi
+            ;;
+    esac
+done
