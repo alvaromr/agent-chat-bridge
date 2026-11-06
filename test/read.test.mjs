@@ -147,6 +147,13 @@ test("read: a server where the user has no member entry has no roles of theirs",
     assert.equal((await compose({ read: "c1" })).mensajes[0].meMencionan, false);
 });
 
+test("read: before Discord has a current user, no message is the user's or mentions them", async () => {
+    /** @type {any} */ (state).me = undefined;
+    loaded("c1", [message("1", { channel_id: "c1", mentions: ["111"] })]);
+    const [m] = (await compose({ read: "c1" })).mensajes;
+    assert.deepEqual([m.yo, m.meMencionan], [false, false]);
+});
+
 test("read: --more loads older pages as scrolling up, pausing between them, until the first read message", async () => {
     vi.useFakeTimers();
     state.readStates.set("dm1", { ack: "5" });

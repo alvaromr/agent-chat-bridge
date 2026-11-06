@@ -108,7 +108,6 @@ async function correctSentMessage(message: Message) {
 
 /** Corrects the last own message. Triggered by Enter on an empty box, which Discord ignores. */
 async function correctLastMessage(channelId: string) {
-    // Discord has no current user until the session is up.
     const myId = UserStore.getCurrentUser()?.id;
     const last = MessageStore.getMessages(channelId)._array.findLast((m: Message) => m.author.id === myId && m.content);
     if (last) await correctSentMessage(last);

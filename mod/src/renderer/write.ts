@@ -151,7 +151,7 @@ function ownMessage(chatId: string, messageId: string): { chat: Candidate; messa
     if (!chat) return CHATS_TEXT.noChat;
     const message = MessageStore.getMessage(chat.id, messageId);
     if (!message) return TEXT.messageNotLoaded;
-    if (message.author.id !== UserStore.getCurrentUser().id) return TEXT.notMine;
+    if (message.author.id !== UserStore.getCurrentUser()?.id) return TEXT.notMine;
     return { chat, message };
 }
 
@@ -246,7 +246,7 @@ export async function send(req: ComposeRequest): Promise<ComposeResult> {
     const before = MessageStore.getMessages(chat.id)._array.at(-1)?.id;
     editor.focus();
     pressEnter(editor);
-    const me = UserStore.getCurrentUser().id;
+    const me = UserStore.getCurrentUser()?.id;
     // Discord first shows a local copy ("SENDING", with a temporary id) and swaps in the server's once accepted.
     const sentMessage = () => {
         const last = MessageStore.getMessages(chat.id)._array.at(-1);

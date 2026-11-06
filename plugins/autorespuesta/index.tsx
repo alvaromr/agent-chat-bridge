@@ -49,6 +49,7 @@ const TEXT = {
     action: "Generar respuesta",
     fromHere: "Generar respuesta desde aquí",
     notLoaded: "Ese mensaje no está cargado",
+    noSession: "Discord aún no ha iniciado la sesión; prueba en unos segundos",
     changedWhileWriting: "El texto cambió mientras se generaba; no lo toco",
     pickMessage: "Haz clic en el mensaje desde el que empezar (Esc para cancelar)"
 } as const;
@@ -69,6 +70,10 @@ async function generateFrom(channelId: string, messageId: string) {
     const systemPrompt = styleNotes.trim() ? `${prompt}\n\nNotas sobre mi forma de escribir:\n${styleNotes}` : prompt;
 
     const me = UserStore.getCurrentUser();
+    if (!me) {
+        showToast({ text: TEXT.noSession, variant: "critical" });
+        return;
+    }
     const ownBefore = examples > 0
         ? messages.slice(0, start).filter(m => m.author.id === me.id && m.content).slice(-examples)
         : [];

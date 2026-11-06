@@ -43,9 +43,9 @@ const isUnread = (chatId: string) => {
  * API objects that MESSAGE_CREATE carries (snake_case), so `read` and `watch` give the same shape.
  */
 function formatMessage(m: any, chat: Candidate) {
-    const me = UserStore.getCurrentUser().id;
+    const me = UserStore.getCurrentUser()?.id;
     // Stryker disable ArrayDeclaration: an empty list stands for none, and any other text is no role id, mention or embed.
-    const myRoles = chat.guildId ? GuildMemberStore.getMember(chat.guildId, me)?.roles ?? [] : [];
+    const myRoles = chat.guildId && me ? GuildMemberStore.getMember(chat.guildId, me)?.roles ?? [] : [];
     const names = namesIn(chat.guildId);
     const embeds = embedTexts(m.embeds ?? [], names);
     const mentions: string[] = (m.mentions ?? []).map((u: any) => typeof u === "string" ? u : u.id);
@@ -73,7 +73,7 @@ function formatMessage(m: any, chat: Candidate) {
         ...(m.reactions?.length ? { reacciones: m.reactions.map(reaction) } : {}),
         adjuntos: (m.attachments ?? []).map((a: any) => ({ nombre: a.filename, tipo: a.content_type ?? a.contentType, url: a.url })),
         sinLeer: isUnread(chat.id)(m),
-        meMencionan: !!(m.mentionEveryone ?? m.mention_everyone) || mentions.includes(me) || roles.some(r => myRoles.includes(r))
+        meMencionan: !!(m.mentionEveryone ?? m.mention_everyone) || (!!me && mentions.includes(me)) || roles.some(r => myRoles.includes(r))
     };
 }
 

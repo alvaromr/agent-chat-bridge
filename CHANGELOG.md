@@ -18,6 +18,8 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ### Fixed
 - `acb watch` no longer fails inside Discord on a new-message event that carries no message.
+- `acb read`, `edit`, `delete` and `send` no longer fail inside Discord before its session is up: until then no
+  message counts as the user's. Autorespuesta says that the session isn't up yet instead of failing.
 
 ## [0.1.1] - 2026-11-04
 

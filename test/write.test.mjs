@@ -240,6 +240,19 @@ test("delete: the user's own message goes through Discord's action, reported onc
     assert.deepEqual(await remove("6"), { ok: false, error: "Discord no confirmó el borrado; revisa el chat" });
 });
 
+test("edit, delete and send: before Discord has a current user, no message is the user's", async () => {
+    loaded("dm1", [mine("4")]);
+    /** @type {any} */ (state).me = undefined;
+    assert.deepEqual(await settle({ edit: { chatId: "dm1", messageId: "4", text: "nuevo" } }), { ok: false, error: "Ese mensaje no es del usuario" });
+    assert.deepEqual(await settle({ delete: { chatId: "dm1", messageId: "4" } }), { ok: false, error: "Ese mensaje no es del usuario" });
+    reset();
+    state.users.set(ana.id, ana);
+    state.privateChannels.push(channel({ id: "dm1", type: 1, recipients: [ana.id] }));
+    sendingBox("hola", "SENT", { author: { id: "me" } });
+    /** @type {any} */ (state).me = undefined;
+    assert.deepEqual(await settle({ send: "dm1", expect: "hola" }), { ok: false, error: "Discord no confirmó el envío; revisa el chat" });
+});
+
 const tooSoon = { ok: false, error: "Límite de ritmo: espera unos segundos entre acciones en el mismo chat" };
 
 test("rate limit: every action that publishes counts, per chat; a refused one publishes nothing", async () => {

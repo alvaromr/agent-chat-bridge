@@ -159,6 +159,14 @@ test("autorespuesta: the button on a message answers from it; one not loaded say
     assert.equal(native.runClaude.mock.calls.length, 0);
 });
 
+test("autorespuesta: before Discord has a current user it says so and asks Claude nothing", async () => {
+    /** @type {any} */ (state).me = undefined;
+    autorespuesta.messagePopoverButton?.render(/** @type {any} */ (message("2", ana, "")))?.onClick?.();
+    await idle();
+    assert.deepEqual(toasts(), [{ text: "Discord aún no ha iniciado la sesión; prueba en unos segundos", variant: "critical" }]);
+    assert.equal(native.runClaude.mock.calls.length, 0);
+});
+
 test("autorespuesta: no reply, or a draft changed meanwhile, leaves the box as it is", async () => {
     const box = chatBox("antes");
     native.runClaude.mockResolvedValueOnce({ ok: false, text: "límite" });

@@ -97,7 +97,8 @@ export interface Stores {
         isChannelMuted(guildId: string | null, channelId: string): boolean;
         isGuildOrCategoryOrChannelMuted(guildId: string, channelId: string): boolean;
     };
-    UserStore: { getCurrentUser(): User; getUser(id: string): User | undefined; };
+    // No current user until Discord's session is up.
+    UserStore: { getCurrentUser(): User | undefined; getUser(id: string): User | undefined; };
 }
 
 export interface ToastData {
