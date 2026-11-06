@@ -5,6 +5,8 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-06
+
 ### Added
 - Dictation: dictate into the chat box with a local Whisper model, with the microphone button or by holding Space as
   in Claude Code. The text appears phrase by phrase and is never sent. Its settings pick the model among the ones on
