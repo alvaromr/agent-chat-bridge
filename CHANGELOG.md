@@ -5,6 +5,10 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-10
+
+Tested with Discord 0.0.421 for macOS, stable web client build 668923.
+
 ### Fixed
 - Discord no longer reloads over and over with «React not found in Discord» after its November 2026 update, whose
   module cache no longer marks modules as loaded, and the plugins' toasts show again with its new toast function.
