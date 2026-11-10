@@ -1,7 +1,7 @@
 # Changelog
 What changes for whoever installs agent-chat-bridge, per version. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/):
-`pnpm release` moves the entries under `[Unreleased]` to the new version.
+`pnpm release` moves the entries under `[Unreleased]` to the new version, opened by the Discord it was tested with.
 
 ## [Unreleased]
 

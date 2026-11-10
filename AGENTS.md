@@ -93,8 +93,10 @@ Defined in `package.json`.
   After `pnpm build`, restarting Discord is enough: the loader reads `mod/dist/` on every start.
 - `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,
   `pnpm check-discord` and a fresh clone installed and tested, the worker and `pnpm smoke-dictation` included, then
-  the version in `package.json`, the dated `CHANGELOG.md`, the commit and the `v<x.y.z>` tag. A user-visible change
-  adds its entry under `[Unreleased]` in the same commit. Tags are never moved or deleted: the `.githooks/`
+  the version in `package.json`, the dated `CHANGELOG.md` section opened by the Discord it was tested with (the app's
+  version and its web client's build), the commit and the `v<x.y.z>` tag, whose message is that section. Then push
+  with `git push --follow-tags` and publish the GitHub release from the tag, as the script prints. A user-visible
+  change adds its entry under `[Unreleased]` in the same commit. Tags are never moved or deleted: the `.githooks/`
   reference-transaction hook refuses it here, and the pre-push hook on the remote.
 
 ## Rules

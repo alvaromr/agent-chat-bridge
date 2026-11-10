@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { canonicalize } from "../mod/src/renderer/regex.ts";
-import { cacheBody, indexCache } from "./discord-cache.mjs";
+import { cacheBody, discordVersion, indexCache } from "./discord-cache.mjs";
 
 const ts = createRequire(import.meta.url)("typescript");
 const SOURCES = [new URL("../mod/src/", import.meta.url), new URL("../plugins/", import.meta.url)];
@@ -125,7 +125,8 @@ const CHECKS = {
 const discord = loadDiscord();
 const { patches, lookups } = wanted();
 
-test(`Discord's code: ${discord.coverage}, ${discord.modules.length} modules`, () => {
+const { app, build, channel } = discordVersion();
+test(`Discord ${app}, ${channel} web build ${build}: ${discord.coverage}, ${discord.modules.length} modules`, () => {
     assert.ok(discord.modules.length > 1000, "Too few modules: the cache doesn't hold the current version");
     assert.ok(patches.length && lookups.length, "No patches or pieces found in the code of mod/");
 });

@@ -34,6 +34,21 @@ export function cacheBody(file) {
     return (brotli ? brotliDecompressSync(body) : body).toString();
 }
 
+/**
+ * The Discord the checks run against: the app's version, and its web client's build and release channel, from the
+ * newest cached app page. The web client updates without the app, so both name what was tested.
+ */
+export function discordVersion() {
+    const plist = readFileSync("/Applications/Discord.app/Contents/Info.plist", "utf8");
+    const app = plist.match(/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/)?.[1];
+    const { page } = indexCache();
+    const html = page ? cacheBody(page.file) ?? "" : "";
+    const build = html.match(/"BUILD_NUMBER":"(\d+)"/)?.[1];
+    const channel = html.match(/"RELEASE_CHANNEL":"(\w+)"/)?.[1];
+    if (!app || !build || !channel) throw new Error("Discord's version isn't readable: open Discord once, from /Applications");
+    return { app, build, channel };
+}
+
 /** Cached scripts and stylesheets by file name, and the newest cached app page. */
 export function indexCache() {
     const scripts = new Map(), styles = new Map();
