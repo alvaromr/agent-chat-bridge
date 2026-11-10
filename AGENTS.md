@@ -73,9 +73,10 @@ Defined in `package.json`.
   files through JSDoc (`tsconfig.json`), and the worker's with ty.
 - `pnpm test`: tests without Discord, with 100 % line, branch, function and statement coverage.
 - `pnpm mutation`: Stryker on the code the coverage counts, with a 100 % score, run by the `.githooks/` pre-push hook instead of
-  the pre-commit one. Run it after changing one of them or their tests. It is incremental and re-tests only what
-  changed, but it can keep a stale survivor after a test change: before committing, confirm with
-  `pnpm mutation --force`. Every surviving mutant gets a test, or an inline
+  the pre-commit one. Run it after changing one of them or their tests. It is incremental and re-tests only the
+  mutants whose code or covering tests changed: it sees no change in the shared test helpers (`test/fake-*.mjs`,
+  `test/dom.mjs`) or the dependencies, so it can keep a mutant counted as killed that no test kills any more. Before
+  committing, confirm with `pnpm mutation --force`; `pnpm release` runs it. Every surviving mutant gets a test, or an inline
   `// Stryker disable next-line <mutator>: <reason>` when it is equivalent.
 - `pnpm run audit`: known advisories in the dependencies, the worker's Python packages included (`uv audit`); part of
   the review of any dependency change, and run by the pre-push hook and `pnpm release`. Plain `pnpm audit` is pnpm's
