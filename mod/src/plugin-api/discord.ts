@@ -75,7 +75,7 @@ export const UploadHandler = {
         () => find(filters.byCode("Unexpected mismatch between files and file metadata")))
 };
 
-export const showToast = lazyFunction<(toast: t.ToastData) => void>("showToast", () => find(filters.byCode(".currentToastMap.has(")));
+export const showToast = lazyFunction<(toast: t.ToastData) => void>("showToast", () => find(filters.byCode(".currentToastMap.get(", ".toastKey")));
 export const openModal = lazyFunction<(render: (props: t.RenderModalProps) => ReactNode) => string>("openModal",
     () => findInModule(".modalKey?", filters.byCode(",instant:")));
 

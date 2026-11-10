@@ -221,6 +221,12 @@ test("find: the first loaded module, or export of one, that passes the filter", 
     assert.equal(find(() => false), null);
 });
 
+test("find: a runtime that doesn't track `loaded`, as Discord's since 2026-11, still has its modules found", async () => {
+    const { find, wreq } = await withModules({});
+    wreq.c[7] = { id: 7, exports: { createElement() { }, useEffect() { } } };
+    assert.equal(find(m => typeof m.createElement === "function"), wreq.c[7].exports);
+});
+
 test("find: a function module's own properties aren't searched, nor exports that throw or aren't ready", async () => {
     const fn = Object.assign(() => { }, { inner: { k: 1 } });
     const throwing = {};

@@ -40,7 +40,7 @@ const BY_PROPS = {
 const withProps = (name, props) => Object.fromEntries(props.map(p => [p, () => name]));
 /** The functions found by their code, and its texts. */
 const BY_CODE = {
-    showToast: [".currentToastMap.has("],
+    showToast: [".currentToastMap.get(", ".toastKey"],
     addReaction: ['"Message Shortcut"', "MESSAGE_SHORTCUT_ACTION_SENT", '"MESSAGE_REACTION_ADD"'],
     removeReaction: ['"MESSAGE_REACTION_REMOVE"', "useTypeEndpoint:!0"],
     promptToUpload: ["Unexpected mismatch between files and file metadata"]

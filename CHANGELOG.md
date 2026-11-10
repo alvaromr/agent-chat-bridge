@@ -5,6 +5,10 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+### Fixed
+- Discord no longer reloads over and over with «React not found in Discord» after its November 2026 update, whose
+  module cache no longer marks modules as loaded, and the plugins' toasts show again with its new toast function.
+
 ## [0.2.0] - 2026-11-06
 
 ### Added

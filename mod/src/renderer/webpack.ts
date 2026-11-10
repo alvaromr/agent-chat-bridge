@@ -158,8 +158,10 @@ function matches(filter: Filter, value: any) {
 export function find(filter: Filter, { topLevelOnly = false } = {}) {
     for (const id in wreq?.c) {
         const mod = wreq.c[id];
-        // Exports that are null match nothing, and have nothing nested.
-        if (!mod?.loaded) continue;
+        // Only a module whose factory is still running says `loaded: false`; Discord's runtime leaves `loaded` out since
+        // 2026-11 (`{ id, exports }`), so a missing one counts as loaded. Exports that are null match nothing, and have
+        // nothing nested.
+        if (!mod || mod.loaded === false) continue;
         if (matches(filter, mod.exports)) return mod.exports;
         if (typeof mod.exports !== "object" || topLevelOnly) continue;
 
