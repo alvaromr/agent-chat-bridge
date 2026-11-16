@@ -34,13 +34,16 @@ From a clone of this repo, at its latest release tag:
 pnpm setup      # hooks, dependencies, build; Dictation's engine where it can run, or it says why not
 pnpm inject     # with Discord closed
 pnpm links      # optional: the acb CLI and its Claude Code skill
+pnpm repatch install   # optional: after each Discord update, offer to re-patch it
 ```
 For Dictation, download its model (~1.6 GB) into the Hugging Face cache with the CLI that `pnpm setup` installed, then
 restart Discord: Dictation looks for its engine and models when Discord starts.
 ```sh
 dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo
 ```
-After a Discord update, run `pnpm inject` again.
+After a Discord update, run `pnpm inject` again. With `pnpm repatch install`, a dialog offers it instead: once the new
+Discord passes `pnpm check-discord`, it asks, and on a yes it quits Discord, patches it and reopens it. It asks once
+per Discord version, and `pnpm repatch uninstall` removes it.
 
 ## Use
 - Each plugin adds a button to the chat box, left of the gift icon.

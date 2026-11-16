@@ -43,7 +43,8 @@ No new code reaches Discord without a review first (see «Review»). When in dou
 - `skills/agent-chat-bridge/`: short skill that points to the CLI's `--help` and sets the usage rules.
   `pnpm links` links the skill into `~/.claude/skills/` and the CLI into `~/.local/bin/`.
 - `scripts/inject.mjs`: the patcher. Renames `app.asar` to `_app.asar` and writes a loader `app.asar`, built by
-  `scripts/asar.mjs`.
+  `scripts/asar.mjs`. `scripts/discord-app.mjs` holds the paths and the check of a running Discord it shares with
+  `scripts/repatch.mjs`, the offer to re-patch after an update («When Discord updates»).
 - `test/` and `dictation/test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test all of `mod/`, `plugins/`
   and `dictation/src/`, and the CLI, without Discord and without network (`test/setup.mjs` refuses every
   connection). What touches Discord runs on a fake one: `test/fake-discord.mjs` for `mod/src/plugin-api/discord.ts`,
@@ -92,6 +93,8 @@ Defined in `package.json`.
   Discord version the app loaded; Discord need not be open. Run it after a change to `mod/`'s or the plugins' colours.
 - `pnpm inject` / `pnpm uninject`: patch (or re-patch) Discord with `mod/`, or remove the patch. Discord closed.
   After `pnpm build`, restarting Discord is enough: the loader reads `mod/dist/` on every start.
+- `pnpm repatch install` / `pnpm repatch uninstall`: add or remove the LaunchAgent that offers to re-patch Discord
+  after an update («When Discord updates»).
 - `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,
   `pnpm check-discord` and a fresh clone installed and tested, the worker and `pnpm smoke-dictation` included, then
   the version in `package.json`, the dated `CHANGELOG.md` section opened by the Discord it was tested with (the app's
@@ -162,6 +165,11 @@ review: do not patch, and ask the user.
 ## When Discord updates
 macOS replaces the whole app and the patch disappears; `pnpm inject` restores it. Then run `pnpm check-discord` and
 `pnpm live`.
+With `pnpm repatch install`, a LaunchAgent does the first part once per Discord version that lost the patch, at login
+or when `/Applications` or Discord's `Resources` change (`scripts/repatch.mjs`). It holds to the review of a re-patch
+without changes: with a clean tree and `pnpm check-discord` passing, it asks in a dialog, and only on a yes it quits
+Discord, rebuilds `mod/dist/`, patches and reopens it. Otherwise a notification says what failed, and the log is
+`~/Library/Logs/agent-chat-bridge-repatch.log`. `pnpm live` stays manual.
 If a patch or piece is no longer found (`pnpm check-discord`, or the settings modal with Discord open), find what
 changed in Discord's code (`docs/debugging.md`, method 3) and adapt `mod/`. `mod/` was first derived from Vencord
 (<https://github.com/Vendicated/Vencord>): when the cause is unclear, see how its repo solved the same change, and
