@@ -35,10 +35,8 @@ vi.mock("net", () => ({
     }
 }));
 
-// The socket as a file, on a Mac's paths on every system the suite runs on; Windows' named pipe is in
+// The socket as a file, as on a Mac, on every system the suite runs on; Windows' named pipe is in
 // test/socket-pipe.test.mjs.
-vi.mock("node:path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
-vi.mock("path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
 const platform = process.platform;
 Object.defineProperty(process, "platform", { value: "darwin" });
 

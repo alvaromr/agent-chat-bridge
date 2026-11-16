@@ -9,9 +9,6 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, beforeEach, test, vi } from "vitest";
 
-// Dictation runs on macOS: its paths, on any system.
-vi.mock("node:path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
-vi.mock("path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
 /** The workers started. @type {any} */
 const fake = vi.hoisted(() => ({ workers: [], venv: true }));
 vi.mock("../dictation/src/worker.ts", async original => ({
@@ -32,7 +29,8 @@ vi.mock("../dictation/src/worker.ts", async original => ({
 }));
 vi.mock("fs", async original => {
     const fs = /** @type {any} */ (await original());
-    return { ...fs, existsSync: path => String(path).endsWith("worker/.venv/bin/python") ? fake.venv : fs.existsSync(path) };
+    // With either separator, as the system joins the venv's path.
+    return { ...fs, existsSync: path => /worker[\\/]\.venv[\\/]bin[\\/]python$/.test(String(path)) ? fake.venv : fs.existsSync(path) };
 });
 
 // A Hugging Face cache with two whole Whisper models.
