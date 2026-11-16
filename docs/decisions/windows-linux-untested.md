@@ -13,8 +13,12 @@
     opening Discord with the module (inconclusive in a container without Chromium's sandbox), the answers to the
     question and the notices (no window manager or notification daemon), the systemd units, and anything that needs a
     logged-in Discord, such as `pnpm live`.
-  - Windows: nothing run. Discord's paths, the named pipe, `tasklist`, `taskkill`, `Update.exe`, the PowerShell
-    dialogs and the scheduled task follow their documentation.
+  - Windows, checked on every push by CI on GitHub's `windows-latest` (`.github/workflows/ci.yml`), first green on
+    2026-11-16, without Discord: the unit suite; `acb` through the named pipe; `tasklist`; the lookup of Discord under
+    `%LOCALAPPDATA%`; the scheduled task created and deleted with `schtasks`, and its PowerShell script parsed. Not
+    checked: Discord itself (its paths, `Update.exe`, `taskkill`, the patch and `mod/` loading), the PowerShell
+    dialogs, which need a desktop, and the task's hourly run. Those follow their documentation.
+  - Linux, also on CI's `ubuntu-latest`: the unit suite, `acb` through the socket file and `pgrep`.
   The README calls both systems experimental and says what was checked, so no one takes the rest for verified.
 - **Why:** the owner has no Windows or Linux machine to run them on, and wanted the project usable there by the people
   it is shared with. What differs per system is kept in `scripts/os/`, `mod/src/platform.mts` and

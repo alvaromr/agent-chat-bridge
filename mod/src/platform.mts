@@ -1,6 +1,7 @@
 // Where the app's folder and the CLI's socket are on each system, defined once for mod/ (inside Discord) and for
 // scripts/ (outside it, without Electron). Only erasable TypeScript, so scripts/acb.mjs loads it with plain Node.
-// Checked on macOS and Linux; Windows follows what Electron and Node document (docs/decisions/windows-linux-untested.md).
+// Checked on macOS and Linux; on Windows, CI checks the pipe, and the app's folder follows what Electron documents
+// (docs/decisions/windows-linux-untested.md).
 import { APP_NAME, SOCKET_FILE } from "./name.mts";
 
 /**

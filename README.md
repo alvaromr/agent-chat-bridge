@@ -19,8 +19,9 @@ Whisper model; and the `acb` CLI to use Discord from Claude Code.
 ## Requirements
 - Discord (stable), installed where each system keeps it:
   - macOS, tested: in `/Applications`.
-  - Windows, experimental and untested: Discord's own installer, under `%LOCALAPPDATA%\Discord`. Run the commands
-    below in Git Bash, which comes with Git for Windows.
+  - Windows, experimental: Discord's own installer, under `%LOCALAPPDATA%\Discord`. Run the commands below in Git
+    Bash, which comes with Git for Windows. Only checked on a machine without Discord: the CLI's connection and the
+    scheduled check's task (`docs/decisions/windows-linux-untested.md`); the patch and the plugins were never run.
   - Linux, experimental: the `.deb` or the `.tar.gz`, opened once, since on its first start Discord installs itself
     into `~/.config/discord`. The patch, the plugins' loading, the CLI and the dialog opening were checked on Debian
     with Discord 1.0.169; the scheduled check was not (`docs/decisions/windows-linux-untested.md`). The dialogs need

@@ -65,13 +65,18 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   Discord's webpack runtime, and happy-dom for the page (`@vitest-environment happy-dom`, `test/dom.mjs`); Electron,
   the system and the worker's process on `vi.mock`s. New code gets its test in the same change; the coverage counts
   the `mutate` list of `stryker.config.mjs`, and what stays out is in `docs/decisions/coverage-io-scripts-and-worker.md`. A fix
-  gets a regression test that fails without it. `test/live/`, `pnpm check-discord`'s files and
+  gets a regression test that fails without it. The suite passes on macOS, Windows and Linux: a test that fakes a Mac
+  or a Linux fakes `process.platform` and, where its code splits no real path, Node's path module
+  (`dictation/test/posix-path.mjs`). `test/live/`, `pnpm check-discord`'s files, `test/smoke-os.mjs` and
   `dictation/test/worker.mjs` run on `node --test` instead, so neither Vitest nor Stryker runs them: `test/live/`
   checks in the running Discord that its real stores answer the CLI in the shape faked (`pnpm live`), publishing
   nothing, asking nothing of the API and showing no content; `discord-code.mjs` finds the patches and the pieces of `mod/` in the
   Discord code of its HTTP cache (`discord-cache.mjs`), without running it or reading the API responses the cache also
-  holds, and `discord-css.mjs` measures there the contrast of what `mod/` colours in every Discord theme; the last runs
-  the real dictation worker.
+  holds, and `discord-css.mjs` measures there the contrast of what `mod/` colours in every Discord theme;
+  `smoke-os.mjs` runs the system's side for real (`pnpm smoke-os`); the last runs the real dictation worker.
+- `.github/workflows/ci.yml`: on every push and pull request, the unit tests and `pnpm smoke-os` on Windows and Linux
+  (GitHub's `windows-latest` and `ubuntu-latest`), the systems no one runs them on by hand. The gate stays the
+  pre-commit hook, on macOS.
 - `docs/debugging.md`: how to verify a failure in the running Discord. Read it before diagnosing any failure of
   `mod/` or the plugins. `scripts/cdp.mjs` is its tool.
 
@@ -104,6 +109,9 @@ Defined in `package.json`.
   (`docs/decisions/accessibility-outside-gate.md`).
 - `pnpm smoke-dictation`: the real dictation worker on a phrase that `say` speaks; Discord need not be open. Run it
   after a change to `dictation/src/worker.ts`, `dictation/worker/` or its packages.
+- `pnpm smoke-os`: the system's side for real, without Discord: `acb` against a socket of its own (a named pipe on
+  Windows), the check of a running Discord and, on CI's Windows machine only, the scheduled task and its PowerShell
+  script. CI runs it on Windows and Linux; run it after a change to `scripts/os/` or `mod/src/platform.mts`.
 - `pnpm check-discord`: patches, pieces and the contrast of what `mod/` colours, in every theme, against the last
   Discord version the app loaded; Discord need not be open. Run it after a change to `mod/`'s or the plugins' colours.
 - `pnpm inject` / `pnpm uninject`: patch (or re-patch) Discord with `mod/`, or remove the patch. Discord closed.

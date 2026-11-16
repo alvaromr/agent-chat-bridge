@@ -1,4 +1,4 @@
-// Windows (untested, README «Requirements»): Discord under %LOCALAPPDATA%\Discord, one app-<version> folder per update
+// Windows (partly checked, docs/decisions/windows-linux-untested.md): Discord under %LOCALAPPDATA%\Discord, one app-<version> folder per update
 // (scripts/os/app-folders.mjs), PowerShell message boxes, and a scheduled task. The user can write Discord's folder,
 // so `apply` runs as is.
 import { rmSync, writeFileSync } from "node:fs";
