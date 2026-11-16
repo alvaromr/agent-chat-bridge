@@ -15,7 +15,7 @@ const REPO = fileURLToPath(new URL("..", import.meta.url));
 const machine = vi.hoisted(() => ({}));
 const fresh = () => ({
     home: "", patched: false, running: true, quits: true, version: "0.0.422", plutil: true, dirty: "", check: true,
-    answer: true, build: true, inject: true, loaded: false, bootout: true, bootstrap: true, missing: "", pgrepStatus: 1,
+    answer: true, build: true, inject: true, install: true, setup: true, at: "", remote: [], notes: "", loaded: false, bootout: true, bootstrap: true, missing: "", pgrepStatus: 1,
     onSleep: () => { }, runs: [], piped: [], sleeps: [], cwds: new Set()
 });
 
@@ -40,6 +40,15 @@ vi.mock("node:child_process", async () => {
         fs.writeFileSync(join(app, "Contents", "Info.plist"), "");
         fs.writeFileSync(join(app, "Contents", "Resources", "Scripts", "main.scpt"), source);
     };
+    /** The clone: the tag it is at, the remote's tags, the notes of a fetched tag, and the checkouts made. */
+    const git = (args, answer) => {
+        if (args[0] === "status") return answer(true, machine.dirty);
+        if (args[0] === "describe") return answer(Boolean(machine.at), `${machine.at}\n`, "fatal: no tag exactly matches\n");
+        if (args[0] === "ls-remote") return answer(machine.remote !== null, (machine.remote ?? []).map(tag => `0123abc\trefs/tags/${tag}\n`).join(""), "fatal: unable to access\n");
+        if (args[0] === "tag") return answer(true, `${machine.notes}\n`);
+        if (args[0] === "checkout") machine.at = args[2];
+        return answer(true);
+    };
     return {
         execFileSync: (command, args, options) => {
             assert.deepEqual([command, args, options], ["pgrep", ["-x", "Discord"], { stdio: "ignore" }]);
@@ -54,11 +63,11 @@ vi.mock("node:child_process", async () => {
             const answer = (ok, stdout = "", stderr = "") => ({ status: ok ? 0 : 1, stdout: options.stdio === "pipe" ? stdout : null, stderr: options.stdio === "pipe" ? stderr : null });
             const line = args.join(" ");
             if (command === "plutil") return answer(machine.plutil, `${machine.version}\n`, "no such file\n");
-            if (command === "git") return answer(true, machine.dirty);
-            if (command === "pnpm") return answer({ "check-discord": machine.check, build: machine.build, inject: machine.inject }[line]);
+            if (command === "git") return git(args, answer);
+            if (command === "pnpm") return answer({ "check-discord": machine.check, build: machine.build, inject: machine.inject, "install --frozen-lockfile": machine.install, bootstrap: machine.setup }[line]);
             if (command === "launchctl" && args[0] === "print") return answer(machine.loaded);
             if (command === "launchctl") return answer(args[0] === "bootout" ? machine.bootout : machine.bootstrap);
-            if (line.includes("display dialog")) return answer(machine.answer, "button returned:Cerrar y parchear\n", "execution error: User canceled. (-128)\n");
+            if (line.includes("display dialog")) return answer(machine.answer, "button returned:yes\n", "execution error: User canceled. (-128)\n");
             if (line.includes("quit app")) machine.running = !machine.quits;
             if (command === "osacompile") compile(args[1], args[3]);
             if (command === "osadecompile") return answer(true, `${fs.readFileSync(args[0], "utf8")}\n`);
@@ -99,6 +108,8 @@ const DIALOG = `osascript -e display dialog ${JSON.stringify(QUESTION)} with tit
     + ' buttons {"Ahora no", "Cerrar y parchear"} default button "Cerrar y parchear" cancel button "Ahora no" with icon caution';
 /** What a run does up to the question, on an unpatched Discord it hasn't seen. */
 const UP_TO_QUESTION = [VERSION, "git status --porcelain", "pnpm check-discord", DIALOG];
+/** How a run ends in a clone that isn't at a release tag, as a development one: it looks for no release. */
+const DESCRIBE = "git describe --tags --exact-match --match v* HEAD";
 
 test("discord-app: the patch's files sit in Discord's Resources", async () => {
     assert.deepEqual({ ...await import("../scripts/discord-app.mjs") }, {
@@ -112,18 +123,18 @@ test("discord-app: the patch's files sit in Discord's Resources", async () => {
 test("repatch: on a patched Discord it only notes the version, at once, and asks nothing", async () => {
     machine.patched = true;
     await main("run");
-    assert.deepEqual(machine.runs, [VERSION]);
+    assert.deepEqual(machine.runs, [VERSION, DESCRIBE]);
     assert.deepEqual(machine.sleeps, []);
     assert.equal(readFileSync(SEEN(), "utf8"), "0.0.422");
 });
 
 test("repatch: an update that lost the patch waits for the app to settle, checks it, asks, and on yes quits Discord and opens the helper", async () => {
     await main("run");
-    assert.deepEqual(machine.runs, [...UP_TO_QUESTION, "pgrep", 'osascript -e quit app "Discord"', "pgrep", `open ${HELPER()}`]);
+    assert.deepEqual(machine.runs, [...UP_TO_QUESTION, "pgrep", 'osascript -e quit app "Discord"', "pgrep", `open ${HELPER()}`, DESCRIBE]);
     assert.deepEqual(machine.sleeps, [30_000]);
     assert.deepEqual([...machine.cwds], [REPO]);
     // Only what the script reads is captured; the rest, pnpm's output included, goes to the log.
-    assert.deepEqual(machine.piped, ["plutil", "git", "osascript"]);
+    assert.deepEqual(machine.piped, ["plutil", "git", "osascript", "git"]);
     assert.equal(readFileSync(SEEN(), "utf8"), "0.0.422");
     assert.deepEqual(logged.mock.calls, [["Discord 0.0.422 lost the patch"]]);
 });
@@ -131,7 +142,7 @@ test("repatch: an update that lost the patch waits for the app to settle, checks
 test("repatch: with Discord closed it opens the helper without quitting Discord", async () => {
     machine.running = false;
     await main("run");
-    assert.deepEqual(machine.runs.slice(UP_TO_QUESTION.length), ["pgrep", "pgrep", `open ${HELPER()}`]);
+    assert.deepEqual(machine.runs.slice(UP_TO_QUESTION.length), ["pgrep", "pgrep", `open ${HELPER()}`, DESCRIBE]);
 });
 
 test("repatch: the helper's apply rebuilds, patches and reopens Discord, and says so", async () => {
@@ -162,8 +173,8 @@ test("repatch: an apply that fails tells the user with a notification and fails 
 test("repatch: on «Ahora no», or a dialog that can't show, it touches nothing and logs why", async () => {
     machine.answer = false;
     await main("run");
-    assert.deepEqual(machine.runs, UP_TO_QUESTION);
-    assert.deepEqual(logged.mock.calls.at(-1), ["Not re-patched: execution error: User canceled. (-128)"]);
+    assert.deepEqual(machine.runs, [...UP_TO_QUESTION, DESCRIBE]);
+    assert.deepEqual(logged.mock.calls.at(-1), ["Declined: execution error: User canceled. (-128)"]);
 });
 
 test("repatch: a version already seen asks nothing again, so a declined one or a patch removed by hand stays quiet", async () => {
@@ -172,7 +183,7 @@ test("repatch: a version already seen asks nothing again, so a declined one or a
     machine.runs = [];
     vi.resetModules();
     await main("run");
-    assert.deepEqual(machine.runs, [VERSION]);
+    assert.deepEqual(machine.runs, [VERSION, DESCRIBE]);
 });
 
 test("repatch: a new version after a seen one asks again", async () => {
@@ -180,35 +191,35 @@ test("repatch: a new version after a seen one asks again", async () => {
     Object.assign(machine, { version: "0.0.423", runs: [] });
     vi.resetModules();
     await main("run");
-    assert.equal(machine.runs.length > 1, true);
+    assert.equal(machine.runs[3], DIALOG.replace("0.0.422", "0.0.423"));
     assert.equal(readFileSync(SEEN(), "utf8"), "0.0.423");
 });
 
 test("repatch: a Discord patched while the update settles asks nothing", async () => {
     machine.onSleep = () => void (machine.patched = true);
     await main("run");
-    assert.deepEqual(machine.runs, [VERSION]);
+    assert.deepEqual(machine.runs, [VERSION, DESCRIBE]);
 });
 
 test("repatch: with uncommitted changes it doesn't check or ask, and says to review them", async () => {
     machine.dirty = " M mod/src/main.ts\n";
     await main("run");
     assert.deepEqual(machine.runs, [VERSION, "git status --porcelain", notification(
-        "Discord se ha actualizado a 0.0.422 y ha perdido el parche, pero el repo tiene cambios sin commit. Revísalos y ejecuta pnpm inject.")]);
+        "Discord se ha actualizado a 0.0.422 y ha perdido el parche, pero el repo tiene cambios sin commit. Revísalos y ejecuta pnpm inject."), DESCRIBE]);
 });
 
 test("repatch: when pnpm check-discord fails it doesn't ask, and says where to look", async () => {
     machine.check = false;
     await main("run");
     assert.deepEqual(machine.runs.slice(3), [notification("Discord se ha actualizado a 0.0.422 y el parche ya no encaja con su código. "
-        + `Mira ${LOG()} y adapta mod/ (AGENTS.md, «When Discord updates»).`)]);
+        + `Mira ${LOG()} y adapta mod/ (AGENTS.md, «When Discord updates»).`), DESCRIBE]);
 });
 
 test("repatch: a Discord that doesn't quit in 30 s is left unpatched, with a notification", async () => {
     machine.quits = false;
     await main("run");
     const after = machine.runs.slice(UP_TO_QUESTION.length);
-    assert.deepEqual(after.at(-1), notification("Discord no se ha cerrado, así que no lo he vuelto a parchear. Ciérralo y ejecuta pnpm inject."));
+    assert.deepEqual(after.slice(-2), [notification("Discord no se ha cerrado, así que no lo he vuelto a parchear. Ciérralo y ejecuta pnpm inject."), DESCRIBE]);
     assert.equal(after.filter(run => run === "pgrep").length, 32);
     assert.deepEqual(machine.sleeps, [30_000, ...Array(30).fill(1_000)]);
 });
@@ -234,6 +245,116 @@ test("repatch: a pgrep that fails for another reason than finding no Discord fai
     await assert.rejects(main("run"), { message: "pgrep" });
 });
 
+/** A clone installed at v0.2.2, its Discord patched, and the runs of its check up to the release's dialog. */
+const AT_RELEASE = { patched: true, at: "v0.2.2", remote: ["v0.2.1", "v0.2.2", "v0.3.0", "v0.10.0", "v0.11", "v1.0.0-beta"], notes: "Tested with Discord 0.0.423.\n\n### Fixed\n- A hang." };
+const UPDATE_DIALOG = notes => `osascript -e display dialog ${JSON.stringify("Hay una versión nueva de agent-chat-bridge: 0.10.0 (tienes la 0.2.2)."
+    + `\n\n${notes}\n\n¿La instalo? Discord se cerrará y se volverá a abrir; si estás en una llamada, se cortará.`)} with title "agent-chat-bridge"`
+    + ' buttons {"Ahora no", "Instalar"} default button "Instalar" cancel button "Ahora no" with icon caution';
+const UP_TO_UPDATE = [VERSION, `${DESCRIBE}`, "git status --porcelain", "git ls-remote --tags --refs origin v*",
+    "git fetch --no-tags origin refs/tags/v0.10.0:refs/tags/v0.10.0", "git tag --list --format=%(contents:body) v0.10.0",
+    UPDATE_DIALOG("Tested with Discord 0.0.423.\n\nFixed:\n• A hang.")];
+const SET_UP = ["pnpm install --frozen-lockfile", "pnpm bootstrap"];
+
+test("update: a clone at a release offers the newest release with its notes, and on yes installs it and reloads Discord", async () => {
+    Object.assign(machine, AT_RELEASE);
+    await main("run");
+    assert.deepEqual(machine.runs, [...UP_TO_UPDATE, "git checkout --quiet v0.10.0", ...SET_UP,
+        "pgrep", 'osascript -e quit app "Discord"', "pgrep", `open ${HELPER()}`]);
+    assert.deepEqual(logged.mock.calls, [["Updating v0.2.2 to v0.10.0"]]);
+});
+
+test("update: each release is offered once, so a declined one stays quiet", async () => {
+    Object.assign(machine, AT_RELEASE, { answer: false });
+    await main("run");
+    assert.deepEqual(machine.runs, UP_TO_UPDATE);
+    Object.assign(machine, { runs: [] });
+    vi.resetModules();
+    await main("run");
+    assert.deepEqual(machine.runs, UP_TO_UPDATE.slice(0, 4));
+});
+
+test("update: a newer release after a declined one is offered", async () => {
+    Object.assign(machine, AT_RELEASE, { answer: false });
+    await main("run");
+    Object.assign(machine, { remote: ["v0.10.1"], runs: [] });
+    vi.resetModules();
+    await main("run");
+    assert.equal(machine.runs[4], "git fetch --no-tags origin refs/tags/v0.10.1:refs/tags/v0.10.1");
+});
+
+test("update: versions compare part by part as numbers, and only whole vX.Y.Z tags are releases", async () => {
+    /** @type {[string[], string][]} */
+    const cases = [[["v0.2.9", "v0.2.10"], "v0.2.10"], [["v9.9.9", "v10.0.0"], "v10.0.0"], [["v0.3.0", "xv9.0.0", "v9.0.0x"], "v0.3.0"]];
+    for (const [remote, newest] of cases) {
+        Object.assign(machine, AT_RELEASE, { remote, answer: false, runs: [] });
+        rmSync(join(machine.home, "Library", "Application Support", "agent-chat-bridge", "update-seen-release"), { force: true });
+        vi.resetModules();
+        await main("run");
+        assert.equal(machine.runs[4], `git fetch --no-tags origin refs/tags/${newest}:refs/tags/${newest}`, remote.join(" "));
+    }
+});
+
+test("update: with no newer release, or none listed, it fetches and asks nothing", async () => {
+    for (const remote of [["v0.2.1", "v0.2.2"], ["v0.1.9"], []]) {
+        Object.assign(machine, AT_RELEASE, { remote, runs: [] });
+        vi.resetModules();
+        await main("run");
+        assert.deepEqual(machine.runs, UP_TO_UPDATE.slice(0, 4), remote.join(" "));
+    }
+});
+
+test("update: offline it only notes in the log that releases weren't checked", async () => {
+    Object.assign(machine, AT_RELEASE, { remote: null });
+    await main("run");
+    assert.deepEqual(machine.runs, UP_TO_UPDATE.slice(0, 4));
+    assert.deepEqual(logged.mock.calls, [["Releases not checked: fatal: unable to access"]]);
+});
+
+test("update: a clone with local changes, at a tag that isn't a release, or off any tag is never updated", async () => {
+    /** @type {[string, string][]} */
+    const clones = [["v0.2.2", " M README.md\n"], ["v0.2", ""], ["", ""]];
+    for (const [at, dirty] of clones) {
+        Object.assign(machine, AT_RELEASE, { at, dirty, runs: [] });
+        vi.resetModules();
+        await main("run");
+        assert.deepEqual(machine.runs, [VERSION, DESCRIBE, ...at === "v0.2.2" ? ["git status --porcelain"] : []], at);
+    }
+});
+
+test("update: a failed install or setup goes back to the release it was at, sets it up again, and says so", async () => {
+    const failed = notification(`No se ha podido instalar la versión 0.10.0: ha fallado su instalación. Sigues con la 0.2.2. Mira ${LOG()}.`);
+    /** @type {[string, string[]][]} */
+    const steps = [["install", ["pnpm install --frozen-lockfile"]], ["setup", SET_UP]];
+    for (const [step, tried] of steps) {
+        Object.assign(machine, AT_RELEASE, { install: true, setup: true, [step]: false, runs: [] });
+        rmSync(join(machine.home, "Library", "Application Support", "agent-chat-bridge", "update-seen-release"), { force: true });
+        vi.resetModules();
+        await main("run");
+        assert.deepEqual(machine.runs.slice(UP_TO_UPDATE.length), ["git checkout --quiet v0.10.0", ...tried,
+            "git checkout --quiet v0.2.2", ...tried, failed], step);
+        assert.equal(machine.at, "v0.2.2");
+    }
+});
+
+test("update: the notes show without the changelog's Markdown", async () => {
+    Object.assign(machine, AT_RELEASE, { answer: false, notes: "Tested with Discord 0.0.422.\n\n### Added\n"
+        + "- `pnpm repatch install`: after a Discord update removes the patch, a dialog\n  offers to re-patch it.\n- Another - not a ### heading." });
+    await main("run");
+    assert.equal(machine.runs.at(-1), UPDATE_DIALOG("Tested with Discord 0.0.422.\n\nAdded:\n"
+        + "• pnpm repatch install: after a Discord update removes the patch, a dialog offers to re-patch it.\n• Another - not a ### heading."));
+});
+
+test("update: long notes are cut to what a dialog shows", async () => {
+    Object.assign(machine, AT_RELEASE, { notes: "a".repeat(801), answer: false });
+    await main("run");
+    assert.equal(machine.runs.at(-1), UPDATE_DIALOG(`${"a".repeat(800)}…`));
+    Object.assign(machine, { notes: "a".repeat(800), runs: [] });
+    rmSync(join(machine.home, "Library", "Application Support", "agent-chat-bridge", "update-seen-release"));
+    vi.resetModules();
+    await main("run");
+    assert.equal(machine.runs.at(-1), UPDATE_DIALOG("a".repeat(800)));
+});
+
 /** What the helper's AppleScript runs: the script beside it, which each install rewrites. */
 const HELPER_SOURCE = () => `do shell script ${JSON.stringify(`/bin/sh '${APPLY()}'`)}`;
 /** What a first install runs to build the helper, under the name the App Management list shows. */
@@ -257,7 +378,8 @@ test("repatch: a first install builds the helper, writes and loads the LaunchAge
     assert.equal(existsSync(join(HELPER(), "Contents", "MacOS", NAME)), true);
     assert.equal(existsSync(join(HELPER(), "Contents", "MacOS", "applet")), false);
     assert.deepEqual(logged.mock.calls, [
-        [`Instalado: al actualizarse Discord, se te preguntará si volver a parchearlo. El registro está en ${LOG()}.`],
+        ["Instalado: al actualizarse Discord, se te preguntará si volver a parchearlo, y al salir una versión nueva "
+            + `de agent-chat-bridge, si instalarla. El registro está en ${LOG()}.`],
         [`Falta un paso: arrastra «${NAME}», que te he mostrado en el Finder, a Ajustes → Privacidad y seguridad → `
             + "Gestión de las apps, que te he abierto, y actívala. Sin ese permiso, macOS no la deja parchear Discord."]
     ]);
@@ -310,6 +432,7 @@ test("repatch: install writes the LaunchAgent that runs the check with node from
     <key>WatchPaths</key>
     <array><string>/Applications</string><string>/Applications/Discord.app/Contents/Resources</string></array>
     <key>RunAtLoad</key><true/>
+    <key>StartInterval</key><integer>86400</integer>
     <key>StandardOutPath</key><string>${LOG()}</string>
     <key>StandardErrorPath</key><string>${LOG()}</string>
 </dict>

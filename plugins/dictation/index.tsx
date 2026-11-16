@@ -81,7 +81,7 @@ const TEXT = {
     noMicrophone: (error: string) => `Dictado: no se pudo abrir el micrófono: ${error}`,
     boxChanged: "El texto de la caja cambió durante el dictado; lo paro",
     chatChanged: "Cambiaste de chat durante el dictado; lo paro",
-    unavailable: "Dictado no disponible: necesita su motor, que `pnpm setup` instala en un Mac con Apple Silicon y macOS 14 o posterior, y un modelo descargado (`dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo`). Después, reinicia Discord."
+    unavailable: "Dictado no disponible: necesita su motor, que `pnpm bootstrap` instala en un Mac con Apple Silicon y macOS 14 o posterior, y un modelo descargado (`dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo`). Después, reinicia Discord."
 } as const;
 
 const MicIcon: IconComponent = ({ height = 20, width = 20, className }) => (

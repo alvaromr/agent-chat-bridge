@@ -1,6 +1,6 @@
 #!/bin/sh
 # Runs the gate before every commit: it takes a few seconds, and docs, the lockfile and snapshots need it too (secret
-# scan, dependency checks, tests). Installed by `pnpm setup` (core.hooksPath).
+# scan, dependency checks, tests). Installed by `pnpm bootstrap` (core.hooksPath).
 # It checks what is being committed, not the working tree: the staged files are exported to a temporary directory,
 # with their dependencies installed from the local pnpm store, so unstaged changes and untracked files can't make it
 # pass. CI=true keeps Vitest from writing a missing snapshot there instead of failing.

@@ -64,8 +64,10 @@ No new code reaches Discord without a review first (see «Review»). When in dou
 
 ## Commands
 Defined in `package.json`.
-- `pnpm setup`: hooks path, dependencies and build; the dictation worker's packages, with `uv`, only where they can
-  run (`scripts/setup-dictation.mjs`).
+- `pnpm bootstrap`: hooks path, dependencies and build; the dictation worker's packages, with `uv`, only where they can
+  run (`scripts/setup-dictation.mjs`). Not named `setup`, which is pnpm's own command. Before it, a clone whose
+  dependencies differ from the lockfile, a fresh one included, needs `pnpm install --frozen-lockfile`: pnpm checks
+  them before every script (`verifyDepsBeforeRun`).
 - `pnpm check`: the gate before each commit, run by the `.githooks/` pre-commit hook on the staged files: `pnpm lint`
   (`eslint.config.mjs`, formatting included, and Ruff on the dictation worker, `dictation/worker/pyproject.toml`),
   `pnpm typecheck`, `pnpm knip` (unused files, exports and dependencies, `knip.json`), `pnpm secrets` (gitleaks on the
@@ -94,7 +96,8 @@ Defined in `package.json`.
 - `pnpm inject` / `pnpm uninject`: patch (or re-patch) Discord with `mod/`, or remove the patch. Discord closed.
   After `pnpm build`, restarting Discord is enough: the loader reads `mod/dist/` on every start.
 - `pnpm repatch install` / `pnpm repatch uninstall`: add or remove the LaunchAgent that offers to re-patch Discord
-  after an update («When Discord updates»).
+  after an update («When Discord updates») and, in a clean clone at a release tag, each new release (README,
+  «Update»). A development clone, off a release tag, is never updated.
 - `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,
   `pnpm check-discord` and a fresh clone installed and tested, the worker and `pnpm smoke-dictation` included, then
   the version in `package.json`, the dated `CHANGELOG.md` section opened by the Discord it was tested with (the app's

@@ -15,7 +15,7 @@ import { IPC } from "../../mod/src/ipc";
 
 /** main.js runs from mod/dist/. */
 const DICTATION_DIR = join(__dirname, "../../dictation");
-/** There once `pnpm setup` installed the worker, where it can run (scripts/setup-dictation.mjs). */
+/** There once `pnpm bootstrap` installed the worker, where it can run (scripts/setup-dictation.mjs). */
 const WORKER_PYTHON = workerPython(DICTATION_DIR);
 /** A worker with no dictation for this long is closed: it holds the model, ~1.6 GB. */
 const IDLE_MS = 60_000;
@@ -26,7 +26,7 @@ const MAX_SETTING = 4000;
 /** Why a dictation doesn't start, shown in the plugin's toast. */
 const TEXT = {
     invalid: "Parámetros no válidos",
-    notInstalled: "El motor de dictado no está instalado: ejecuta `pnpm setup` en el repo",
+    notInstalled: "El motor de dictado no está instalado: ejecuta `pnpm bootstrap` en el repo",
     noModel: (id: string) => `El modelo ${id} no está descargado`,
     badReplacements: (lines: number[]) => `Sustituciones: las líneas ${lines.join(", ")} no tienen la forma «oído => querido»`
 } as const;

@@ -1,5 +1,5 @@
 # The transcription worker that dictation/src/worker.ts starts: mlx-whisper on Apple Silicon. uv.lock pins every
-# package with its hash; `pnpm setup` installs them into .venv/ with `uv sync --frozen`.
+# package with its hash; `pnpm bootstrap` installs them into .venv/ with `uv sync --frozen`.
 [project]
 name = "dictation-worker"
 # uv requires one; the worker is released with agent-chat-bridge, whose one version is package.json's, so this stays.

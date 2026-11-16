@@ -26,6 +26,6 @@ test("dictation: without a model it can run, it shows no button and holding Spac
     assert.deepEqual(prevented, Array(8).fill(false));
     assert.equal(native.dictation.onEvent.mock.calls.length, 0);
     assert.equal(native.dictation.start.mock.calls.length, 0);
-    assert.equal(dictation.notice?.(), "Dictado no disponible: necesita su motor, que `pnpm setup` instala en un Mac con Apple Silicon y macOS 14 o posterior, y un modelo descargado (`dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo`). Después, reinicia Discord.",
+    assert.equal(dictation.notice?.(), "Dictado no disponible: necesita su motor, que `pnpm bootstrap` instala en un Mac con Apple Silicon y macOS 14 o posterior, y un modelo descargado (`dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo`). Después, reinicia Discord.",
         "its settings tab says why, and how to fix it");
 });

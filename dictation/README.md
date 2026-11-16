@@ -26,7 +26,7 @@ imports only its own files and Node's modules (the lint enforces it), so it can 
 
 ## Install
 Needs [uv](https://docs.astral.sh/uv/). `uv sync --frozen --project dictation/worker` installs the worker's
-packages, pinned with their hashes in `worker/uv.lock`, into `worker/.venv/`; agent-chat-bridge's `pnpm setup` does it
+packages, pinned with their hashes in `worker/uv.lock`, into `worker/.venv/`; agent-chat-bridge's `pnpm bootstrap` does it
 where `src/platform.ts` says they exist. Then download a model with the Hugging Face CLI those packages include:
 `worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo`.
 

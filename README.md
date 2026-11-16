@@ -29,14 +29,20 @@ Whisper model; and the `acb` CLI to use Discord from Claude Code.
 - To work on the repo (`pnpm check`), uv on that Mac too: the gate also lints and type-checks the dictation worker.
 
 ## Install
-From a clone of this repo, at its latest release tag:
+With Discord closed, one command clones the repo at its latest release, builds it, patches Discord and installs the
+dialogs that keep it patched and up to date (below):
 ```sh
-pnpm setup      # hooks, dependencies, build; Dictation's engine where it can run, or it says why not
-pnpm inject     # with Discord closed
-pnpm links      # optional: the acb CLI and its Claude Code skill
-pnpm repatch install   # optional: after each Discord update, offer to re-patch it
+git clone https://github.com/alvaromr/agent-chat-bridge.git && cd agent-chat-bridge \
+  && git checkout "$(git describe --tags --abbrev=0)" && pnpm install --frozen-lockfile && pnpm bootstrap \
+  && pnpm inject && pnpm repatch install
 ```
-For Dictation, download its model (~1.6 GB) into the Hugging Face cache with the CLI that `pnpm setup` installed, then
+- `pnpm install --frozen-lockfile`: the dependencies, which pnpm wants installed before it runs any script.
+- `pnpm bootstrap`: hooks and build; Dictation's engine where it can run, or it says why not.
+- `pnpm inject`: patches Discord.
+- `pnpm repatch install`: optional; drop it to re-patch and update by hand.
+- `pnpm links`, optional and apart: the acb CLI and its Claude Code skill.
+
+For Dictation, download its model (~1.6 GB) into the Hugging Face cache with the CLI that `pnpm bootstrap` installed, then
 restart Discord: Dictation looks for its engine and models when Discord starts.
 ```sh
 dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo
@@ -46,6 +52,18 @@ Discord passes `pnpm check-discord`, it asks, and on a yes it quits Discord, pat
 per Discord version, and `pnpm repatch uninstall` removes it. The patch runs in a helper app, «Reparchear Discord
 (agent-chat-bridge)», that needs macOS's App Management permission: the install shows it in the Finder and opens that
 setting, where you drag it in and turn it on.
+
+## Update
+With `pnpm repatch install`, a dialog offers each new release once, with what changed and which Discord it was tested
+with, checked once a day and at login: on a yes it installs it and reloads Discord. It only does so in a clone at a
+release tag with no local changes. Without it, watch the repo on GitHub for releases only (Watch → Custom →
+Releases), and install a release from the clone:
+```sh
+git fetch --tags && git checkout v<x.y.z>   # the new release's tag
+pnpm install --frozen-lockfile              # that release's dependencies
+pnpm bootstrap                              # and its build
+```
+Then restart Discord: the patch loads the new build on every start, so it needs no `pnpm inject`.
 
 ## Use
 - Each plugin adds a button to the chat box, left of the gift icon.

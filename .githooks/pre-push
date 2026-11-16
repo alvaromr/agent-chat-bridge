@@ -1,7 +1,7 @@
 #!/bin/sh
 # Refuses to move or delete a tag the remote already has: a released version identifies one commit forever. Then runs
 # what is too slow for the pre-commit hook: the mutation testing, so what reaches the remote has tests that notice a
-# wrong result, and the dependency audit. Installed by `pnpm setup`. Git passes one line per ref: local ref, local
+# wrong result, and the dependency audit. Installed by `pnpm bootstrap`. Git passes one line per ref: local ref, local
 # sha, remote ref, remote sha.
 set -e
 zero=0000000000000000000000000000000000000000

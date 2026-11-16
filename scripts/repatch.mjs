@@ -5,6 +5,8 @@
 // Only on the user's yes does it quit Discord and open the helper app, which runs `apply`: it rebuilds mod/dist/,
 // patches Discord and reopens it. macOS lets only an app with its App Management permission change another app, and
 // grants it to one exact build: so the helper stays the same build, and what it runs lives in a script beside it.
+// `run` also offers each new release, once a day, to a clone installed at a release tag (README, «Update»): on a yes it
+// checks the new tag out, sets it up and reloads Discord the same way. A development clone is never touched.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
@@ -26,6 +28,8 @@ const APP_FOLDER = join(homedir(), "Library", "Application Support", APP_NAME);
  * (`pnpm uninject`) keeps the version, so it asks nothing.
  */
 const SEEN = join(APP_FOLDER, "repatch-seen-version");
+/** The last release offered: it offers each one once. */
+const RELEASE_SEEN = join(APP_FOLDER, "update-seen-release");
 /** The helper's name says what it does, as the user sees it in macOS's App Management list. */
 const HELPER_NAME = `Reparchear Discord (${APP_NAME})`;
 const HELPER = join(APP_FOLDER, `${HELPER_NAME}.app`);
@@ -38,11 +42,16 @@ const SETTLE_MS = 30_000;
 /** How long Discord gets to quit before the re-patch gives up. */
 const QUIT_WAIT_MS = 30_000;
 const POLL_MS = 1_000;
+/** How often launchd runs the check besides login and Discord's changes: daily, for new releases. */
+const CHECK_INTERVAL_S = 86_400;
+/** A release's notes in the dialog, cut to what a dialog shows. */
+const MAX_NOTES = 800;
 
 /** What the user reads, in a dialog or a notification. */
 const TEXT = {
     usage: "Uso: node scripts/repatch.mjs install|uninstall|run|apply",
-    installed: `Instalado: al actualizarse Discord, se te preguntará si volver a parchearlo. El registro está en ${LOG}.`,
+    installed: "Instalado: al actualizarse Discord, se te preguntará si volver a parchearlo, y al salir una versión nueva "
+        + `de agent-chat-bridge, si instalarla. El registro está en ${LOG}.`,
     grant: `Falta un paso: arrastra «${HELPER_NAME}», que te he mostrado en el Finder, a Ajustes → Privacidad y `
         + "seguridad → Gestión de las apps, que te he abierto, y actívala. Sin ese permiso, macOS no la deja parchear Discord.",
     uninstalled: `Desinstalado: Discord ya no se vuelve a parchear tras actualizarse. Quita «${HELPER_NAME}» de Gestión de las apps.`,
@@ -60,6 +69,12 @@ const TEXT = {
     failed: step => `No se ha podido volver a parchear Discord: ha fallado pnpm ${step}. Mira ${LOG}; si dice EPERM, `
         + `activa «${HELPER_NAME}» en Ajustes → Privacidad y seguridad → Gestión de las apps.`,
     done: version => `Discord ${version} vuelve a estar parcheado.`,
+    update: (current, latest, notes) => `Hay una versión nueva de agent-chat-bridge: ${latest.slice(1)} (tienes la `
+        + `${current.slice(1)}).\n\n${notes}\n\n¿La instalo? Discord se cerrará y se volverá a abrir; si estás en una `
+        + "llamada, se cortará.",
+    install: "Instalar",
+    updateFailed: (latest, current) => `No se ha podido instalar la versión ${latest.slice(1)}: ha fallado su instalación. `
+        + `Sigues con la ${current.slice(1)}. Mira ${LOG}.`,
     crashed: `La comprobación del parche de Discord ha fallado. Mira ${LOG}.`
 };
 
@@ -74,13 +89,21 @@ function exec(command, args, capture = false) {
 
 const notify = text => exec("osascript", ["-e", `display notification ${quoted(text)} with title ${quoted(APP_NAME)}`]);
 
-/** Whether the user chose to re-patch now. Any other answer, or a dialog that couldn't show, is a no. */
-function askToRepatch(version) {
-    const answer = exec("osascript", ["-e", `display dialog ${quoted(TEXT.question(version))} with title ${quoted(APP_NAME)}`
-        + ` buttons {${quoted(TEXT.later)}, ${quoted(TEXT.repatch)}} default button ${quoted(TEXT.repatch)}`
+/** Whether the user chose `yes`. «Ahora no», or a dialog that couldn't show, is a no. */
+function ask(question, yes) {
+    const answer = exec("osascript", ["-e", `display dialog ${quoted(question)} with title ${quoted(APP_NAME)}`
+        + ` buttons {${quoted(TEXT.later)}, ${quoted(yes)}} default button ${quoted(yes)}`
         + ` cancel button ${quoted(TEXT.later)} with icon caution`], true);
-    if (!answer.ok) console.log(`Not re-patched: ${answer.stderr.trim()}`);
+    if (!answer.ok) console.log(`Declined: ${answer.stderr.trim()}`);
     return answer.ok;
+}
+
+/** Whether `value` is new to `file`, which then keeps it: what asks once per version. */
+function firstSeen(file, value) {
+    const seen = existsSync(file) && readFileSync(file, "utf8") === value;
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, value);
+    return !seen;
 }
 
 async function waitUntilQuit() {
@@ -117,18 +140,81 @@ function apply() {
     notify(failed ? TEXT.failed(failed) : TEXT.done(appVersion()));
 }
 
-/** What the LaunchAgent runs: it asks only when a Discord version it hasn't seen comes unpatched. */
-async function run() {
+/** It asks only when a Discord version it hasn't seen comes unpatched. */
+async function checkPatch() {
     if (!existsSync(ORIGINAL)) await sleep(SETTLE_MS);
     const version = appVersion();
-    const seen = existsSync(SEEN) && readFileSync(SEEN, "utf8") === version;
-    mkdirSync(dirname(SEEN), { recursive: true });
-    writeFileSync(SEEN, version);
-    if (existsSync(ORIGINAL) || seen) return;
+    if (!firstSeen(SEEN, version) || existsSync(ORIGINAL)) return;
     console.log(`Discord ${version} lost the patch`);
     if (output("git", ["status", "--porcelain"])) notify(TEXT.dirty(version));
     else if (!exec("pnpm", ["check-discord"]).ok) notify(TEXT.checkFailed(version));
-    else if (askToRepatch(version)) await repatch();
+    else if (ask(TEXT.question(version), TEXT.repatch)) await repatch();
+}
+
+/** A release tag's x.y.z as numbers, or null for any other tag. */
+function release(tag) {
+    const parts = tag.match(/^v(\d+)\.(\d+)\.(\d+)$/)?.slice(1).map(Number);
+    return parts ?? null;
+}
+
+const newer = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+
+/** The newest release tag on the remote, or null when it can't be listed (offline, say), which only the log notes. */
+function latestRelease() {
+    const listed = exec("git", ["ls-remote", "--tags", "--refs", "origin", "v*"], true);
+    if (!listed.ok) {
+        console.log(`Releases not checked: ${listed.stderr.trim()}`);
+        return null;
+    }
+    // Stryker disable next-line StringLiteral: a line without a tag, as the last empty one, is no release either way.
+    const tags = listed.stdout.split("\n").map(line => line.split("refs/tags/")[1] ?? "").filter(tag => release(tag));
+    return tags.sort((a, b) => newer(/** @type {number[]} */ (release(b)), /** @type {number[]} */ (release(a))))[0] ?? null;
+}
+
+/** Offers a release newer than the clean release tag the clone is at, once; on a yes, installs it and reloads Discord. */
+async function checkUpdate() {
+    // Off a tag, git describe fails and prints nothing on stdout: no release.
+    const current = exec("git", ["describe", "--tags", "--exact-match", "--match", "v*", "HEAD"], true).stdout.trim();
+    // Only a clone installed at a release, as it was left: a development clone, or local changes, stay as they are.
+    if (!release(current) || output("git", ["status", "--porcelain"])) return;
+    const latest = latestRelease();
+    if (!latest || newer(/** @type {number[]} */ (release(latest)), /** @type {number[]} */ (release(current))) <= 0) return;
+    if (!firstSeen(RELEASE_SEEN, latest)) return;
+    // The tag's objects only: nothing of it runs before the user's yes.
+    output("git", ["fetch", "--no-tags", "origin", `refs/tags/${latest}:refs/tags/${latest}`]);
+    const notes = plainNotes(output("git", ["tag", "--list", "--format=%(contents:body)", latest]));
+    const shown = notes.length > MAX_NOTES ? `${notes.slice(0, MAX_NOTES)}…` : notes;
+    if (!ask(TEXT.update(current, latest, shown), TEXT.install)) return;
+    console.log(`Updating ${current} to ${latest}`);
+    output("git", ["checkout", "--quiet", latest]);
+    if (setUp()) {
+        await repatch();
+        return;
+    }
+    output("git", ["checkout", "--quiet", current]);
+    setUp();
+    notify(TEXT.updateFailed(latest, current));
+}
+
+/**
+ * The release checked out installed and built. The install comes first: pnpm refuses to run a script while the
+ * dependencies differ from the lockfile, as a new release's may.
+ */
+const setUp = () => exec("pnpm", ["install", "--frozen-lockfile"]).ok && exec("pnpm", ["bootstrap"]).ok;
+
+/** A release's notes, from the changelog's Markdown to the plain text a dialog shows. */
+function plainNotes(markdown) {
+    return markdown
+        .replaceAll("\n  ", " ") // a list item wrapped onto the next line joins it
+        .replace(/^### (.+)/gm, "$1:") // `.` stops at the line's end
+        .replace(/^- /gm, "• ")
+        .replaceAll("`", "");
+}
+
+/** What the LaunchAgent runs: the patch after a Discord update, then a new release. */
+async function run() {
+    await checkPatch();
+    await checkUpdate();
 }
 
 /** A shell word that stands for the text as it is. */
@@ -173,6 +259,7 @@ function launchAgent(path) {
     <key>WatchPaths</key>
     <array>${string("/Applications")}${string(RESOURCES)}</array>
     <key>RunAtLoad</key><true/>
+    <key>StartInterval</key><integer>${CHECK_INTERVAL_S}</integer>
     <key>StandardOutPath</key>${string(LOG)}
     <key>StandardErrorPath</key>${string(LOG)}
 </dict>

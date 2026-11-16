@@ -5,6 +5,18 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+### Added
+- With `pnpm repatch install`, a dialog offers each new release once, with its notes, checked daily and at login; on
+  a yes it installs it and reloads Discord. Only in a clone at a release tag with no local changes.
+- The README installs in one command: clone at the latest release, build, patch and the dialogs.
+
+### Changed
+- `pnpm setup` is now `pnpm bootstrap`: `pnpm setup` ran pnpm's own command instead of the repo's.
+
+### Fixed
+- The install steps work on a fresh clone: they install the dependencies first, which pnpm wants before it runs any
+  script, and then run `pnpm bootstrap`.
+
 ## [0.2.2] - 2026-11-16
 
 Tested with Discord 0.0.422 for macOS, stable web client build 673869.

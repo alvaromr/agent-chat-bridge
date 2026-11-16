@@ -1,5 +1,5 @@
-// `pnpm setup`'s step for Dictation (scripts/setup-dictation.mjs), with the machine and uv faked: it installs the
-// worker's packages only where they can run, says why not elsewhere, and fails `pnpm setup` when the install fails.
+// `pnpm bootstrap`'s step for Dictation (scripts/setup-dictation.mjs), with the machine and uv faked: it installs the
+// worker's packages only where they can run, says why not elsewhere, and fails `pnpm bootstrap` when the install fails.
 // Run with `pnpm test`.
 import assert from "node:assert/strict";
 
@@ -33,7 +33,7 @@ test("setup-dictation: on an Apple Silicon Mac with uv, it installs the worker's
     assert.equal(warned.mock.calls.length, 0);
 });
 
-test("setup-dictation: a failed install fails pnpm setup, with uv's own code, or 1 when a signal ended uv", async () => {
+test("setup-dictation: a failed install fails pnpm bootstrap, with uv's own code, or 1 when a signal ended uv", async () => {
     machine.syncStatus = 2;
     await run();
     assert.equal(process.exitCode, 2);
@@ -60,6 +60,6 @@ test("setup-dictation: without uv it installs nothing and says how to get it", a
     await run();
     assert.deepEqual(machine.runs, ["uv --version"]);
     assert.deepEqual(warned.mock.calls.map(([text]) => text),
-        ["Dictado: no se instala, porque falta uv (https://docs.astral.sh/uv/). Instálalo y repite `pnpm setup`. El resto de agent-chat-bridge sí."]);
+        ["Dictado: no se instala, porque falta uv (https://docs.astral.sh/uv/). Instálalo y repite `pnpm bootstrap`. El resto de agent-chat-bridge sí."]);
     assert.equal(process.exitCode, undefined);
 });
