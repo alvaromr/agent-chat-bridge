@@ -5,6 +5,10 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-16
+
+Tested with Discord 0.0.422 for macOS, stable web client build 673869.
+
 ### Added
 - With `pnpm repatch install`, a dialog offers each new release once, with its notes, checked daily and at login; on
   a yes it installs it and reloads Discord. Only in a clone at a release tag with no local changes.
