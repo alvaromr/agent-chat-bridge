@@ -9,6 +9,9 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, beforeEach, test, vi } from "vitest";
 
+// Dictation runs on macOS: its paths, on any system.
+vi.mock("node:path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
+vi.mock("path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
 /** The workers started. @type {any} */
 const fake = vi.hoisted(() => ({ workers: [], venv: true }));
 vi.mock("../dictation/src/worker.ts", async original => ({

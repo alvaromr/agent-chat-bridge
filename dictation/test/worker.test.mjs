@@ -9,6 +9,9 @@ import { afterEach, beforeEach, test, vi } from "vitest";
 
 import { encodeRequest } from "../src/protocol.ts";
 
+// The worker runs on macOS: its paths, on any system.
+vi.mock("node:path", async original => (await import("./posix-path.mjs")).posixPath(original));
+vi.mock("path", async original => (await import("./posix-path.mjs")).posixPath(original));
 /** Each spawn: its command, arguments and options, and the fake child. @type {any[]} */
 const spawned = vi.hoisted(() => []);
 vi.mock("child_process", async () => {

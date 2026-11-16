@@ -33,10 +33,10 @@ test("run: claude is where its native installer puts it, with the least environm
         bin: "/Users/ana/.local/bin/claude", env: { HOME: "/Users/ana", USER: "ana", PATH: "/usr/bin:/bin", TMPDIR: "/tmp" }
     });
     assert.deepEqual(claudeProcess("linux", env, "/home/ana", "/tmp").bin, "/home/ana/.local/bin/claude");
-    assert.deepEqual(claudeProcess("win32", env, "/Users/ana", "C:\\T"), {
-        bin: "/Users/ana/.local/bin/claude.exe",
+    assert.deepEqual(claudeProcess("win32", env, "C:\\Users\\ana", "C:\\T"), {
+        bin: "C:\\Users\\ana\\.local\\bin\\claude.exe",
         env: {
-            USERPROFILE: "/Users/ana", APPDATA: "C:\\R", LOCALAPPDATA: "C:\\L", SystemRoot: "C:\\Windows",
+            USERPROFILE: "C:\\Users\\ana", APPDATA: "C:\\R", LOCALAPPDATA: "C:\\L", SystemRoot: "C:\\Windows",
             PATH: "C:\\Windows\\System32", TEMP: "C:\\T", TMP: "C:\\T"
         }
     });

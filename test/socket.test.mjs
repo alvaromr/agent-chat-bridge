@@ -35,8 +35,18 @@ vi.mock("net", () => ({
     }
 }));
 
+// The socket as a file, on a Mac's paths on every system the suite runs on; Windows' named pipe is in
+// test/socket-pipe.test.mjs.
+vi.mock("node:path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
+vi.mock("path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
+const platform = process.platform;
+Object.defineProperty(process, "platform", { value: "darwin" });
+
 fake.appData = mkdtempSync(join(tmpdir(), "agent-chat-bridge-socket-"));
-afterAll(() => rmSync(fake.appData, { recursive: true, force: true }));
+afterAll(() => {
+    rmSync(fake.appData, { recursive: true, force: true });
+    Object.defineProperty(process, "platform", { value: platform });
+});
 const FOLDER = join(fake.appData, "agent-chat-bridge"), SOCKET = join(FOLDER, "compose.sock");
 
 const { IPC } = await import("../mod/src/ipc.ts");
@@ -44,8 +54,11 @@ const { startComposeServer } = await import("../mod/src/compose.ts");
 
 test("socket: in a folder only the user can enter, replacing a stale one, readable only by the user; removed on quit", () => {
     startComposeServer();
-    assert.equal(statSync(FOLDER).mode & 0o777, 0o700);
-    assert.equal(statSync(SOCKET).mode & 0o777, 0o600);
+    // Windows has no POSIX permission bits to check, and on Windows the socket is a pipe anyway.
+    if (platform !== "win32") {
+        assert.equal(statSync(FOLDER).mode & 0o777, 0o700);
+        assert.equal(statSync(SOCKET).mode & 0o777, 0o600);
+    }
     writeFileSync(SOCKET, "viejo");
     startComposeServer();
     assert.equal(statSync(SOCKET).size, 0, "the stale socket went first");

@@ -181,7 +181,7 @@ test("linux: Discord is ended with pkill and started detached; notices and quest
         "zenity --question --title=agent-chat-bridge --text=¿Parcheo? --ok-label=Cerrar y parchear --cancel-label=Ahora no --no-markup"]);
     assert.deepEqual(machine.locales, ["C.UTF-8", "C.UTF-8", "C.UTF-8"], "the desktop tools read accents in any session");
     assert.deepEqual(machine.piped, ["zenity", "zenity"], "only the answer is read; a notice's output goes to the log");
-    assert.equal(system.logFile("/s"), "/s/repatch.log");
+    assert.equal(system.logFile("/s"), join("/s", "repatch.log"));
     assert.equal(system.permissionHint, "");
 });
 

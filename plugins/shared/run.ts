@@ -4,23 +4,24 @@ import { execFile } from "child_process";
 import type { IpcMainInvokeEvent } from "electron";
 import { mkdtemp, rm } from "fs/promises";
 import { homedir, tmpdir } from "os";
-import { join } from "path";
+import { join, posix, win32 } from "path";
 
 /**
  * Where Claude Code's native installer puts claude, and the least environment it runs with, on each system. macOS is
- * tested; Windows and Linux follow the installer's documented paths, untested.
+ * tested; Windows and Linux follow the installer's documented paths, untested. The paths are `platform`'s, whatever
+ * system this runs on.
  */
 export function claudeProcess(platform: string, env: NodeJS.ProcessEnv, home: string, tmp: string) {
     if (platform === "win32") {
         return {
-            bin: join(home, ".local", "bin", "claude.exe"),
+            bin: win32.join(home, ".local", "bin", "claude.exe"),
             env: {
                 USERPROFILE: home, APPDATA: env.APPDATA, LOCALAPPDATA: env.LOCALAPPDATA, SystemRoot: env.SystemRoot,
                 PATH: `${env.SystemRoot}\\System32`, TEMP: tmp, TMP: tmp
             }
         };
     }
-    return { bin: join(home, ".local", "bin", "claude"), env: { HOME: home, USER: env.USER, PATH: "/usr/bin:/bin", TMPDIR: tmp } };
+    return { bin: posix.join(home, ".local", "bin", "claude"), env: { HOME: home, USER: env.USER, PATH: "/usr/bin:/bin", TMPDIR: tmp } };
 }
 
 const MODEL_RE = /^claude-[a-z0-9-]+$/;

@@ -10,6 +10,10 @@ import { afterAll, test, vi } from "vitest";
 import { readAttachments } from "../mod/src/attachments.ts";
 import { settingsFile } from "../mod/src/settingsFile.ts";
 
+// Windows has no POSIX permission bits: chmod can't make a file unreadable there, and the user folder's access list,
+// not the mode, keeps the settings the user's own. What depends on the bits is tested on macOS and Linux.
+const MODES = process.platform !== "win32";
+
 const dir = mkdtempSync(join(tmpdir(), "agent-chat-bridge-test-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const file = (name, data = "x") => {
@@ -48,7 +52,7 @@ test("attachments: no folders, no missing paths and nothing over 25 MB", () => {
     assert.equal(readAttachments([file("bien.png"), big]), `Pasa de 25 MB: ${big}`);
 });
 
-test("attachments: a path that exists but can't be read says why", () => {
+test.runIf(MODES)("attachments: a path that exists but can't be read says why", () => {
     const closed = join(dir, "cerrada");
     mkdirSync(closed, { mode: 0o000 });
     try {
@@ -58,7 +62,7 @@ test("attachments: a path that exists but can't be read says why", () => {
     }
 });
 
-test("attachments: a file that can be found but not read says why instead of failing the request", () => {
+test.runIf(MODES)("attachments: a file that can be found but not read says why instead of failing the request", () => {
     const locked = file("bloqueada.png");
     chmodSync(locked, 0o000);
     try {
@@ -72,8 +76,10 @@ test("settings: saved to a 0600 file in a 0700 folder, leaving no temporary file
     const path = join(dir, "ajustes", "settings.json");
     settingsFile(path).write({ corrector: { model: "x" } });
     assert.deepEqual(settingsFile(path).read(), { settings: { corrector: { model: "x" } } });
-    assert.equal(statSync(path).mode & 0o777, 0o600);
-    assert.equal(statSync(join(dir, "ajustes")).mode & 0o777, 0o700);
+    if (MODES) {
+        assert.equal(statSync(path).mode & 0o777, 0o600);
+        assert.equal(statSync(join(dir, "ajustes")).mode & 0o777, 0o700);
+    }
     assert.deepEqual(readdirSync(join(dir, "ajustes")), ["settings.json"]);
 });
 
@@ -135,7 +141,7 @@ test.each([
     }
 });
 
-test("settings: a file that can't be read or moved blocks saving, so nothing overwrites it", () => {
+test.runIf(MODES)("settings: a file that can't be read or moved blocks saving, so nothing overwrites it", () => {
     vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const folder = mkdtempSync(join(dir, "cerrada-"));

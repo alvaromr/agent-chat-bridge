@@ -22,10 +22,7 @@ const { machine, platform } = vi.hoisted(() => {
     return { machine: /** @type {any} */ ({}), platform };
 });
 afterAll(() => void Object.defineProperty(process, "platform", { value: platform }));
-vi.mock("node:path", async original => {
-    const { posix } = /** @type {typeof import("node:path")} */ (await original());
-    return { ...posix, default: posix };
-});
+vi.mock("node:path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
 const fresh = () => ({
     home: "", installed: true, patched: false, running: true, quits: true, version: "0.0.422", dirty: "", check: true,
     answer: true, build: true, inject: true, install: true, setup: true, at: "", remote: [], notes: "", loaded: false, bootout: true, bootstrap: true, missing: "", pgrepStatus: 1,
@@ -446,7 +443,7 @@ test("repatch: the helper's and the LaunchAgent's scripts run apply and run from
         const scripts = [[APPLY(), "apply"], [RUN(), "run"]];
         for (const [file, command] of scripts) {
             assert.equal(readFileSync(file, "utf8"), `cd '${REPO}' && PATH='/it'\\''s/bin:/usr/bin' exec node `
-                + `--disable-warning=MODULE_TYPELESS_PACKAGE_JSON '${REPO}scripts/repatch.mjs' ${command} >> '${LOG()}' 2>&1\n`);
+                + `--disable-warning=MODULE_TYPELESS_PACKAGE_JSON '${fileURLToPath(new URL("../scripts/repatch.mjs", import.meta.url))}' ${command} >> '${LOG()}' 2>&1\n`);
         }
         delete process.env.PATH;
         vi.resetModules();
@@ -481,9 +478,11 @@ test("repatch: install writes the LaunchAgent that runs the check at login, when
 
 test("repatch: the LaunchAgent escapes what XML would read as markup", async () => {
     rmSync(machine.home, { recursive: true, force: true });
-    machine.home = mkdtempSync(join(tmpdir(), "repatch-a&b<c-"));
+    // Windows allows no `<` in a file's name.
+    const lt = platform === "win32" ? ["", ""] : ["<", "&lt;"];
+    machine.home = mkdtempSync(join(tmpdir(), `repatch-a&b${lt[0]}c-`));
     await main("install");
-    assert.match(readFileSync(PLIST(), "utf8"), /<string>[^<]*repatch-a&amp;b&lt;c-[^<]*repatch-run\.sh<\/string>/);
+    assert.match(readFileSync(PLIST(), "utf8"), new RegExp(`<string>[^<]*repatch-a&amp;b${lt[1]}c-[^<]*repatch-run\\.sh</string>`));
 });
 
 test("repatch: install fails, saying why, without Discord installed", async () => {

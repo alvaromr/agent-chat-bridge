@@ -25,5 +25,7 @@ jobs:
         with:
           node-version: 26
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test
+      # Without the coverage threshold: the tests of POSIX permission bits don't run on Windows (test/files.test.mjs),
+      # and the coverage is counted on macOS, by the gate.
+      - run: pnpm exec vitest run
       - run: pnpm smoke-os

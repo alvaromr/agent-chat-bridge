@@ -27,7 +27,7 @@ vi.mock("fs/promises", () => ({
 }));
 
 // Typed loosely: the tests send what a page script could, of any type.
-const { runClaude } = /** @type {any} */ (await import("../plugins/shared/run.ts"));
+const { runClaude, claudeProcess } = /** @type {any} */ (await import("../plugins/shared/run.ts"));
 
 const event = /** @type {any} */ ({});
 beforeEach(() => {
@@ -47,7 +47,9 @@ async function answer({ err = null, stdout = "", stderr = "" } = {}) {
 test("run: claude from the user's bin, isolated, in a throwaway folder, with the input on stdin", async () => {
     assert.deepEqual(await answer({ stdout: "  hola \n" }), { ok: true, text: "hola" });
     const [{ file, args, options, input }] = runs;
-    assert.equal(file, join(homedir(), ".local/bin/claude"));
+    // Where this system's claude is, which test/platform.test.mjs checks on each one.
+    const claude = claudeProcess(process.platform, process.env, homedir(), tmpdir());
+    assert.equal(file, claude.bin);
     assert.deepEqual(args, [
         "-p", "--safe-mode", "--settings", '{"language":""}', "--tools", "", "--strict-mcp-config", "--no-session-persistence", "--effort", "low",
         "--model", "claude-sonnet-5-5", "--system-prompt", "sistema"
@@ -55,7 +57,7 @@ test("run: claude from the user's bin, isolated, in a throwaway folder, with the
     const folder = join(tmpdir(), "discord-claude-");
     assert.deepEqual(options, {
         cwd: `${folder}abc`, timeout: 120_000, maxBuffer: 1 << 20,
-        env: { HOME: homedir(), USER: process.env.USER, PATH: "/usr/bin:/bin", TMPDIR: tmpdir(), CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" }
+        env: { ...claude.env, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" }
     });
     assert.equal(input, "entrada");
     assert.deepEqual(folders.made, [folder]);

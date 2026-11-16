@@ -4,9 +4,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, beforeEach, test } from "vitest";
+import { afterEach, beforeEach, test, vi } from "vitest";
 
 import { findModels, hubDir } from "../src/models.ts";
+
+// The models are read on macOS: its paths, on any system.
+vi.mock("node:path", async original => (await import("./posix-path.mjs")).posixPath(original));
+vi.mock("path", async original => (await import("./posix-path.mjs")).posixPath(original));
 
 /** @type {string} */
 let hub;

@@ -1,5 +1,6 @@
 // Arguments and dates of the CLI (scripts/acb.mjs), without Discord. Run with `pnpm test`.
 import assert from "node:assert/strict";
+import { resolve } from "node:path";
 
 import { expect, test, vi } from "vitest";
 
@@ -47,7 +48,8 @@ test("draft: text or an attachment, and the chat by name or by id", () => {
     assert.deepEqual(request(["draft", "nacho", "hola"]), { text: "hola", query: "nacho" });
     assert.deepEqual(request(["draft", "1", "hola", "--id", "--dry-run"]), { text: "hola", channelId: "1", dryRun: true });
     const { attach } = request(["draft", "nacho", "--attach", "a.png", "--attach", "/tmp/b.png"]);
-    assert.deepEqual(attach, [`${process.cwd()}/a.png`, "/tmp/b.png"]);
+    // Each path as this system resolves it: from the working folder, or as given when absolute.
+    assert.deepEqual(attach, [resolve("a.png"), resolve("/tmp/b.png")]);
 });
 
 test("draft --clear takes no text and no other options", () => {
