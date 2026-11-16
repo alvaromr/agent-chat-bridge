@@ -43,7 +43,9 @@ dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo
 ```
 After a Discord update, run `pnpm inject` again. With `pnpm repatch install`, a dialog offers it instead: once the new
 Discord passes `pnpm check-discord`, it asks, and on a yes it quits Discord, patches it and reopens it. It asks once
-per Discord version, and `pnpm repatch uninstall` removes it.
+per Discord version, and `pnpm repatch uninstall` removes it. The patch runs in a helper app, «Reparchear Discord
+(agent-chat-bridge)», that needs macOS's App Management permission: the install shows it in the Finder and opens that
+setting, where you drag it in and turn it on.
 
 ## Use
 - Each plugin adds a button to the chat box, left of the gift icon.

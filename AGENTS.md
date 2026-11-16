@@ -168,8 +168,11 @@ macOS replaces the whole app and the patch disappears; `pnpm inject` restores it
 With `pnpm repatch install`, a LaunchAgent does the first part once per Discord version that lost the patch, at login
 or when `/Applications` or Discord's `Resources` change (`scripts/repatch.mjs`). It holds to the review of a re-patch
 without changes: with a clean tree and `pnpm check-discord` passing, it asks in a dialog, and only on a yes it quits
-Discord, rebuilds `mod/dist/`, patches and reopens it. Otherwise a notification says what failed, and the log is
-`~/Library/Logs/agent-chat-bridge-repatch.log`. `pnpm live` stays manual.
+Discord and opens a helper app, «Reparchear Discord (agent-chat-bridge)», that rebuilds `mod/dist/`, patches and
+reopens it. macOS lets only an app with its App Management permission change another app, and the user grants it to
+the helper once: a new build of the helper loses it, so an install keeps the one there while its AppleScript is the
+same. Otherwise a notification says what failed, and the log is `~/Library/Logs/agent-chat-bridge-repatch.log`.
+`pnpm live` stays manual.
 If a patch or piece is no longer found (`pnpm check-discord`, or the settings modal with Discord open), find what
 changed in Discord's code (`docs/debugging.md`, method 3) and adapt `mod/`. `mod/` was first derived from Vencord
 (<https://github.com/Vendicated/Vencord>): when the cause is unclear, see how its repo solved the same change, and

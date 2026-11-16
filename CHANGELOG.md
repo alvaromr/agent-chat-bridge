@@ -7,7 +7,8 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ### Added
 - `pnpm repatch install`: after a Discord update removes the patch, a dialog offers to re-patch it, once the new
-  Discord passes `pnpm check-discord`. On a yes it quits Discord, patches it and reopens it.
+  Discord passes `pnpm check-discord`. On a yes it quits Discord, patches it and reopens it, through a helper app
+  that needs macOS's App Management permission.
 
 ## [0.2.1] - 2026-11-10
 
