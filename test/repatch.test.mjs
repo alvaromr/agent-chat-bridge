@@ -7,12 +7,25 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, test, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, test, vi } from "vitest";
 
 const REPO = fileURLToPath(new URL("..", import.meta.url));
 
-/** The machine: Discord's state, what each command answers, and every command run, in order. @type {any} */
-const machine = vi.hoisted(() => ({}));
+/**
+ * The machine: Discord's state, what each command answers, and every command run, in order. It is a Mac on every
+ * system the suite runs on, with its paths, so scripts/os/index.mjs picks the macOS module; the others are tested on
+ * their own fakes in test/os.test.mjs.
+ */
+const { machine, platform } = vi.hoisted(() => {
+    const platform = process.platform;
+    Object.defineProperty(process, "platform", { value: "darwin" });
+    return { machine: /** @type {any} */ ({}), platform };
+});
+afterAll(() => void Object.defineProperty(process, "platform", { value: platform }));
+vi.mock("node:path", async original => {
+    const { posix } = /** @type {typeof import("node:path")} */ (await original());
+    return { ...posix, default: posix };
+});
 const fresh = () => ({
     home: "", installed: true, patched: false, running: true, quits: true, version: "0.0.422", dirty: "", check: true,
     answer: true, build: true, inject: true, install: true, setup: true, at: "", remote: [], notes: "", loaded: false, bootout: true, bootstrap: true, missing: "", pgrepStatus: 1,

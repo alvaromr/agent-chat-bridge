@@ -2,10 +2,11 @@
 // or each event of a `watch`, and its exit codes. Run with `pnpm test`.
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { homedir, userInfo } from "node:os";
 
 import { beforeEach, test, vi } from "vitest";
+
+import { appDataDir, socketPath } from "../mod/src/platform.mts";
 
 /** Each connection: the path, what was written, and the fake socket. @type {any[]} */
 const conns = vi.hoisted(() => []);
@@ -32,7 +33,8 @@ const printed = spy => spy.mock.calls.map(args => args.join(" "));
 test("cli: a request goes to the app's socket as one JSON line, and its answer is printed; a failed one exits with 1", async () => {
     main(["list"]);
     const [conn] = conns;
-    assert.equal(conn.path, join(homedir(), "Library/Application Support/agent-chat-bridge/compose.sock"));
+    // The socket that mod/src/platform.mts names for this system, which test/platform.test.mjs checks on each one.
+    assert.equal(conn.path, socketPath(process.platform, appDataDir(process.platform, process.env, homedir()), userInfo().username));
     await vi.waitFor(() => assert.equal(conn.written, JSON.stringify({ list: true }) + "\n"));
     conn.emit("data", '{"ok":true,');
     conn.emit("data", '"chats":[]}\n');
