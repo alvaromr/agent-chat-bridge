@@ -18,6 +18,7 @@ export default {
         "scripts/changelog.mjs",
         "scripts/acb.mjs",
         "scripts/discord-app.mjs",
+        "scripts/os/*.mjs",
         "scripts/repatch.mjs",
         "scripts/setup-dictation.mjs"
     ],

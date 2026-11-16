@@ -5,6 +5,11 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+### Added
+- Windows and Linux, experimental: the patch, the plugins but Dictation, the `acb` CLI and `pnpm repatch install`,
+  with each system's paths, dialogs and scheduler. On Linux the patch and the CLI were checked with Discord 1.0.169;
+  Windows is untested (README, «Requirements»). Dictation stays on Apple Silicon Macs.
+
 ## [0.2.3] - 2026-11-16
 
 Tested with Discord 0.0.422 for macOS, stable web client build 673869.

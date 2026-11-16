@@ -1,18 +1,21 @@
-// Local socket for scripts/acb.mjs. Only the user's account can connect (socket 0600 in a 0700 dir).
+// Local socket for scripts/acb.mjs. Only the user's account can connect: socket 0600 in a 0700 dir, or on Windows a
+// named pipe (mod/src/platform.mts).
 // Validates each request, reads files to attach, hands the request to the renderer and brings Discord to the front
 // after a draft.
 import { app, BrowserWindow, ipcMain } from "electron";
 import { chmodSync, mkdirSync, rmSync } from "fs";
 import { createServer, Socket } from "net";
-import { join } from "path";
+import { userInfo } from "os";
+import { dirname } from "path";
 
 import { readAttachments } from "./attachments";
 import { type ComposeEvent, type ComposeRequest, type ComposeResult, IPC } from "./ipc";
-import { APP_NAME, SOCKET_FILE } from "./name.mts";
+import { isPipe, socketPath } from "./platform.mts";
 import { log } from "./plugin-api/log";
 import { isValid, watchRequest } from "./validate";
 
-const SOCKET = join(app.getPath("appData"), APP_NAME, SOCKET_FILE);
+const SOCKET = socketPath(process.platform, app.getPath("appData"), userInfo().username);
+const ON_DISK = !isPipe(process.platform);
 const MAX_REQUEST_BYTES = 16 * 1024;
 const TIMEOUT_MS = 10_000;
 
@@ -97,8 +100,10 @@ async function handle(raw: string): Promise<ComposeResult> {
 }
 
 export function startComposeServer() {
-    mkdirSync(join(SOCKET, ".."), { recursive: true, mode: 0o700 });
-    rmSync(SOCKET, { force: true }); // left over by a previous run that didn't exit cleanly
+    if (ON_DISK) {
+        mkdirSync(dirname(SOCKET), { recursive: true, mode: 0o700 });
+        rmSync(SOCKET, { force: true }); // left over by a previous run that didn't exit cleanly
+    }
 
     const server = createServer(conn => {
         let data = "";
@@ -124,9 +129,9 @@ export function startComposeServer() {
             if (err.code !== "EPIPE" && err.code !== "ECONNRESET") log.error(`CLI connection failed: ${err.code ?? err.message}`);
         });
     });
-    server.listen(SOCKET, () => chmodSync(SOCKET, 0o600));
+    server.listen(SOCKET, () => ON_DISK && chmodSync(SOCKET, 0o600));
     app.on("will-quit", () => {
         server.close();
-        rmSync(SOCKET, { force: true });
+        if (ON_DISK) rmSync(SOCKET, { force: true });
     });
 }

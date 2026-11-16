@@ -1,8 +1,8 @@
 # agent-chat-bridge
 
 A bridge between an AI agent and your Discord, with you confirming everything it publishes. A minimal patch of the
-official Discord desktop app for macOS adds two plugins backed by a local `claude -p`: Corrector (spelling fixes) and
-Autorespuesta (reply drafts in the user's tone); Dictation, which writes what you say into the chat box with a local
+official Discord desktop app for macOS, and experimentally for Windows and Linux (Requirements), adds two plugins
+backed by a local `claude -p`: Corrector (spelling fixes) and Autorespuesta (reply drafts in the user's tone); Dictation, which writes what you say into the chat box with a local
 Whisper model; and the `acb` CLI to use Discord from Claude Code.
 
 ## Before you install
@@ -17,11 +17,18 @@ Whisper model; and the `acb` CLI to use Discord from Claude Code.
 - agent-chat-bridge is not affiliated with or endorsed by Discord or Anthropic.
 
 ## Requirements
-- macOS with Discord (stable) in `/Applications`.
-- Node (version in `.node-version`) and pnpm (version in `package.json`).
-- Homebrew's `gitleaks`, at the version in `scripts/secrets.mjs`, for the secret scan of the gate
-  (`brew install gitleaks`).
-- Claude Code installed as `~/.local/bin/claude`, for the plugins.
+- Discord (stable), installed where each system keeps it:
+  - macOS, tested: in `/Applications`.
+  - Windows, experimental and untested: Discord's own installer, under `%LOCALAPPDATA%\Discord`. Run the commands
+    below in Git Bash, which comes with Git for Windows.
+  - Linux, experimental: the `.deb` or the `.tar.gz`, opened once, since on its first start Discord installs itself
+    into `~/.config/discord`. The patch, the plugins' loading, the CLI and the dialog opening were checked on Debian
+    with Discord 1.0.169; the scheduled check was not (`docs/decisions/windows-linux-untested.md`). The dialogs need
+    `zenity` and `notify-send`. Flatpak and Snap are not supported.
+- Node (version in `.node-version`) and pnpm (version in `package.json`), and git.
+- Claude Code installed with its native installer, as `~/.local/bin/claude` (`claude.exe` on Windows), for the plugins.
+- To work on the repo (`pnpm check`): `gitleaks`, at the version in `scripts/secrets.mjs` (`brew install gitleaks` on
+  a Mac), for the secret scan of the gate.
 - Optional, for Dictation: a Mac with Apple Silicon and macOS 14 or later, the only ones its model's runtime
   (`mlx`) ships for; [uv](https://docs.astral.sh/uv/) (version in `dictation/worker/pyproject.toml`); a Whisper model
   in MLX format (Install); and the microphone allowed for Discord in macOS's Privacy settings. Without them the rest
@@ -49,13 +56,15 @@ dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo
 ```
 After a Discord update, run `pnpm inject` again. With `pnpm repatch install`, a dialog offers it instead: once the new
 Discord passes `pnpm check-discord`, it asks, and on a yes it quits Discord, patches it and reopens it. It asks once
-per Discord version, and `pnpm repatch uninstall` removes it. The patch runs in a helper app, «Reparchear Discord
-(agent-chat-bridge)», that needs macOS's App Management permission: the install shows it in the Finder and opens that
-setting, where you drag it in and turn it on.
+per Discord version, and `pnpm repatch uninstall` removes it. It checks at login, when Discord changes and daily on
+macOS (a LaunchAgent), and at login and hourly on Windows (a scheduled task) and Linux (systemd user units), where
+Discord updates whenever it starts. On macOS the patch runs in a helper app, «Reparchear Discord (agent-chat-bridge)»,
+that needs macOS's App Management permission: the install shows it in the Finder and opens that setting, where you
+drag it in and turn it on.
 
 ## Update
 With `pnpm repatch install`, a dialog offers each new release once, with what changed and which Discord it was tested
-with, checked once a day and at login: on a yes it installs it and reloads Discord. It only does so in a clone at a
+with, checked with the patch above: on a yes it installs it and reloads Discord. It only does so in a clone at a
 release tag with no local changes. Without it, watch the repo on GitHub for releases only (Watch → Custom →
 Releases), and install a release from the clone:
 ```sh

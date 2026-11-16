@@ -1,7 +1,19 @@
 # agent-chat-bridge
 
-A bridge between an AI agent and the user's Discord: the official Discord app (macOS, stable channel) with a minimal
-own patch (`mod/`) that loads own plugins. Everything is managed from this repo: install, re-patch and plugins.
+A bridge between an AI agent and the user's Discord: the official Discord app (stable channel; macOS, and Windows and
+Linux experimental, `docs/decisions/windows-linux-untested.md`) with a minimal own patch (`mod/`) that loads own plugins.
+Everything is managed from this repo: install, re-patch and plugins.
+
+## Systems
+What differs between macOS, Windows and Linux lives in one place per side, and everything else is shared:
+- `mod/src/platform.mts`: the app's folder and the CLI's socket (a named pipe on Windows), for `mod/` and the scripts.
+- `plugins/shared/run.ts` (`claudeProcess`): where `claude` is and the environment it runs with.
+- `scripts/os/`: one module per system with the same exports (where Discord is, running, quit and open it, dialogs and
+  notices, how pnpm and the patch run, and the scheduler of `pnpm repatch`), chosen by `scripts/os/index.mjs`;
+  `posix.mjs` holds what macOS and Linux share, and `app-folders.mjs` what Windows and Linux share (Discord installs
+  itself into the user's folder, one `app-<version>` per update). A new difference goes into each module, never into
+  a caller.
+- Dictation runs only on Apple Silicon Macs (`dictation/src/platform.ts`).
 
 ## Guiding principle
 Discord handles private conversations, and the patch runs inside the app with access to the session token.
@@ -43,8 +55,9 @@ No new code reaches Discord without a review first (see «Review»). When in dou
 - `skills/agent-chat-bridge/`: short skill that points to the CLI's `--help` and sets the usage rules.
   `pnpm links` links the skill into `~/.claude/skills/` and the CLI into `~/.local/bin/`.
 - `scripts/inject.mjs`: the patcher. Renames `app.asar` to `_app.asar` and writes a loader `app.asar`, built by
-  `scripts/asar.mjs`. `scripts/discord-app.mjs` holds the paths and the check of a running Discord it shares with
-  `scripts/repatch.mjs`, the offer to re-patch after an update («When Discord updates»).
+  `scripts/asar.mjs`. `scripts/discord-app.mjs` holds the patch's paths and Discord's version (its
+  `build_info.json`), on every system, which it shares with `scripts/repatch.mjs`, the offer to re-patch after an
+  update («When Discord updates»), and `pnpm check-discord`.
 - `test/` and `dictation/test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test all of `mod/`, `plugins/`
   and `dictation/src/`, and the CLI, without Discord and without network (`test/setup.mjs` refuses every
   connection). What touches Discord runs on a fake one: `test/fake-discord.mjs` for `mod/src/plugin-api/discord.ts`,
@@ -95,7 +108,7 @@ Defined in `package.json`.
   Discord version the app loaded; Discord need not be open. Run it after a change to `mod/`'s or the plugins' colours.
 - `pnpm inject` / `pnpm uninject`: patch (or re-patch) Discord with `mod/`, or remove the patch. Discord closed.
   After `pnpm build`, restarting Discord is enough: the loader reads `mod/dist/` on every start.
-- `pnpm repatch install` / `pnpm repatch uninstall`: add or remove the LaunchAgent that offers to re-patch Discord
+- `pnpm repatch install` / `pnpm repatch uninstall`: add or remove the scheduled check that offers to re-patch Discord
   after an update («When Discord updates») and, in a clean clone at a release tag, each new release (README,
   «Update»). A development clone, off a release tag, is never updated.
 - `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,
@@ -166,15 +179,15 @@ review: do not patch, and ask the user.
 - `eval`, `new Function`, obfuscated, minified or base64-encoded code.
 
 ## When Discord updates
-macOS replaces the whole app and the patch disappears; `pnpm inject` restores it. Then run `pnpm check-discord` and
-`pnpm live`.
-With `pnpm repatch install`, a LaunchAgent does the first part once per Discord version that lost the patch, at login
-or when `/Applications` or Discord's `Resources` change (`scripts/repatch.mjs`). It holds to the review of a re-patch
-without changes: with a clean tree and `pnpm check-discord` passing, it asks in a dialog, and only on a yes it quits
-Discord and opens a helper app, «Reparchear Discord (agent-chat-bridge)», that rebuilds `mod/dist/`, patches and
-reopens it. macOS lets only an app with its App Management permission change another app, and the user grants it to
-the helper once: a new build of the helper loses it, so an install keeps the one there while its AppleScript is the
-same. Otherwise a notification says what failed, and the log is `~/Library/Logs/agent-chat-bridge-repatch.log`.
+The update replaces Discord's app (on Windows, a new `app-<version>` folder) and the patch disappears; `pnpm inject`
+restores it. Then run `pnpm check-discord` and `pnpm live`.
+With `pnpm repatch install`, a scheduled check does the first part once per Discord version that lost the patch
+(`scripts/repatch.mjs`; when it runs on each system, README «Install»). It holds to the review of a re-patch without
+changes: with a clean tree and `pnpm check-discord` passing, it asks in a dialog, and only on a yes it quits Discord,
+rebuilds `mod/dist/`, patches and reopens it. On macOS a helper app, «Reparchear Discord (agent-chat-bridge)», does
+the patching: macOS lets only an app with its App Management permission change another app, and the user grants it
+to the helper once; a new build of the helper loses it, so an install keeps the one there while its AppleScript is the
+same. Otherwise a notification says what failed, and the log's path is in it.
 `pnpm live` stays manual.
 If a patch or piece is no longer found (`pnpm check-discord`, or the settings modal with Discord open), find what
 changed in Discord's code (`docs/debugging.md`, method 3) and adapt `mod/`. `mod/` was first derived from Vencord

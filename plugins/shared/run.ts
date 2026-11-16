@@ -6,7 +6,23 @@ import { mkdtemp, rm } from "fs/promises";
 import { homedir, tmpdir } from "os";
 import { join } from "path";
 
-const CLAUDE_BIN = join(homedir(), ".local/bin/claude");
+/**
+ * Where Claude Code's native installer puts claude, and the least environment it runs with, on each system. macOS is
+ * tested; Windows and Linux follow the installer's documented paths, untested.
+ */
+export function claudeProcess(platform: string, env: NodeJS.ProcessEnv, home: string, tmp: string) {
+    if (platform === "win32") {
+        return {
+            bin: join(home, ".local", "bin", "claude.exe"),
+            env: {
+                USERPROFILE: home, APPDATA: env.APPDATA, LOCALAPPDATA: env.LOCALAPPDATA, SystemRoot: env.SystemRoot,
+                PATH: `${env.SystemRoot}\\System32`, TEMP: tmp, TMP: tmp
+            }
+        };
+    }
+    return { bin: join(home, ".local", "bin", "claude"), env: { HOME: home, USER: env.USER, PATH: "/usr/bin:/bin", TMPDIR: tmp } };
+}
+
 const MODEL_RE = /^claude-[a-z0-9-]+$/;
 const TIMEOUT_MS = 120_000;
 
@@ -33,21 +49,16 @@ export async function runClaude(_: IpcMainInvokeEvent, systemPrompt: string, inp
 
     const cwd = await mkdtemp(join(tmpdir(), "discord-claude-"));
     try {
+        const claude = claudeProcess(process.platform, process.env, homedir(), tmpdir());
         const text = await new Promise<string>((resolve, reject) => {
             const child = execFile(
-                CLAUDE_BIN,
+                claude.bin,
                 [...ISOLATION_ARGS, "--model", model, "--system-prompt", systemPrompt],
                 {
                     cwd,
                     timeout: TIMEOUT_MS,
                     maxBuffer: 1 << 20,
-                    env: {
-                        HOME: homedir(),
-                        USER: process.env.USER,
-                        PATH: "/usr/bin:/bin",
-                        TMPDIR: tmpdir(),
-                        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
-                    }
+                    env: { ...claude.env, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" }
                 },
                 (err, stdout, stderr) => err ? reject(new Error(stderr.trim() || err.message)) : resolve(stdout.trim())
             );

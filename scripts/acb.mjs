@@ -2,15 +2,15 @@
 // acb (agent-chat-bridge): talks to the patched Discord through its local socket (mod/src/compose.ts).
 // Run with --help for the commands; `pnpm links` puts it on the PATH.
 import { connect } from "net";
-import { homedir } from "os";
-import { join, resolve } from "path";
+import { homedir, userInfo } from "os";
+import { resolve } from "path";
 import { parseArgs } from "util";
 
 import {
     DEFAULT_READ_LIMIT, MAX_ATTACHMENT_MB, MAX_ATTACHMENTS, MAX_EXTRA_PAGES, MAX_READ_LIMIT, MAX_SENDS_PER_HOUR,
     MAX_WATCHED_CHATS, MIN_SEND_INTERVAL_MS
 } from "../mod/src/limits.mts";
-import { APP_NAME, SOCKET_FILE } from "../mod/src/name.mts";
+import { appDataDir, socketPath } from "../mod/src/platform.mts";
 
 const KINDS = ["dm", "grupo", "canal", "hilo"];
 
@@ -269,7 +269,7 @@ export function buildRequest(argv) {
     return { request: JSON.parse(JSON.stringify(command.request(positionals, values))) }; // drops undefined flags
 }
 
-const SOCKET = join(homedir(), "Library", "Application Support", APP_NAME, SOCKET_FILE);
+const SOCKET = socketPath(process.platform, appDataDir(process.platform, process.env, homedir()), userInfo().username);
 
 /** The CLI: the request to Discord's socket, and its answer, or each event of a `watch`, on stdout. Exported for its test. */
 export function main(argv = process.argv.slice(2)) {

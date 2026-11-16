@@ -6,7 +6,10 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { brotliDecompressSync } from "node:zlib";
 
-const CACHE = join(homedir(), "Library", "Application Support", "discord", "Cache", "Cache_Data");
+import { appDataDir } from "../mod/src/platform.mts";
+import { discordVersion as discordAppVersion } from "../scripts/discord-app.mjs";
+
+const CACHE = join(appDataDir(process.platform, process.env, homedir()), "discord", "Cache", "Cache_Data");
 
 // Chromium's simple cache: `<hash>_0` holds a 24-byte header, the key (the URL), the body, an end record, the HTTP
 // headers, an optional SHA-256 of the key and a last end record.
@@ -39,13 +42,12 @@ export function cacheBody(file) {
  * newest cached app page. The web client updates without the app, so both name what was tested.
  */
 export function discordVersion() {
-    const plist = readFileSync("/Applications/Discord.app/Contents/Info.plist", "utf8");
-    const app = plist.match(/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/)?.[1];
+    const app = discordAppVersion();
     const { page } = indexCache();
     const html = page ? cacheBody(page.file) ?? "" : "";
     const build = html.match(/"BUILD_NUMBER":"(\d+)"/)?.[1];
     const channel = html.match(/"RELEASE_CHANNEL":"(\w+)"/)?.[1];
-    if (!app || !build || !channel) throw new Error("Discord's version isn't readable: open Discord once, from /Applications");
+    if (!app || !build || !channel) throw new Error("Discord's version isn't readable: open Discord once");
     return { app, build, channel };
 }
 
