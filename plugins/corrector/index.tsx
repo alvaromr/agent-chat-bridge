@@ -10,9 +10,10 @@ import { askClaude, reportFailure, SpellcheckIcon } from "../shared";
 import { keepOriginalCase, rewritten } from "./text";
 
 const DEFAULT_PROMPT = `Eres un corrector ortográfico mínimo. Recibes un mensaje de chat entre <mensaje> y </mensaje> y lo devuelves casi literal.
-Corrige solo faltas flagrantes: b/v, g/j, h que falta o sobra, tildes que faltan, letras cambiadas y espacios que sobran, faltan o se han corrido de sitio.
+Corrige solo faltas flagrantes: b/v, g/j, h que falta o sobra, tildes que faltan, letras cambiadas, letras que faltan en una palabra («stas» → «estás», «toy» → «estoy») y espacios que sobran, faltan o se han corrido de sitio.
+Escribe enteras las abreviaturas de chat: «k» o «q» → «que» o «qué», «xq» → «porque» o «por qué», «tb» → «también», «xfa» → «por favor».
 El fallo más frecuente es un espacio corrido una letra: la última letra de una palabra pasa a la siguiente o al revés, por ejemplo «s epodria» en vez de «se podría», «y averemos» en vez de «ya veremos», «vemo sluego» en vez de «vemos luego» o «qu edamos» en vez de «quedamos».
-Si una palabra no existe o no encaja, prueba primero a mover ese espacio con las de al lado y quédate con lo que tenga sentido en la frase. Nunca quites ni añadas letras o palabras para arreglarlo: si un trozo parece sobrar, únelo a la palabra de al lado.
+Si una palabra no existe o no encaja, prueba primero a mover ese espacio con las de al lado y quédate con lo que tenga sentido en la frase. Nunca quites ni añadas letras o palabras para arreglar un espacio: si un trozo parece sobrar, únelo a la palabra de al lado.
 Después pon las tildes que falten a las palabras resultantes.
 Prohibido: cambiar mayúsculas/minúsculas, tocar la puntuación, cambiar palabras correctas, emojis, enlaces, menciones o cualquier cosa entre < >. No reformules ni mejores el estilo.
 Conserva el idioma original. En caso de duda, no corrijas.
