@@ -5,6 +5,11 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+### Changed
+- The Corrector no longer drops a correction that changes the message too much: it puts it in the chat box with a
+  notice to review it, without sending it on Ctrl+Enter, and on a sent message it opens the edit box with the
+  correction, saved only when you press Enter.
+
 ## [0.3.0] - 2026-11-16
 
 Tested with Discord 0.0.422 for macOS, stable web client build 673869.

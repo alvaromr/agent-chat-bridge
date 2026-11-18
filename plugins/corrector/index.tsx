@@ -42,7 +42,9 @@ const settings = definePluginSettings({
 const TEXT = {
     action: "Corregir ortografía",
     nothingToFix: "Sin faltas que corregir",
-    tooMuch: "La corrección cambiaba demasiado el mensaje; descartada",
+    reviewDraft: "La corrección cambia bastante el mensaje; revísala antes de enviarlo",
+    reviewBeforeSending: "La corrección cambia bastante el mensaje; revísala y pulsa Enter para enviarlo",
+    reviewEdit: "La corrección cambia bastante el mensaje; revísala y pulsa Enter para guardarla",
     changedWhileFixing: "El texto cambió mientras se corregía; no lo toco",
     changedBeforeSending: "El texto cambió mientras se corregía; no lo envío",
     fixed: "Mensaje corregido",
@@ -52,11 +54,20 @@ const TEXT = {
 /** Model answers per correction: a second one when the first rewrote the message ("s epodria" → "Es posible"). */
 const ATTEMPTS = 2;
 
-/** Returns the corrected text, or null when there is nothing to apply (a toast explains why). */
-async function correct(text: string) {
-    for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+/**
+ * A corrected text. `rewritten` when it changes more than spelling fixes would, even on the last attempt: then it is
+ * never sent or saved without the user seeing it first.
+ */
+interface Correction {
+    text: string;
+    rewritten: boolean;
+}
+
+/** Returns the correction, or null when there is nothing to apply (a toast explains why). */
+async function correct(text: string): Promise<Correction | null> {
+    for (let attempt = 1; ; attempt++) {
         // The text goes in unescaped, since the model must return it as it is. Text that closes <mensaje> and asks for
-        // something else gets an answer that changes words, which rewritten() discards.
+        // something else gets an answer that changes words, which rewritten() flags.
         const raw = await askClaude(settings.store.prompt, `<mensaje>\n${text}\n</mensaje>`, settings.store.model);
         if (raw == null) return null;
 
@@ -65,10 +76,9 @@ async function correct(text: string) {
             showToast({ text: TEXT.nothingToFix, variant: "success" });
             return null;
         }
-        if (!rewritten(text, fixed)) return fixed;
+        const isRewritten = rewritten(text, fixed);
+        if (!isRewritten || attempt === ATTEMPTS) return { text: fixed, rewritten: isRewritten };
     }
-    showToast({ text: TEXT.tooMuch, variant: "critical" });
-    return null;
 }
 
 /** Corrects the draft in the box, unless it changes meanwhile. */
@@ -76,13 +86,14 @@ async function correctDraft(channelId: string) {
     const draft = getDraft(channelId);
     if (!draft.trim()) return;
 
-    const fixed = await correct(draft);
-    if (fixed == null) return;
+    const correction = await correct(draft);
+    if (correction == null) return;
     if (getDraft(channelId) !== draft) {
         showToast({ text: TEXT.changedWhileFixing, variant: "critical" });
         return;
     }
-    await replaceChatInput(fixed);
+    await replaceChatInput(correction.text);
+    if (correction.rewritten) showToast({ text: TEXT.reviewDraft, variant: "info" });
 }
 
 const CorrectorChatBarButton: ChatBarButtonFactory = ({ isMainChat, channel }) => {
@@ -95,10 +106,19 @@ const CorrectorChatBarButton: ChatBarButtonFactory = ({ isMainChat, channel }) =
     );
 };
 
-/** Edits an own sent message in place; the click on its button or the Enter is the confirmation. */
+/**
+ * Edits an own sent message in place; the click on its button or the Enter is the confirmation. A rewritten correction
+ * is not saved: it opens in the message's edit box, which saves it only on the user's Enter.
+ */
 async function correctSentMessage(message: Message) {
-    const fixed = await correct(message.content);
-    if (fixed == null) return;
+    const correction = await correct(message.content);
+    if (correction == null) return;
+    const fixed = correction.text;
+    if (correction.rewritten) {
+        MessageActions.startEditMessage(message.channel_id, message.id, fixed);
+        showToast({ text: TEXT.reviewEdit, variant: "info" });
+        return;
+    }
     await MessageActions.editMessage(message.channel_id, message.id, { content: fixed });
     // Discord queues the edit and doesn't wait for it; the store has the new text once the server accepts it.
     const edited = () => MessageStore.getMessage(message.channel_id, message.id)?.content === fixed;
@@ -115,17 +135,22 @@ async function correctLastMessage(channelId: string) {
 
 /**
  * Ctrl+Enter: corrects the draft, then sends it through Discord's own Enter handling, so replies, mentions and
- * emoji parsing behave as usual. If the correction fails or is discarded, the original text is sent.
+ * emoji parsing behave as usual. If the correction fails or finds nothing, the original text is sent; if it is
+ * rewritten, it stays in the box unsent.
  */
 async function correctAndSend(channelId: string, draft: string, editor: HTMLElement) {
-    const fixed = await correct(draft);
+    const correction = await correct(draft);
     if (getDraft(channelId) !== draft) {
         showToast({ text: TEXT.changedBeforeSending, variant: "critical" });
         return;
     }
-    if (fixed != null) {
-        await replaceChatInput(fixed);
-        await waitFor(() => getDraft(channelId) === fixed, DRAFT_SHOWN_MS);
+    if (correction != null) {
+        await replaceChatInput(correction.text);
+        if (correction.rewritten) {
+            showToast({ text: TEXT.reviewBeforeSending, variant: "info" });
+            return;
+        }
+        await waitFor(() => getDraft(channelId) === correction.text, DRAFT_SHOWN_MS);
     }
     pressEnter(editor);
 }

@@ -134,7 +134,8 @@ Defined in `package.json`.
 3. **Discord's terms**: modifying the client breaks them; the risk stays low by avoiding automation.
    - Every send or edit is triggered by an explicit user action, never automatically. The Corrector edits without a
      dialog on Enter in an empty box and with its button on an own message: the key or the click is the confirmation.
-     It discards the correction if it changes words or removes parts of the message.
+     A correction that changes words or removes parts of the message is never sent or saved that way: it stays in the
+     chat box unsent, or opens in the message's edit box unsaved, for the user to review.
    - Claude may publish with the CLI (`send`, `edit`, `delete` and `react`) only with the user's explicit
      confirmation, after showing what rule 1 of `skills/agent-chat-bridge/SKILL.md` sets for each command. `send`
      requires the confirmed text and sends by pressing Enter in the box, Discord's normal path; with `--direct`, with

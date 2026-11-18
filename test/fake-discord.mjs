@@ -106,6 +106,8 @@ export const MessageActions = {
         const message = messageOf(channelId, id);
         if (message) message.content = content;
     }),
+    /** Opens the message's edit box with that text, as Discord's MESSAGE_START_EDIT does; nothing is saved. */
+    startEditMessage: mock(() => { }),
     deleteMessage: mock(async (channelId, id) => {
         const chat = state.chats.get(channelId);
         if (chat) chat._array = chat._array.filter(m => m.id !== id);
@@ -223,7 +225,7 @@ export function reset() {
     for (const close of [...modals]) close();
     document.querySelectorAll('[class*="channelTextArea"]').forEach(area => area.remove());
     for (const fn of [
-        MessageActions.editMessage, MessageActions.deleteMessage, MessageActions.sendMessage, MessageActions.getSendMessageOptionsForReply,
+        MessageActions.editMessage, MessageActions.startEditMessage, MessageActions.deleteMessage, MessageActions.sendMessage, MessageActions.getSendMessageOptionsForReply,
         MessageActions.fetchMessages, MessageManager.fetchMessages, DraftActions.saveDraft, ChannelRouter.transitionToChannel, addReaction,
         removeReaction, UploadHandler.promptToUpload, FluxDispatcher.subscribe, FluxDispatcher.dispatch, ComponentDispatch.dispatchToLastSubscribed,
         showToast, openModal

@@ -113,16 +113,21 @@ test("corrector: only the tags around the whole answer come off, with the blank 
     assert.deepEqual(toasts().at(-1), { text: "Sin faltas que corregir", variant: "success" }, "tags inside the message stay");
 });
 
-test("corrector: an answer that rewrites the message gets a second try, and is dropped if it rewrites again", async () => {
+test("corrector: an answer that rewrites the message gets a second try", async () => {
     const box = chatBox("s epodria");
     answers = [{ ok: true, text: "Es posible" }, { ok: true, text: "se podría" }];
     await correctDraft();
     assert.equal(box.textContent, "se podría");
     assert.equal(native.runClaude.mock.calls.length, 2);
+    assert.deepEqual(toasts(), [{ text: "Consultando a Claude…" }, { text: "Consultando a Claude…" }]);
+});
+
+test("corrector: a draft rewritten twice gets the second answer in the box, with a toast to review it", async () => {
+    const box = chatBox("s epodria");
     answers = [{ ok: true, text: "Otra cosa" }, { ok: true, text: "Algo distinto" }];
     await correctDraft();
-    assert.deepEqual(toasts().at(-1), { text: "La corrección cambiaba demasiado el mensaje; descartada", variant: "critical" });
-    assert.equal(box.textContent, "se podría");
+    assert.equal(box.textContent, "algo distinto");
+    assert.deepEqual(toasts().at(-1), { text: "La corrección cambia bastante el mensaje; revísala antes de enviarlo", variant: "info" });
 });
 
 test("corrector: an action that fails shows the user why, not only the console", async () => {
@@ -162,6 +167,14 @@ test("corrector: an edit Discord never confirms is reported as unconfirmed, not 
     MessageActions.editMessage.mockImplementation(async () => { });
     await correctSent();
     assert.deepEqual(toasts().at(-1), { text: "Discord no confirmó la corrección; revisa el mensaje", variant: "critical" });
+});
+
+test("corrector: a sent message rewritten twice is not saved: its edit box opens with the correction to review", async () => {
+    answers = [{ ok: true, text: "Otra cosa" }, { ok: true, text: "Algo distinto" }];
+    await correctSent();
+    assert.equal(MessageActions.editMessage.mock.calls.length, 0);
+    assert.deepEqual(MessageActions.startEditMessage.mock.calls, [["1", "10", "Algo distinto"]]);
+    assert.deepEqual(toasts().at(-1), { text: "La corrección cambia bastante el mensaje; revísala y pulsa Enter para guardarla", variant: "info" });
 });
 
 test("corrector: a sent message with nothing to fix is not edited", async () => {
@@ -287,6 +300,18 @@ test("corrector: Ctrl+Enter with a failed correction sends the text as it was; w
     state.drafts.set("1", " ");
     const event = keydown(box, "Enter", { ctrlKey: true });
     assert.equal(event.defaultPrevented, false);
+});
+
+test("corrector: Ctrl+Enter with a draft rewritten twice leaves the correction in the box, unsent", async () => {
+    const box = chatBox("s epodria");
+    const enters = vi.fn();
+    box.addEventListener("keydown", e => void (e.key === "Enter" && !e.ctrlKey && enters()));
+    answers = [{ ok: true, text: "Otra cosa" }, { ok: true, text: "Algo distinto" }];
+    keydown(box, "Enter", { ctrlKey: true });
+    await idle();
+    assert.equal(box.textContent, "algo distinto");
+    assert.equal(enters.mock.calls.length, 0);
+    assert.deepEqual(toasts().at(-1), { text: "La corrección cambia bastante el mensaje; revísala y pulsa Enter para enviarlo", variant: "info" });
 });
 
 test("corrector: Ctrl+Enter sends nothing when the draft changed while correcting", async () => {
