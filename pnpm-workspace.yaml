@@ -11,3 +11,8 @@ allowBuilds:
 overrides:
   qs: 6.16.1
   minimatch: 11.0.1
+# GHSA-fc5q-39xc-vjpf (picomatch <=4.0.7, high) was withdrawn by GitHub on 2026-11-18, but pnpm audit still reports
+# it. Drop it once pnpm audit no longer does.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-fc5q-39xc-vjpf
