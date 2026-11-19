@@ -1,13 +1,13 @@
-// Discord's HTTP cache, where `pnpm check-discord` reads the version the app last loaded (test/discord-code.mjs and
-// test/discord-css.mjs). Reads only the entries of the app page and its assets (https://discord.com/app and
+// Discord's HTTP cache, where `pnpm check-discord` reads the version the app last loaded (./code.mjs and ./css.mjs).
+// Reads only the entries of the app page and its assets (https://discord.com/app and
 // /assets/*.js or *.css), never the cached API answers, which hold private messages.
 import { closeSync, openSync, readdirSync, readFileSync, readSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { brotliDecompressSync } from "node:zlib";
 
-import { appDataDir } from "../mod/src/platform.mts";
-import { discordVersion as discordAppVersion } from "../scripts/discord-app.mjs";
+import { appDataDir } from "../../mod/src/platform.mts";
+import { discordVersion as discordAppVersion } from "../discord-app.mjs";
 
 const CACHE = join(appDataDir(process.platform, process.env, homedir()), "discord", "Cache", "Cache_Data");
 

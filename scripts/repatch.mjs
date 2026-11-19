@@ -7,18 +7,15 @@
 // `run` also offers each new release once to a clone installed at a release tag (README, «Update»): on a yes it checks
 // the new tag out, sets it up and reloads Discord the same way. A development clone is never touched.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
-import { APP_NAME } from "../mod/src/name.mts";
-import { appDataDir } from "../mod/src/platform.mts";
+import { STATE } from "./bundle.mjs";
 import { discordRunning, discordVersion, original, resources } from "./discord-app.mjs";
 import { exec, output } from "./os/exec.mjs";
 import { system } from "./os/index.mjs";
 
-const STATE = join(appDataDir(process.platform, process.env, homedir()), APP_NAME);
 const LOG = system.logFile(STATE);
 /**
  * The last Discord version this script saw, patched or not: it asks once per version, and a patch removed by hand

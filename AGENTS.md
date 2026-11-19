@@ -67,13 +67,16 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   the `mutate` list of `stryker.config.mjs`, and what stays out is in `docs/decisions/coverage-io-scripts-and-worker.md`. A fix
   gets a regression test that fails without it. The suite passes on macOS, Windows and Linux: a test that fakes a Mac
   or a Linux fakes `process.platform` and, where its code splits no real path, Node's path module
-  (`dictation/test/posix-path.mjs`). `test/live/`, `pnpm check-discord`'s files, `test/smoke-os.mjs` and
-  `dictation/test/worker.mjs` run on `node --test` instead, so neither Vitest nor Stryker runs them: `test/live/`
-  checks in the running Discord that its real stores answer the CLI in the shape faked (`pnpm live`), publishing
-  nothing, asking nothing of the API and showing no content; `discord-code.mjs` finds the patches and the pieces of `mod/` in the
-  Discord code of its HTTP cache (`discord-cache.mjs`), without running it or reading the API responses the cache also
-  holds, and `discord-css.mjs` measures there the contrast of what `mod/` colours in every Discord theme;
-  `smoke-os.mjs` runs the system's side for real (`pnpm smoke-os`); the last runs the real dictation worker.
+  (`dictation/test/posix-path.mjs`). `test/live/`, `test/smoke-os.mjs` and `dictation/test/worker.mjs` run on
+  `node --test` instead, so neither Vitest nor Stryker runs them: `test/live/` checks in the running Discord that its
+  real stores answer the CLI in the shape faked (`pnpm live`), publishing nothing, asking nothing of the API and
+  showing no content; `smoke-os.mjs` runs the system's side for real (`pnpm smoke-os`); the last runs the real
+  dictation worker.
+- `scripts/check-discord/`: `pnpm check-discord`, on `node --test` too, which the scheduled re-patch runs before it
+  asks. `code.mjs` finds the patches and the pieces of `mod/` in the Discord code of its HTTP cache (`cache.mjs`),
+  without running it or reading the API responses the cache also holds, and `css.mjs` measures there the contrast of
+  what `mod/` colours in every Discord theme. They read `mod/`'s and the plugins' sources where `scripts/bundle.mjs`
+  says the files are.
 - `.github/workflows/ci.yml`: on every push and pull request, the unit tests and `pnpm smoke-os` on Windows and Linux
   (GitHub's `windows-latest` and `ubuntu-latest`), the systems no one runs them on by hand. The gate stays the
   pre-commit hook, on macOS.

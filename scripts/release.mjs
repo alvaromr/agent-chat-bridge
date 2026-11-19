@@ -7,8 +7,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
-import { discordVersion } from "../test/discord-cache.mjs";
 import { releaseChangelog } from "./changelog.mjs";
+import { discordVersion } from "./check-discord/cache.mjs";
 
 /** @param {string} command @param {string[]} args */
 const output = (command, args) => execFileSync(command, args, { encoding: "utf8" }).trim();

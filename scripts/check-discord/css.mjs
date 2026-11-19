@@ -1,13 +1,15 @@
 // The contrast of what mod/ colours in every Discord theme, from the CSS of the version the app last loaded
-// (test/discord-cache.mjs), without opening Discord: the colours mod/'s stylesheets ask for, as each theme's variables
+// (./cache.mjs), without opening Discord: the colours mod/'s stylesheets ask for, as each theme's variables
 // resolve them, over the backgrounds Discord paints behind them. Run with `pnpm check-discord`. That the message's
 // background is one of these was checked once in the running Discord, on 2026-11-06; the modal's never was, and nothing
 // checks either again (docs/decisions/accessibility-outside-gate.md).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { test } from "node:test";
 
-import { cacheBody, indexCache } from "./discord-cache.mjs";
+import { filesRoot } from "../bundle.mjs";
+import { cacheBody, indexCache } from "./cache.mjs";
 
 const TEXT_RATIO = 4.5;
 const EDGE_RATIO = 3;
@@ -139,8 +141,8 @@ const themes = names.flatMap(name => {
 }).map(({ label, declarations }) => ({ label, vars: new Map(declarations.filter(([p]) => p.startsWith("--"))) }));
 
 // What mod/ colours, from its own stylesheets: the colour each rule asks for.
-const modRules = ["../mod/src/renderer/styles.css", "../plugins/autorespuesta/styles.css"]
-    .flatMap(file => rulesOf(readFileSync(new URL(file, import.meta.url), "utf8")));
+const modRules = [["mod", "src", "renderer", "styles.css"], ["plugins", "autorespuesta", "styles.css"]]
+    .flatMap(file => rulesOf(readFileSync(join(filesRoot(), ...file), "utf8")));
 function modColor(selector, property) {
     const value = modRules.filter(([selectors]) => selectors.includes(selector))
         .flatMap(([, declarations]) => declarations).findLast(([p]) => p === property)?.[1];

@@ -6,7 +6,7 @@
   contrast of what it colours, in every Discord theme, by `pnpm check-discord` on the stylesheets of Discord's cache.
   The keyboard paths, focus rings and modal focus come from Discord's own components (`ChatBarButton`, `Modal`,
   `TextArea`), which Discord keeps working for its own users; nothing checks them in the running Discord any more, nor
-  that the backgrounds `test/discord-css.mjs` measures against are the ones Discord paints.
+  that the backgrounds `scripts/check-discord/css.mjs` measures against are the ones Discord paints.
 - **Why:** those checks needed the user's own Discord with the debugging port open, and the user left alone while
   they pressed keys in it: they interrupted the user's work, and a use of Discord meanwhile made them fail. The owner
   judged them not vital. `pnpm check-discord` stays outside the gate because it needs the Discord version the app

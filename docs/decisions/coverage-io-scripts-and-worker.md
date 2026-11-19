@@ -8,4 +8,8 @@
   `scripts/cdp.mjs` (`docs/debugging.md`) and `mod/build.mjs` (`pnpm build`); and the
   dictation worker, `dictation/worker/worker.py`, a loop that hands each request to `mlx-whisper`, checked by
   `pnpm smoke-dictation`. In the CLI, only the line that runs it as a command is excluded in place, with that reason.
-- **Decided by:** the owner, 2026-10-29; the dictation worker, 2026-11-05; everything else covered, 2026-11-05.
+  `scripts/check-discord/` stays out too: it is itself a check, `pnpm check-discord`, run against Discord's real
+  cache, as `test/live/` is against the running Discord; it moved there from `test/` so that the release's executable
+  carries it for the scheduled re-patch.
+- **Decided by:** the owner, 2026-10-29; the dictation worker, 2026-11-05; everything else covered, 2026-11-05;
+  `scripts/check-discord/`, 2026-11-19, with the single executable.

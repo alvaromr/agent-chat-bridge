@@ -26,7 +26,7 @@
     border-bottom-color: var(--text-link);
 }
 
-/* Why the plugin can't work here: the labels' colour, which test/discord-css.mjs measures, in bold. */
+/* Why the plugin can't work here: the labels' colour, which scripts/check-discord/css.mjs measures, in bold. */
 .dm-settings .dm-notice {
     color: var(--text-default, var(--text-normal));
     font-weight: 600;

@@ -16,6 +16,7 @@ export default {
         "plugins/**/*.{ts,tsx}",
         "scripts/agent-chat-bridge.mjs",
         "scripts/asar.mjs",
+        "scripts/bundle.mjs",
         "scripts/changelog.mjs",
         "scripts/discord-app.mjs",
         "scripts/os/*.mjs",

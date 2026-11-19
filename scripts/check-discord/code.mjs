@@ -1,17 +1,18 @@
-// Checks the patches and lookups of mod/ against the Discord code in its HTTP cache (test/discord-cache.mjs), the
-// version the app last loaded. Run with `pnpm check-discord`; Discord doesn't need to be open. Discord's code is only
-// parsed, never run, and only the names of the patches and lookups are printed.
+// Checks the patches and lookups of mod/ against the Discord code in its HTTP cache (./cache.mjs), the version the app
+// last loaded. Run with `pnpm check-discord`; Discord doesn't need to be open. Discord's code is only parsed, never
+// run, and only the names of the patches and lookups are printed.
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { canonicalize } from "../mod/src/renderer/regex.ts";
-import { cacheBody, discordVersion, indexCache } from "./discord-cache.mjs";
+import ts from "typescript";
 
-const ts = createRequire(import.meta.url)("typescript");
-const SOURCES = [new URL("../mod/src/", import.meta.url), new URL("../plugins/", import.meta.url)];
+import { canonicalize } from "../../mod/src/renderer/regex.ts";
+import { filesRoot } from "../bundle.mjs";
+import { cacheBody, discordVersion, indexCache } from "./cache.mjs";
+
+const SOURCES = [join(filesRoot(), "mod", "src"), join(filesRoot(), "plugins")];
 
 /** File names of the page's scripts and of every chunk its webpack runtime can load (`__webpack_require__.u`). */
 function currentFiles(page, readScript) {
@@ -86,19 +87,24 @@ function wanted() {
         const sf = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true, file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
         const visit = node => {
             if (ts.isCallExpression(node)) {
-                const name = callee(node), args = node.arguments;
-                if (name === "push" && ts.isPropertyAccessExpression(node.expression) && node.expression.expression.getText() === "patches" && ts.isObjectLiteralExpression(args[0])) {
-                    const prop = key => args[0].properties.find(p => p.name?.getText() === key)?.initializer;
-                    const literal = prop("match").text;
+                const name = callee(node), args = node.arguments, [first, second] = args;
+                if (name === "push" && ts.isPropertyAccessExpression(node.expression) && node.expression.expression.getText() === "patches" && first && ts.isObjectLiteralExpression(first)) {
+                    /** The text of a string or regular expression the patch sets. @param {string} key */
+                    const prop = key => {
+                        const value = first.properties.filter(ts.isPropertyAssignment).find(p => p.name.getText() === key)?.initializer;
+                        assert.ok(value && (ts.isStringLiteral(value) || ts.isRegularExpressionLiteral(value)), `a patch in ${file} has no literal ${key}`);
+                        return value.text;
+                    };
+                    const literal = prop("match");
                     const slash = literal.lastIndexOf("/");
-                    patches.push({ name: prop("name").text, find: prop("find").text, match: new RegExp(literal.slice(1, slash), literal.slice(slash + 1)) });
-                } else if (name === "store" && strings(args)) {
-                    lookups.push({ name: args[0].text, kind: "byStoreName", args: [args[0].text] });
+                    patches.push({ name: prop("name"), find: prop("find"), match: new RegExp(literal.slice(1, slash), literal.slice(slash + 1)) });
+                } else if (name === "store" && first && ts.isStringLiteral(first) && strings(args)) {
+                    lookups.push({ name: first.text, kind: "byStoreName", args: [first.text] });
                 } else if (name === "find" && args[0] && filterOf(args[0]).args !== null && lookupName(node) !== "?") {
                     lookups.push({ name: lookupName(node), ...filterOf(args[0]) });
-                } else if (name === "findInModule" && ts.isStringLiteral(args[0])) {
-                    const filter = filterOf(args[1]);
-                    lookups.push({ name: lookupName(node), kind: "findInModule", module: args[0].text, args: filter.args ?? [] });
+                } else if (name === "findInModule" && first && ts.isStringLiteral(first) && second) {
+                    const filter = filterOf(second);
+                    lookups.push({ name: lookupName(node), kind: "findInModule", module: first.text, args: filter.args ?? [] });
                 } else if (name === "findCssClasses" && strings(args)) {
                     lookups.push({ name: `classes ${strings(args).join(", ")}`, kind: "css", args: strings(args) });
                 }

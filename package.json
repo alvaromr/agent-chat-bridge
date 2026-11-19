@@ -22,7 +22,7 @@
     "live": "node --test --test-concurrency=1 'test/live/*.mjs'",
     "smoke-dictation": "node --test dictation/test/worker.mjs",
     "smoke-os": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/smoke-os.mjs",
-    "check-discord": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test test/discord-code.mjs test/discord-css.mjs",
+    "check-discord": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/check-discord/code.mjs scripts/check-discord/css.mjs",
     "inject": "node scripts/inject.mjs install",
     "uninject": "node scripts/inject.mjs uninstall",
     "repatch": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/repatch.mjs",

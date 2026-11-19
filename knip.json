@@ -5,7 +5,8 @@
         "mod/src/preload.ts",
         "mod/src/renderer/index.ts",
         "mod/src/plugin-api/jsx.ts",
-        "scripts/*.mjs"
+        "scripts/*.mjs",
+        "scripts/check-discord/{code,css}.mjs"
     ],
     "ignoreDependencies": ["electron"],
     "ignoreBinaries": ["pgrep", "brew", "uv", "say"]
