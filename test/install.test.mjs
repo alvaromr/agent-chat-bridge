@@ -10,6 +10,7 @@ import { afterEach, beforeEach, test, vi } from "vitest";
 
 import { appDataDir } from "../mod/src/platform.mts";
 import pkg from "../package.json" with { type: "json" };
+import { stubAppFolders } from "./app-folders.mjs";
 
 /**
  * The machine: a temporary home, what ran, in order, whether Discord is patched, and for Dictation what uv's install
@@ -61,6 +62,7 @@ const cli = async (/** @type {string[]} */ argv) => (await import("../scripts/ag
 let out, err;
 beforeEach(() => {
     Object.assign(fake, { home: mkdtempSync(join(tmpdir(), "install-")), steps: [], patched: true, sync: 0, download: 0, canRun: true });
+    stubAppFolders(fake.home);
     writeFileSync(join(fake.home, "_app.asar"), "");
     out = vi.spyOn(console, "log").mockImplementation(() => { });
     err = vi.spyOn(console, "error").mockImplementation(() => { });
@@ -68,6 +70,7 @@ beforeEach(() => {
 });
 afterEach(() => {
     vi.doUnmock("node:sea");
+    vi.unstubAllEnvs();
     vi.resetModules();
     rmSync(fake.home, { recursive: true, force: true });
     process.exitCode = undefined;
@@ -75,6 +78,7 @@ afterEach(() => {
 
 test("install: unpacks the files, puts the skill where Claude Code finds it, patches Discord and schedules the check", async () => {
     asExecutable();
+    assert.ok(state().startsWith(fake.home), "the app's folder is the temporary home's on every system");
     mkdirSync(skill(), { recursive: true });
     writeFileSync(join(skill(), "old.md"), "");
     await cli(["install"]);

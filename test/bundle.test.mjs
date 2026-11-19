@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, test, vi } from "vitest";
 
 import { appDataDir } from "../mod/src/platform.mts";
+import { stubAppFolders } from "./app-folders.mjs";
 
 const fake = vi.hoisted(() => ({ home: "", assets: /** @type {Record<string, string>} */ ({}) }));
 vi.mock("node:os", async original => ({ ...(/** @type {any} */ (await original())), homedir: () => fake.home }));
@@ -26,9 +27,13 @@ const asExecutable = (/** @type {Record<string, string>} */ files) => {
 };
 const state = () => join(appDataDir(process.platform, process.env, fake.home), "agent-chat-bridge");
 
-beforeEach(() => void (fake.home = mkdtempSync(join(tmpdir(), "bundle-"))));
+beforeEach(() => {
+    fake.home = mkdtempSync(join(tmpdir(), "bundle-"));
+    stubAppFolders(fake.home);
+});
 afterEach(() => {
     vi.doUnmock("node:sea");
+    vi.unstubAllEnvs();
     vi.resetModules();
     rmSync(fake.home, { recursive: true, force: true });
 });
@@ -57,6 +62,7 @@ test("bundle: the executable has no clone; its files, the patch included, are in
 });
 
 test("bundle: unpack writes what the executable carries, replacing an older version's files and leaving the rest", async () => {
+    assert.ok(state().startsWith(fake.home), "the app's folder is the temporary home's on every system");
     mkdirSync(join(state(), "plugins", "gone"), { recursive: true });
     writeFileSync(join(state(), "plugins", "gone", "old.ts"), "");
     writeFileSync(join(state(), "settings.json"), "{}");
