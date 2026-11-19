@@ -5,6 +5,10 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-19
+
+Tested with Discord 0.0.422 for macOS, stable web client build 676376.
+
 ### Added
 - Each release has one executable per system, which needs neither git, pnpm nor Node: download yours and run
   `agent-chat-bridge install`, with `--dictation` on an Apple Silicon Mac for Dictation's engine and model, or ask
