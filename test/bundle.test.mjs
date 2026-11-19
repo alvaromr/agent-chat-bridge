@@ -1,7 +1,7 @@
 // Where the files are (scripts/bundle.mjs): the clone a test runs from, or, in the release's executable, the app's
 // folder, into which it unpacks the files it carries. Run with `pnpm test`.
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -66,6 +66,21 @@ test("bundle: unpack writes what the executable carries, replacing an older vers
     assert.equal(readFileSync(join(state(), "skills", "agent-chat-bridge", "SKILL.md"), "utf8"), "skill");
     assert.equal(existsSync(join(state(), "plugins")), false, "a folder the new version doesn't carry goes");
     assert.equal(readFileSync(join(state(), "settings.json"), "utf8"), "{}", "the settings stay");
+});
+
+test("bundle: Dictation's folder keeps the worker's packages beside its new files, and the programs in tools/ can run", async () => {
+    mkdirSync(join(state(), "dictation", "worker", ".venv"), { recursive: true });
+    asExecutable({ "dictation/worker/worker.py": "worker", "tools/uv": "uv" });
+    const bundle = await import("../scripts/bundle.mjs");
+    bundle.unpack();
+    assert.equal(readFileSync(join(state(), "dictation", "worker", "worker.py"), "utf8"), "worker");
+    assert.equal(existsSync(join(state(), "dictation", "worker", ".venv")), true);
+    assert.equal(bundle.UV, join(state(), "tools", "uv"));
+    if (process.platform !== "win32") {
+        assert.equal(statSync(bundle.UV).mode & 0o777, 0o755);
+        assert.equal(statSync(join(state(), "dictation", "worker", "worker.py")).mode & 0o111, 0, "the rest is only read");
+    }
+    assert.deepEqual(bundle.UNPACKED, ["mod", "plugins", "skills", "dictation", "tools"]);
 });
 
 test("bundle: unpack refuses a file outside the folders it owns, or one that climbs out of them, before it removes any", async () => {

@@ -1,7 +1,7 @@
 // Where this copy of agent-chat-bridge keeps its files: a clone runs from its own, and a release's single executable
 // (node:sea) unpacks the ones it carries into the app's folder, laid out as in the repo. The one place that tells the
 // two apart.
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { getAsset, isSea } from "node:sea";
@@ -30,10 +30,18 @@ export const modMain = () => join(filesRoot(), "mod", "dist", "main.js");
 
 /** The executable's list of the files it carries, as their paths in the repo, each an asset of that name. */
 export const MANIFEST = "files.json";
-/** The app folder's subfolders that hold only unpacked files, replaced whole, so no file of an older version stays. */
-export const UNPACKED = ["mod", "plugins", "skills"];
+/**
+ * The app folder's subfolders that hold only unpacked files, replaced whole, so no file of an older version stays.
+ * dictation/ is overwritten instead: beside its files it keeps the worker's packages, which `install --dictation`
+ * installed there; tools/ holds the programs the executable carries, such as Dictation's uv.
+ */
+const REPLACED = ["mod", "plugins", "skills"];
+/** Every subfolder of the app's folder that unpacked files go into, which `uninstall` removes. */
+export const UNPACKED = [...REPLACED, "dictation", "tools"];
+/** Where the executable's uv is, once unpacked: only the macOS executable for Apple Silicon carries Dictation. */
+export const UV = join(STATE, "tools", "uv");
 
-/** Puts the files the executable carries into the app's folder. */
+/** Puts the files the executable carries into the app's folder; the programs in tools/ can run. */
 export function unpack() {
     const files = /** @type {string[]} */ (JSON.parse(getAsset(MANIFEST, "utf8")));
     for (const file of files) {
@@ -41,10 +49,11 @@ export function unpack() {
         // split returns at least one part.
         if (!UNPACKED.includes(/** @type {string} */ (parts[0])) || parts.includes("..")) throw new Error(`Unexpected file in the executable: ${file}`);
     }
-    for (const dir of UNPACKED) rmSync(join(STATE, dir), { recursive: true, force: true });
+    for (const dir of REPLACED) rmSync(join(STATE, dir), { recursive: true, force: true });
     for (const file of files) {
         const target = join(STATE, ...file.split("/"));
         mkdirSync(dirname(target), { recursive: true });
         writeFileSync(target, new Uint8Array(getAsset(file)));
+        if (file.startsWith("tools/")) chmodSync(target, 0o755);
     }
 }

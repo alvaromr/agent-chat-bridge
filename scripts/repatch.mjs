@@ -15,12 +15,13 @@ import { dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
-import { executableName, INSTALLED, STATE, unpack, VERSION } from "./bundle.mjs";
+import { executableName, INSTALLED, STATE, unpack, UV, VERSION } from "./bundle.mjs";
 import { discordRunning, discordVersion, original, resources } from "./discord-app.mjs";
 import { exec, output } from "./os/exec.mjs";
 import { system } from "./os/index.mjs";
 import { download, latestRelease } from "./release-feed.mjs";
 import { RELEASE_KEY } from "./release-key.mjs";
+import { setUpDictation } from "./setup-dictation.mjs";
 
 const LOG = system.logFile(STATE);
 /**
@@ -126,16 +127,20 @@ async function repatch() {
     system.runApply(agent());
 }
 
-/** The files the patch loads, made anew: built in a clone, unpacked from the executable. */
+/**
+ * The files the patch loads, made anew: built in a clone, unpacked from the executable, with Dictation's packages
+ * installed again where they were, as a new release's uv.lock may pin others.
+ */
 function refresh() {
     if (!INSTALLED) return pnpm(["build"]).ok;
     unpack();
-    return true;
+    const worker = join(STATE, "dictation", "worker");
+    return !existsSync(join(worker, ".venv")) || setUpDictation(UV, worker) === 0;
 }
 
 /** Refresh, patch, reopen Discord and say how it went; on macOS the helper app runs it, with its permission. */
 function apply() {
-    const failed = !refresh() ? "build" : !step("inject").ok ? "inject" : null;
+    const failed = !refresh() ? (INSTALLED ? "install --dictation" : "build") : !step("inject").ok ? "inject" : null;
     system.open();
     system.notify(failed ? TEXT.failed(failed) : TEXT.done(discordVersion()));
 }

@@ -112,7 +112,7 @@ test("dictation main: a request outside its shape, or too long, starts nothing",
 
 test("dictation main: without the worker installed, a model not on disk, or bad replacements, it says why", () => {
     fake.venv = false;
-    assert.deepEqual(main.startDictation(tab, request()), { ok: false, error: "El motor de dictado no está instalado: ejecuta `pnpm bootstrap` en el repo" });
+    assert.deepEqual(main.startDictation(tab, request()), { ok: false, error: "El motor de dictado no está instalado: ejecuta `agent-chat-bridge install --dictation` (en un clon del repo, `pnpm bootstrap`)" });
     fake.venv = true;
     assert.deepEqual(main.startDictation(tab, request({ model: "otro/whisper" })), { ok: false, error: "El modelo otro/whisper no está descargado" });
     assert.deepEqual(main.startDictation(tab, request({ replacements: "a => b\nmal\nc => d\notra" })),

@@ -2,7 +2,7 @@
 // (scripts/discord-app.mjs), with the machine faked: the commands it runs and what each answers, the clock, and a
 // temporary HOME. Run with `pnpm test`.
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,7 +26,7 @@ vi.mock("node:path", async original => (await import("../dictation/test/posix-pa
 const fresh = () => ({
     home: "", installed: true, patched: false, running: true, quits: true, version: "0.0.422", dirty: "", check: true,
     answer: true, build: true, inject: true, install: true, setup: true, at: "", remote: [], notes: "", loaded: false, bootout: true, bootstrap: true, missing: "", pgrepStatus: 1,
-    onSleep: () => { }, runs: [], piped: [], sleeps: [], cwds: new Set(), release: null, files: {}, downloads: []
+    onSleep: () => { }, runs: [], piped: [], sleeps: [], cwds: new Set(), release: null, files: {}, downloads: [], sync: 0
 });
 
 vi.mock("node:os", async original => ({ ...(/** @type {any} */ (await original())), homedir: () => machine.home, userInfo: () => ({ uid: 501 }) }));
@@ -36,6 +36,13 @@ vi.mock("../scripts/release-feed.mjs", () => ({
     download: async url => {
         machine.downloads.push(url);
         return machine.files[url];
+    }
+}));
+/** Dictation's packages, which the executable's apply installs again where they were. */
+vi.mock("../scripts/setup-dictation.mjs", () => ({
+    setUpDictation: (uv, project) => {
+        machine.runs.push(`setUpDictation ${uv} ${project}`);
+        return machine.sync;
     }
 }));
 /** A release key of the test's own, whose private half signs the fake releases. */
@@ -608,6 +615,24 @@ test("repatch, executable: apply unpacks the files it carries, patches with its 
     vi.resetModules();
     await main("apply");
     assert.match(machine.runs.at(-1), /ha fallado agent-chat-bridge inject\./);
+});
+
+test("repatch, executable: where Dictation was installed, apply installs its packages again, and a failure says which step", async () => {
+    asExecutable();
+    const worker = join(STATE_DIR(), "dictation", "worker");
+    mkdirSync(worker, { recursive: true });
+    await main("apply");
+    assert.equal(machine.runs[0], `${EXE()} inject`, "the worker's files without its packages: Dictation was never installed");
+    mkdirSync(join(worker, ".venv"));
+    Object.assign(machine, { runs: [] });
+    vi.resetModules();
+    await main("apply");
+    assert.deepEqual(machine.runs, [`setUpDictation ${join(STATE_DIR(), "tools", "uv")} ${worker}`, `${EXE()} inject`, "open -a Discord", DONE]);
+    Object.assign(machine, { sync: 1, runs: [] });
+    vi.resetModules();
+    await main("apply");
+    assert.equal(machine.runs.length, 3, "no patch after a failed install");
+    assert.match(machine.runs.at(-1), /ha fallado agent-chat-bridge install --dictation\./);
 });
 
 test("repatch, executable: the scripts run its repatch command, and the LaunchAgent has no clone to start in", async () => {

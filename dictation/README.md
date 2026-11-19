@@ -28,7 +28,8 @@ imports only its own files and Node's modules (the lint enforces it), so it can 
 Needs [uv](https://docs.astral.sh/uv/). `uv sync --frozen --project dictation/worker` installs the worker's
 packages, pinned with their hashes in `worker/uv.lock`, into `worker/.venv/`; agent-chat-bridge's `pnpm bootstrap` does it
 where `src/platform.ts` says they exist. Then download a model with the Hugging Face CLI those packages include:
-`worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo`.
+`worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo`. agent-chat-bridge's executable for Apple Silicon
+Macs carries `worker/` and uv, and its `install --dictation` does both steps, in its app folder.
 
 ## Use
 ```ts

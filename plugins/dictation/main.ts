@@ -13,9 +13,12 @@ import { parseReplacements, parseWords, promptFor } from "../../dictation/src/vo
 import { startWorker, type Worker, workerPython } from "../../dictation/src/worker";
 import { IPC } from "../../mod/src/ipc";
 
-/** main.js runs from mod/dist/. */
+/** main.js runs from mod/dist/, in the clone or in the app's folder, where the executable unpacks both (scripts/bundle.mjs). */
 const DICTATION_DIR = join(__dirname, "../../dictation");
-/** There once `pnpm bootstrap` installed the worker, where it can run (scripts/setup-dictation.mjs). */
+/**
+ * There once `pnpm bootstrap`, or the executable's `install --dictation`, installed the worker, where it can run
+ * (scripts/setup-dictation.mjs).
+ */
 const WORKER_PYTHON = workerPython(DICTATION_DIR);
 /** A worker with no dictation for this long is closed: it holds the model, ~1.6 GB. */
 const IDLE_MS = 60_000;
@@ -26,7 +29,7 @@ const MAX_SETTING = 4000;
 /** Why a dictation doesn't start, shown in the plugin's toast. */
 const TEXT = {
     invalid: "Parámetros no válidos",
-    notInstalled: "El motor de dictado no está instalado: ejecuta `pnpm bootstrap` en el repo",
+    notInstalled: "El motor de dictado no está instalado: ejecuta `agent-chat-bridge install --dictation` (en un clon del repo, `pnpm bootstrap`)",
     noModel: (id: string) => `El modelo ${id} no está descargado`,
     badReplacements: (lines: number[]) => `Sustituciones: las líneas ${lines.join(", ")} no tienen la forma «oído => querido»`
 } as const;

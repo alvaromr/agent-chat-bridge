@@ -1,8 +1,9 @@
 // `pnpm build-executable [<target>...]`: the release's single executable for each system (all by default), into dist/.
 // It bundles scripts/executable.mjs with esbuild, puts it with the files it carries (scripts/bundle.mjs) into Node's
 // official binary for the target as a single executable application (node --build-sea), and signs the macOS ones
-// locally, without which macOS won't run them. Node's archives are checked against the SHA-256 pinned here, from
-// nodejs.org's SHASUMS256.txt. Only I/O, checked by running it (docs/decisions/coverage-io-scripts-and-worker.md).
+// locally, without which macOS won't run them. The macOS one for Apple Silicon also carries Dictation's worker and
+// uv. Node's and uv's archives are checked against the SHA-256 pinned here, from nodejs.org's SHASUMS256.txt and
+// astral-sh/uv's release. Only I/O, checked by running it (docs/decisions/coverage-io-scripts-and-worker.md).
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -27,26 +28,38 @@ const TARGETS = {
 };
 /** @typedef {keyof typeof TARGETS} Target */
 
-/** What the executable carries besides its script: the patch, and the sources and styles the Discord check reads. */
+/**
+ * Dictation's uv for the one executable that carries Dictation, the macOS one for Apple Silicon: the version
+ * dictation/worker/pyproject.toml requires, pinned by the SHA-256 of astral-sh/uv's release.
+ */
+const UV_VERSION = "0.13.6";
+const UV = {
+    target: "darwin-arm64",
+    archive: "uv-aarch64-apple-darwin.tar.gz",
+    sha256: "60fbd5c8a1ed681845eea28d9d622fcde03c51e91a43465b64a1e17db1ed3472",
+    binary: "uv-aarch64-apple-darwin/uv"
+};
+
+/** What every executable carries besides its script: the patch, the skill, and the sources and styles the Discord check reads. */
 const CARRIED = [
     ...["main", "preload", "renderer"].map(name => `mod/dist/${name}.js`),
     ...trackedFiles(["mod/src", "plugins"]).filter(file => /\.(ts|tsx|mts|css)$/.test(file) && !file.endsWith(".d.ts")),
     ...trackedFiles(["skills/agent-chat-bridge"])
 ];
+/** What the one with Dictation carries too: its worker, which its uv installs. */
+const DICTATION = trackedFiles(["dictation/worker"]);
 
 function trackedFiles(/** @type {string[]} */ dirs) {
     return execFileSync("git", ["ls-files", "--", ...dirs], { cwd: ROOT, encoding: "utf8" }).split("\n").filter(Boolean);
 }
 
-/** Node's binary for a target, downloaded once into the cache and checked against its pinned SHA-256. */
-async function nodeBinary(/** @type {Target} */ target) {
-    const { archive, sha256, binary } = TARGETS[target];
-    const dir = join(CACHE, archive.replace(/\.(tar\.gz|tar\.xz|zip)$/, ""));
+/** An archive's file, downloaded once into the cache, checked against its pinned SHA-256 and unpacked there. */
+async function fromArchive(/** @type {string} */ url, /** @type {{ archive: string, sha256: string, binary: string }} */ { archive, sha256, binary }) {
     const file = join(CACHE, archive);
     if (!existsSync(file)) {
         mkdirSync(CACHE, { recursive: true });
-        const response = await fetch(`https://nodejs.org/dist/v${NODE_VERSION}/${archive}`);
-        if (!response.ok) throw new Error(`nodejs.org answered ${response.status} for ${archive}`);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`${url} answered ${response.status}`);
         writeFileSync(file, new Uint8Array(await response.arrayBuffer()));
     }
     const actual = createHash("sha256").update(readFileSync(file)).digest("hex");
@@ -54,13 +67,23 @@ async function nodeBinary(/** @type {Target} */ target) {
         rmSync(file);
         throw new Error(`${archive} has SHA-256 ${actual}, not the pinned ${sha256}`);
     }
-    if (!existsSync(dir)) execFileSync("tar", ["-xf", file, "-C", CACHE]);
-    return join(dir, binary);
+    if (!existsSync(join(CACHE, binary))) execFileSync("tar", ["-xf", file, "-C", CACHE]);
+    return join(CACHE, binary);
 }
+
+/** Node's binary for a target. */
+const nodeBinary = (/** @type {Target} */ target) => {
+    const { archive, sha256, binary } = TARGETS[target];
+    const dir = archive.replace(/\.(tar\.gz|tar\.xz|zip)$/, "");
+    return fromArchive(`https://nodejs.org/dist/v${NODE_VERSION}/${archive}`, { archive, sha256, binary: `${dir}/${binary}` });
+};
+const uvBinary = () => fromArchive(`https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${UV.archive}`, UV);
 
 const host = /** @type {Target} */ (`${process.platform === "win32" ? "win" : process.platform}-${process.arch}`);
 if (!(host in TARGETS)) throw new Error(`No Node build to run --build-sea with on ${host}`);
 if (readFileSync(join(ROOT, ".node-version"), "utf8").trim() !== NODE_VERSION) throw new Error(`.node-version isn't ${NODE_VERSION}: update TARGETS`);
+if (!readFileSync(join(ROOT, "dictation", "worker", "pyproject.toml"), "utf8").includes(`required-version = "==${UV_VERSION}"`))
+    throw new Error(`dictation/worker/pyproject.toml doesn't require uv ${UV_VERSION}: update UV`);
 const targets = /** @type {Target[]} */ (process.argv.length > 2 ? process.argv.slice(2) : Object.keys(TARGETS));
 for (const target of targets) if (!(target in TARGETS)) throw new Error(`Unknown target ${target}: one of ${Object.keys(TARGETS).join(", ")}`);
 for (const file of CARRIED) if (!existsSync(join(ROOT, file))) throw new Error(`Missing ${file}: run pnpm build first`);
@@ -74,18 +97,19 @@ await build({
     // Only the executable runs this script: scripts/bundle.mjs reads no import.meta in it, and nothing runs as a module.
     logOverride: { "empty-import-meta": "silent" }
 });
-const manifest = join(DIST, MANIFEST);
-writeFileSync(manifest, JSON.stringify(CARRIED));
-const assets = { [MANIFEST]: manifest, ...Object.fromEntries(CARRIED.map(file => [file, join(ROOT, file)])) };
-
 const builder = await nodeBinary(host);
 for (const target of targets) {
     const [os = "", arch = ""] = target.split("-");
     // The name scripts/repatch.mjs looks for among a release's files.
     const output = join(DIST, executableName(os === "win" ? "win32" : os, arch));
+    /** Each carried file by its path in the repo, which is where scripts/bundle.mjs unpacks it. */
+    const files = Object.fromEntries([...CARRIED, ...target === UV.target ? DICTATION : []].map(file => [file, join(ROOT, file)]));
+    if (target === UV.target) files["tools/uv"] = await uvBinary();
+    const manifest = join(DIST, `files-${target}.json`);
+    writeFileSync(manifest, JSON.stringify(Object.keys(files)));
     const config = join(DIST, `sea-${target}.json`);
     writeFileSync(config, JSON.stringify({
-        main: script, output, executable: await nodeBinary(target), assets,
+        main: script, output, executable: await nodeBinary(target), assets: { [MANIFEST]: manifest, ...files },
         disableExperimentalSEAWarning: true, useSnapshot: false, useCodeCache: false
     }));
     execFileSync(builder, ["--build-sea", config], { stdio: "inherit" });
