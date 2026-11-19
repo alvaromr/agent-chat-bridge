@@ -66,6 +66,13 @@ jobs:
         with:
           name: executables
           path: dist
-      - run: gh release create "$GITHUB_REF_NAME" --verify-tag --notes-from-tag dist/agent-chat-bridge-* LICENSE
+      # The tag's subject is the release's title, and its body the notes, which the update dialog shows under its own
+      # line naming the version: --notes-from-tag would put the subject in the notes too.
+      - run: |
+          git fetch --depth=1 origin "+refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          git tag --list --format='%(contents:body)' "$GITHUB_REF_NAME" > notes.md
+          test -s notes.md
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "$(git tag --list --format='%(contents:subject)' "$GITHUB_REF_NAME")" \
+            --notes-file notes.md dist/agent-chat-bridge-* LICENSE
         env:
           GH_TOKEN: ${{ github.token }}
