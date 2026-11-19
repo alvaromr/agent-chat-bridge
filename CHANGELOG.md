@@ -11,6 +11,7 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
   correction, saved only when you press Enter.
 - The Corrector's default prompt also adds missing letters («stas» → «estás») and spells out chat abbreviations
   («k» → «qué», «xq» → «porque»).
+- The Corrector's default prompt forbids adding punctuation that isn't in the message, opening «¿» and «¡» included.
 
 ## [0.3.0] - 2026-11-16
 

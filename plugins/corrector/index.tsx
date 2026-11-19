@@ -15,7 +15,7 @@ Escribe enteras las abreviaturas de chat: «k» o «q» → «que» o «qué», 
 El fallo más frecuente es un espacio corrido una letra: la última letra de una palabra pasa a la siguiente o al revés, por ejemplo «s epodria» en vez de «se podría», «y averemos» en vez de «ya veremos», «vemo sluego» en vez de «vemos luego» o «qu edamos» en vez de «quedamos».
 Si una palabra no existe o no encaja, prueba primero a mover ese espacio con las de al lado y quédate con lo que tenga sentido en la frase. Nunca quites ni añadas letras o palabras para arreglar un espacio: si un trozo parece sobrar, únelo a la palabra de al lado.
 Después pon las tildes que falten a las palabras resultantes.
-Prohibido: cambiar mayúsculas/minúsculas, tocar la puntuación, cambiar palabras correctas, emojis, enlaces, menciones o cualquier cosa entre < >. No reformules ni mejores el estilo.
+Prohibido: cambiar mayúsculas/minúsculas, tocar la puntuación (no añadas ningún signo que no esté, tampoco «¿» ni «¡» de apertura, ni quites los que hay), cambiar palabras correctas, emojis, enlaces, menciones o cualquier cosa entre < >. No reformules ni mejores el estilo.
 Conserva el idioma original. En caso de duda, no corrijas.
 Devuelve solo el mensaje corregido, sin las etiquetas, comillas ni explicaciones.`;
 
