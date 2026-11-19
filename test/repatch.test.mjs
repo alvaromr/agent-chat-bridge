@@ -25,7 +25,7 @@ afterAll(() => void Object.defineProperty(process, "platform", { value: platform
 vi.mock("node:path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
 const fresh = () => ({
     home: "", installed: true, patched: false, running: true, quits: true, version: "0.0.422", dirty: "", check: true,
-    answer: true, build: true, inject: true, install: true, setup: true, at: "", remote: [], notes: "", loaded: false, bootout: true, bootstrap: true, missing: "", pgrepStatus: 1,
+    answer: true, build: true, inject: true, install: true, setup: true, at: "", remote: [], notes: "", loaded: false, bootout: true, bootstrap: true, missing: "", pgrepStatus: 1, pgrepMissing: "",
     onSleep: () => { }, runs: [], piped: [], sleeps: [], cwds: new Set(), release: null, files: {}, downloads: [], sync: 0
 });
 
@@ -92,6 +92,7 @@ vi.mock("node:child_process", async () => {
         execFileSync: (command, args, options) => {
             assert.deepEqual([command, args, options], ["pgrep", ["-x", "Discord"], { stdio: "ignore" }]);
             machine.runs.push(command);
+            if (machine.pgrepMissing) throw Object.assign(new Error(`spawnSync pgrep ${machine.pgrepMissing}`), { code: machine.pgrepMissing });
             if (!machine.running) throw Object.assign(new Error("pgrep"), { status: machine.pgrepStatus });
         },
         spawnSync: (command, args, options) => {
@@ -298,6 +299,17 @@ test("repatch: a pgrep that fails for another reason than finding no Discord fai
     vi.resetModules();
     rmSync(SEEN(), { force: true });
     await assert.rejects(main("run"), { message: "pgrep" });
+});
+
+test("repatch: without pgrep, as on a minimal Linux, it fails saying what to install; another failure to start it, as it is", async () => {
+    machine.pgrepMissing = "ENOENT";
+    await assert.rejects(main("run"), {
+        message: "Falta pgrep, que dice si Discord está abierto: instálalo (en Debian y Ubuntu, el paquete procps) y repite."
+    });
+    machine.pgrepMissing = "EACCES";
+    vi.resetModules();
+    rmSync(SEEN(), { force: true });
+    await assert.rejects(main("run"), { message: "spawnSync pgrep EACCES" });
 });
 
 /** A clone installed at v0.2.2, its Discord patched, and the runs of its check up to the release's dialog. */
