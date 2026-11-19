@@ -112,9 +112,11 @@ Defined in `package.json`.
 - `pnpm test`: tests without Discord, with 100 % line, branch, function and statement coverage.
 - `pnpm mutation`: Stryker on the code the coverage counts, with a 100 % score, run by the `.githooks/` pre-push hook instead of
   the pre-commit one. Run it after changing one of them or their tests. It is incremental and re-tests only the
-  mutants whose code or covering tests changed: it sees no change in the shared test helpers (`test/fake-*.mjs`,
-  `test/dom.mjs`, `test/app-folders.mjs`) or the dependencies, so it can keep a mutant counted as killed that no test kills any more. Before
-  committing, confirm with `pnpm mutation --force`; `pnpm release` runs it. Every surviving mutant gets a test, or an inline
+  mutants whose code or covering tests changed: it sees no change in the shared test helpers, the dependencies or the
+  test and mutation configs (`MUTATION_UNSEEN` in `scripts/release.mjs`), so it can keep a mutant counted as killed
+  that no test kills any more. After changing one of those, confirm with `pnpm mutation --force` before committing; a
+  full run takes about 20 minutes, so it is run only then, and `pnpm release` runs it only when one of them changed
+  since the last release. Every surviving mutant gets a test, or an inline
   `// Stryker disable next-line <mutator>: <reason>` when it is equivalent.
 - `pnpm run audit`: known advisories in the dependencies, the worker's Python packages included (`uv audit`); part of
   the review of any dependency change, and run by the pre-push hook and `pnpm release`. Plain `pnpm audit` is pnpm's
@@ -136,7 +138,8 @@ Defined in `package.json`.
 - `pnpm repatch install` / `pnpm repatch uninstall`: add or remove the scheduled check that offers to re-patch Discord
   after an update («When Discord updates») and each new release (README, «Update»): to the executable, its signed
   executable; to a clean clone at a release tag, the tag. A development clone, off a release tag, is never updated.
-- `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,
+- `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation` (full
+  only as said above),
   `pnpm check-discord` and a fresh clone installed and tested, the worker, `pnpm smoke-dictation` and this system's
   executable included, then the version in `package.json`, the dated `CHANGELOG.md` section opened by the Discord it
   was tested with (the app's version and its web client's build), the commit and the `v<x.y.z>` tag, whose message is

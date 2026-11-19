@@ -1,5 +1,6 @@
 // `pnpm release <x.y.z>`: the whole release from main, stopping at the first failure. It runs the gate, the audit, the
-// mutation run and the Discord code check, installs and tests a fresh clone, this system's executable included, then
+// mutation run (a full one only when what incremental runs can't see changed since the last release) and the Discord
+// code check, installs and tests a fresh clone, this system's executable included, then
 // sets the version, dates the changelog with the Discord it was tested with, commits and tags, the tag carrying that
 // section. Pushing stays with whoever releases; the tag's push starts the release workflow
 // (.github/workflows/release.yml), which builds, signs and publishes the executables.
@@ -12,8 +13,24 @@ import { executableName } from "./bundle.mjs";
 import { releaseChangelog } from "./changelog.mjs";
 import { discordVersion } from "./check-discord/cache.mjs";
 
+/**
+ * What incremental mutation can't see change (AGENTS.md, `pnpm mutation`): the shared test helpers, the dependencies
+ * and the test and mutation configs. With any of it changed since the last release, only a full run counts.
+ */
+const MUTATION_UNSEEN = ["test/fake-*.mjs", "test/dom.mjs", "test/app-folders.mjs", "test/setup.mjs", "dictation/test/posix-path.mjs",
+    "pnpm-lock.yaml", "vitest.config.mjs", "stryker.config.mjs"];
+
 /** @param {string} command @param {string[]} args */
 const output = (command, args) => execFileSync(command, args, { encoding: "utf8" }).trim();
+
+/** Whether the mutation run must be a full one: something it can't see changed since `tag`, or there is no such tag. */
+function fullMutation(/** @type {string} */ tag) {
+    try {
+        return Boolean(output("git", ["diff", "--name-only", tag, "HEAD", "--", ...MUTATION_UNSEEN]));
+    } catch {
+        return true; // no previous release to compare with
+    }
+}
 /** @param {string} command @param {string[]} args @param {string} [cwd] */
 const run = (command, args, cwd) => execFileSync(command, args, { cwd, stdio: "inherit" });
 
@@ -29,7 +46,7 @@ try {
     run("pnpm", ["check"]);
     // `run`: pnpm's own audit command would shadow the script, which also audits the dictation worker's packages.
     run("pnpm", ["run", "audit"]);
-    run("pnpm", ["mutation", "--force"]);
+    run("pnpm", ["mutation", ...fullMutation(`v${pkg.version}`) ? ["--force"] : []]);
     run("pnpm", ["check-discord"]);
 
     // As someone who clones it: only what is committed, installed from the lockfile.
