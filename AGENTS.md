@@ -87,7 +87,9 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   says the files are.
 - `.github/workflows/ci.yml`: on every push and pull request, the unit tests and `pnpm smoke-os` on Windows and Linux
   (GitHub's `windows-latest` and `ubuntu-latest`), the systems no one runs them on by hand. The gate stays the
-  pre-commit hook, on macOS.
+  pre-commit hook, on macOS. `.github/workflows/release.yml`: on the push of a release tag, the executables built on a
+  Mac, signed with the release key (`scripts/sign-release.mjs`, the secret `RELEASE_SIGNING_KEY`), each started on its
+  system, and the GitHub release with the tag's notes, the executables, their signatures and the licence.
 - `docs/debugging.md`: how to verify a failure in the running Discord. Read it before diagnosing any failure of
   `mod/` or the plugins. `scripts/cdp.mjs` is its tool.
 
@@ -135,10 +137,10 @@ Defined in `package.json`.
   after an update («When Discord updates») and each new release (README, «Update»): to the executable, its signed
   executable; to a clean clone at a release tag, the tag. A development clone, off a release tag, is never updated.
 - `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,
-  `pnpm check-discord` and a fresh clone installed and tested, the worker and `pnpm smoke-dictation` included, then
-  the version in `package.json`, the dated `CHANGELOG.md` section opened by the Discord it was tested with (the app's
-  version and its web client's build), the commit and the `v<x.y.z>` tag, whose message is that section. Then push
-  with `git push --follow-tags` and publish the GitHub release from the tag, as the script prints. A user-visible
+  `pnpm check-discord` and a fresh clone installed and tested, the worker, `pnpm smoke-dictation` and this system's
+  executable included, then the version in `package.json`, the dated `CHANGELOG.md` section opened by the Discord it
+  was tested with (the app's version and its web client's build), the commit and the `v<x.y.z>` tag, whose message is
+  that section. Then push with `git push --follow-tags`: the tag starts `.github/workflows/release.yml`. A user-visible
   change adds its entry under `[Unreleased]` in the same commit. Tags are never moved or deleted: the `.githooks/`
   reference-transaction hook refuses it here, and the pre-push hook on the remote.
 

@@ -6,7 +6,8 @@
 - **Why:** what stays out is only I/O, checked by running it, where a unit test would fake all it does:
   `scripts/inject.mjs` (`pnpm inject`), `scripts/release.mjs` (`pnpm release`), `scripts/secrets.mjs` (`pnpm check`),
   `scripts/cdp.mjs` (`docs/debugging.md`), `mod/build.mjs` (`pnpm build`), `scripts/build-executable.mjs`
-  (`pnpm build-executable`) and `scripts/executable.mjs`, the executable's one-line script; and the
+  (`pnpm build-executable`), `scripts/sign-release.mjs` (the release workflow) and `scripts/executable.mjs`, the
+  executable's one-line script; and the
   dictation worker, `dictation/worker/worker.py`, a loop that hands each request to `mlx-whisper`, checked by
   `pnpm smoke-dictation`. In the CLI, only the line that runs it as a command is excluded in place, with that reason.
   `scripts/check-discord/` stays out too: it is itself a check, `pnpm check-discord`, run against Discord's real

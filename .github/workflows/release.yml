@@ -1,0 +1,71 @@
+# A release's executables, on the push of its v<x.y.z> tag (`pnpm release`): built on a Mac, which signs the macOS ones
+# locally as macOS asks; signed with the release key (scripts/sign-release.mjs, its secret RELEASE_SIGNING_KEY);
+# each one started on its own system; then the GitHub release, with the tag's notes, the executables, their
+# signatures and the licence. Each action is pinned to the commit of its release.
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The pnpm of package.json's packageManager.
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build-executable
+      - run: node scripts/sign-release.mjs
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+      - run: test "$(dist/agent-chat-bridge-darwin-arm64 --version)" = "${GITHUB_REF_NAME#v}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: executables
+          path: dist/agent-chat-bridge-*
+          if-no-files-found: error
+  # Each executable starts on its system and says the tag's version.
+  try:
+    needs: build
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-latest
+            executable: agent-chat-bridge-linux-x64
+          - os: windows-latest
+            executable: agent-chat-bridge-win-x64.exe
+          - os: macos-15-intel
+            executable: agent-chat-bridge-darwin-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: executables
+      - shell: bash
+        run: chmod +x "$EXECUTABLE" && test "$("./$EXECUTABLE" --version)" = "${GITHUB_REF_NAME#v}"
+        env:
+          EXECUTABLE: ${{ matrix.executable }}
+  publish:
+    needs: try
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: executables
+          path: dist
+      - run: gh release create "$GITHUB_REF_NAME" --verify-tag --notes-from-tag dist/agent-chat-bridge-* LICENSE
+        env:
+          GH_TOKEN: ${{ github.token }}

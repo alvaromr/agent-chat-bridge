@@ -1,12 +1,14 @@
 // `pnpm release <x.y.z>`: the whole release from main, stopping at the first failure. It runs the gate, the audit, the
-// mutation run and the Discord code check, installs and tests a fresh clone, then sets the version, dates the
-// changelog with the Discord it was tested with, commits and tags, the tag carrying that section. Pushing and the
-// GitHub release, made from the tag, stay with whoever releases.
+// mutation run and the Discord code check, installs and tests a fresh clone, this system's executable included, then
+// sets the version, dates the changelog with the Discord it was tested with, commits and tags, the tag carrying that
+// section. Pushing stays with whoever releases; the tag's push starts the release workflow
+// (.github/workflows/release.yml), which builds, signs and publishes the executables.
 import { execFileSync } from "child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
+import { executableName } from "./bundle.mjs";
 import { releaseChangelog } from "./changelog.mjs";
 import { discordVersion } from "./check-discord/cache.mjs";
 
@@ -39,6 +41,10 @@ try {
         run("pnpm", ["build"], clone);
         run("pnpm", ["test"], clone);
         run("pnpm", ["smoke-dictation"], clone);
+        // This system's executable builds and starts; the workflow builds and starts each system's.
+        run("pnpm", ["build-executable", `${process.platform === "win32" ? "win" : process.platform}-${process.arch}`], clone);
+        const started = output(join(clone, "dist", executableName(process.platform, process.arch)), ["--version"]);
+        if (started !== pkg.version) throw new Error(`the executable says it is ${started}, not ${pkg.version}`);
     } finally {
         rmSync(clone, { recursive: true, force: true });
     }
@@ -51,8 +57,8 @@ try {
     run("git", ["add", "package.json", "CHANGELOG.md"]);
     run("git", ["commit", "--quiet", "--message", `Release ${version}`]);
     run("git", ["tag", "--annotate", `v${version}`, "--cleanup=verbatim", "--message", `agent-chat-bridge ${version}\n\n${notes}`]);
-    console.log(`Released ${version}: push it with \`git push --follow-tags\`, then publish its GitHub release with ` +
-        `\`gh release create v${version} --verify-tag --notes-from-tag\`.`);
+    console.log(`Released ${version}: push it with \`git push --follow-tags\`; the release workflow then publishes its `
+        + "executables on GitHub (gh run watch).");
 } catch (err) {
     // A failed command already printed its output; this says which step stopped the release.
     console.error(`Release stopped: ${err instanceof Error ? err.message : err}`);
