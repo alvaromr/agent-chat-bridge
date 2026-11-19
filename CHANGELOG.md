@@ -5,6 +5,10 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-19
+
+Tested with Discord 0.0.422 for macOS, stable web client build 676376.
+
 ### Fixed
 - On a Linux without `pgrep`, `install` and the scheduled check say to install it, instead of failing with Node's
   error.
