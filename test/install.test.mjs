@@ -19,8 +19,8 @@ const fake = vi.hoisted(() => ({ home: "", steps: /** @type {string[]} */ ([]), 
 vi.mock("../scripts/setup-dictation.mjs", async () => {
     const { mkdirSync, writeFileSync } = await import("node:fs");
     return {
-        setUpDictation: (uv, project) => {
-            fake.steps.push(`setUpDictation ${uv} ${project}`);
+        setUpDictation: (uv, project, dev) => {
+            fake.steps.push(`setUpDictation ${uv} ${project} ${dev}`);
             if (fake.canRun && !fake.sync) {
                 mkdirSync(join(project, ".venv", "bin"), { recursive: true });
                 writeFileSync(join(project, ".venv", "bin", "hf"), "");
@@ -92,7 +92,7 @@ const MODEL = "mlx-community/whisper-large-v3-turbo";
 test("install --dictation: installs the worker with the uv it carries and downloads the model, before it patches", async () => {
     asExecutable(true);
     await cli(["install", "--dictation"]);
-    assert.deepEqual(fake.steps, [`setUpDictation ${join(state(), "tools", "uv")} ${WORKER()}`, `${HF()} download ${MODEL} inherit`,
+    assert.deepEqual(fake.steps, [`setUpDictation ${join(state(), "tools", "uv")} ${WORKER()} false`, `${HF()} download ${MODEL} inherit`,
         "patch install", "repatch install"]);
     assert.equal(readFileSync(join(WORKER(), "worker.py"), "utf8"), "worker");
     assert.equal(out.mock.calls[0]?.[0], `Dictado: descargando el modelo ${MODEL} (unos 1,6 GB) en la caché de Hugging Face.`);

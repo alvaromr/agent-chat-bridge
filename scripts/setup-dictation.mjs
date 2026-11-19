@@ -14,10 +14,10 @@ const TEXT = {
 };
 
 /**
- * Installs the worker's packages into `project`'s .venv, as its uv.lock pins them. Returns uv's exit code, 1 when a
- * signal ended it, and 0 where it installs nothing.
+ * Installs the worker's packages into `project`'s .venv, as its uv.lock pins them, with its `dev` group, the gate's
+ * Ruff and ty, only for a clone. Returns uv's exit code, 1 when a signal ended it, and 0 where it installs nothing.
  */
-export function setUpDictation(uv = "uv", project = "dictation/worker") {
+export function setUpDictation(uv = "uv", project = "dictation/worker", dev = true) {
     if (!canRunWorker(platform(), arch(), release())) {
         console.warn(TEXT.unsupported);
         return 0;
@@ -26,7 +26,7 @@ export function setUpDictation(uv = "uv", project = "dictation/worker") {
         console.warn(TEXT.noUv);
         return 0;
     }
-    return spawnSync(uv, ["sync", "--frozen", "--project", project], { stdio: "inherit" }).status ?? 1;
+    return spawnSync(uv, ["sync", "--frozen", ...dev ? [] : ["--no-dev"], "--project", project], { stdio: "inherit" }).status ?? 1;
 }
 
 // Stryker disable next-line all: only `pnpm bootstrap` runs it as a command, never the tests (and, for that, not the coverage).

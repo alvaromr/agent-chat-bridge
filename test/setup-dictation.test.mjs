@@ -29,9 +29,9 @@ test("setup-dictation: on an Apple Silicon Mac with uv, it installs the worker's
     assert.equal(warned.mock.calls.length, 0);
 });
 
-test("setup-dictation: the executable hands it the uv it carries and the worker it unpacked", () => {
-    assert.equal(setUpDictation("/state/tools/uv", "/state/dictation/worker"), 0);
-    assert.deepEqual(machine.runs, ["/state/tools/uv --version", "/state/tools/uv sync --frozen --project /state/dictation/worker inherit"]);
+test("setup-dictation: the executable hands it the uv it carries and the worker it unpacked, and wants no development tools", () => {
+    assert.equal(setUpDictation("/state/tools/uv", "/state/dictation/worker", false), 0);
+    assert.deepEqual(machine.runs, ["/state/tools/uv --version", "/state/tools/uv sync --frozen --no-dev --project /state/dictation/worker inherit"]);
 });
 
 test("setup-dictation: a failed install returns uv's own code, or 1 when a signal ended uv", () => {

@@ -40,8 +40,8 @@ vi.mock("../scripts/release-feed.mjs", () => ({
 }));
 /** Dictation's packages, which the executable's apply installs again where they were. */
 vi.mock("../scripts/setup-dictation.mjs", () => ({
-    setUpDictation: (uv, project) => {
-        machine.runs.push(`setUpDictation ${uv} ${project}`);
+    setUpDictation: (uv, project, dev) => {
+        machine.runs.push(`setUpDictation ${uv} ${project} ${dev}`);
         return machine.sync;
     }
 }));
@@ -627,7 +627,7 @@ test("repatch, executable: where Dictation was installed, apply installs its pac
     Object.assign(machine, { runs: [] });
     vi.resetModules();
     await main("apply");
-    assert.deepEqual(machine.runs, [`setUpDictation ${join(STATE_DIR(), "tools", "uv")} ${worker}`, `${EXE()} inject`, "open -a Discord", DONE]);
+    assert.deepEqual(machine.runs, [`setUpDictation ${join(STATE_DIR(), "tools", "uv")} ${worker} false`, `${EXE()} inject`, "open -a Discord", DONE]);
     Object.assign(machine, { sync: 1, runs: [] });
     vi.resetModules();
     await main("apply");

@@ -48,7 +48,7 @@ async function installDictation() {
         process.exitCode = 2;
         return false;
     }
-    const status = (await import("./setup-dictation.mjs")).setUpDictation(UV, WORKER);
+    const status = (await import("./setup-dictation.mjs")).setUpDictation(UV, WORKER, false);
     if (status) {
         process.exitCode = status;
         return false;

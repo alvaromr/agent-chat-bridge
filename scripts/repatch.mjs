@@ -135,7 +135,7 @@ function refresh() {
     if (!INSTALLED) return pnpm(["build"]).ok;
     unpack();
     const worker = join(STATE, "dictation", "worker");
-    return !existsSync(join(worker, ".venv")) || setUpDictation(UV, worker) === 0;
+    return !existsSync(join(worker, ".venv")) || setUpDictation(UV, worker, false) === 0;
 }
 
 /** Refresh, patch, reopen Discord and say how it went; on macOS the helper app runs it, with its permission. */
