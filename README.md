@@ -19,61 +19,75 @@ Whisper model; and the `agent-chat-bridge` CLI to use Discord from Claude Code.
 ## Requirements
 - Discord (stable), installed where each system keeps it:
   - macOS, tested: in `/Applications`.
-  - Windows, experimental: Discord's own installer, under `%LOCALAPPDATA%\Discord`. Run the commands below in Git
-    Bash, which comes with Git for Windows. Only checked on a machine without Discord: the CLI's connection and the
-    scheduled check's task (`docs/decisions/windows-linux-untested.md`); the patch and the plugins were never run.
+  - Windows, experimental: Discord's own installer, under `%LOCALAPPDATA%\Discord`. Only checked on a machine without
+    Discord: the CLI's connection and the scheduled check's task (`docs/decisions/windows-linux-untested.md`); the
+    patch and the plugins were never run.
   - Linux, experimental: the `.deb` or the `.tar.gz`, opened once, since on its first start Discord installs itself
     into `~/.config/discord`. The patch, the plugins' loading, the CLI and the dialog opening were checked on Debian
     with Discord 1.0.169; the scheduled check was not (`docs/decisions/windows-linux-untested.md`). The dialogs need
-    `zenity` and `notify-send`. Flatpak and Snap are not supported.
-- Node (version in `.node-version`) and pnpm (version in `package.json`), and git.
-- Claude Code installed with its native installer, as `~/.local/bin/claude` (`claude.exe` on Windows), for the plugins.
-- To work on the repo (`pnpm check`): `gitleaks`, at the version in `scripts/secrets.mjs` (`brew install gitleaks` on
-  a Mac), for the secret scan of the gate.
+    `zenity` and `notify-send`, and the executable `pgrep` and `libatomic1`, which desktop systems have. Flatpak and
+    Snap are not supported.
+- Claude Code installed with its native installer, as `~/.local/bin/claude` (`claude.exe` on Windows), for the plugins,
+  with `~/.local/bin` on the PATH, as that installer offers.
+- On macOS, the App Management permission for the terminal you install from (System Settings → Privacy & Security →
+  App Management), which macOS asks for before a program changes another app.
 - Optional, for Dictation: a Mac with Apple Silicon and macOS 14 or later, the only ones its model's runtime
-  (`mlx`) ships for; [uv](https://docs.astral.sh/uv/) (version in `dictation/worker/pyproject.toml`); a Whisper model
-  in MLX format (Install); and the microphone allowed for Discord in macOS's Privacy settings. Without them the rest
-  works, and Dictation shows no button.
-- To work on the repo (`pnpm check`), uv on that Mac too: the gate also lints and type-checks the dictation worker.
+  (`mlx`) ships for, and the microphone allowed for Discord in macOS's Privacy settings. Without them the rest works,
+  and Dictation shows no button.
+
+Nothing else: the release's executable carries what it runs. To work on the repo, see «Develop».
 
 ## Install
-With Discord closed, one command clones the repo at its latest release, builds it, patches Discord and installs the
-dialogs that keep it patched and up to date (below):
-```sh
-git clone https://github.com/alvaromr/agent-chat-bridge.git && cd agent-chat-bridge \
-  && git checkout "$(git describe --tags --abbrev=0)" && pnpm install --frozen-lockfile && pnpm bootstrap \
-  && pnpm inject && pnpm repatch install
-```
-- `pnpm install --frozen-lockfile`: the dependencies, which pnpm wants installed before it runs any script.
-- `pnpm bootstrap`: hooks and build; Dictation's engine where it can run, or it says why not.
-- `pnpm inject`: patches Discord.
-- `pnpm repatch install`: optional; drop it to re-patch and update by hand.
-- `pnpm links`, optional and apart: the `agent-chat-bridge` CLI and its Claude Code skill.
+Ask Claude Code to install agent-chat-bridge from this README, or do it by hand: download your system's executable from
+the [latest release](https://github.com/alvaromr/agent-chat-bridge/releases/latest) into `~/.local/bin/`, then, with
+Discord closed, run its `install`. Each release has one executable per system:
 
-For Dictation, download its model (~1.6 GB) into the Hugging Face cache with the CLI that `pnpm bootstrap` installed, then
-restart Discord: Dictation looks for its engine and models when Discord starts.
+| System | File |
+|---|---|
+| macOS, Apple Silicon | `agent-chat-bridge-darwin-arm64` |
+| macOS, Intel | `agent-chat-bridge-darwin-x64` |
+| Linux, x64 | `agent-chat-bridge-linux-x64` |
+| Windows, x64 | `agent-chat-bridge-win-x64.exe` |
+
+On macOS and Linux (here for Apple Silicon; change the file for yours):
 ```sh
-dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo
+mkdir -p ~/.local/bin && curl -fL -o ~/.local/bin/agent-chat-bridge \
+  https://github.com/alvaromr/agent-chat-bridge/releases/latest/download/agent-chat-bridge-darwin-arm64 \
+  && chmod +x ~/.local/bin/agent-chat-bridge && agent-chat-bridge install --dictation
 ```
-After a Discord update, run `pnpm inject` again. With `pnpm repatch install`, a dialog offers it instead: once the new
-Discord passes `pnpm check-discord`, it asks, and on a yes it quits Discord, patches it and reopens it. It asks once
-per Discord version, and `pnpm repatch uninstall` removes it. It checks at login, when Discord changes and daily on
-macOS (a LaunchAgent), and at login and hourly on Windows (a scheduled task) and Linux (systemd user units), where
-Discord updates whenever it starts. On macOS the patch runs in a helper app, «Reparchear Discord (agent-chat-bridge)»,
-that needs macOS's App Management permission: the install shows it in the Finder and opens that setting, where you
-drag it in and turn it on.
+On Windows, in PowerShell:
+```powershell
+New-Item -ItemType Directory -Force "$HOME\.local\bin" | Out-Null
+Invoke-WebRequest -OutFile "$HOME\.local\bin\agent-chat-bridge.exe" `
+  https://github.com/alvaromr/agent-chat-bridge/releases/latest/download/agent-chat-bridge-win-x64.exe
+& "$HOME\.local\bin\agent-chat-bridge.exe" install
+```
+- Download it with the terminal, as above, not with the browser: Apple and Microsoft haven't signed it, so macOS
+  blocks, and Windows warns about, an executable a browser downloaded. The first download is checked only by HTTPS;
+  every update after it, by the release's signature (below).
+- `install` puts its files in agent-chat-bridge's app folder, the Claude Code skill in `~/.claude/skills/`, patches
+  Discord and schedules the check that keeps it patched and up to date (below). `--dictation`, only on a Mac with
+  Apple Silicon, also installs Dictation's engine and model, about 2.2 GB; drop it to install without Dictation. It
+  downloads before it patches, so Discord can stay open until then; run `install` again to finish once it is closed.
+- On macOS the patch needs the App Management permission (Requirements), and the scheduled re-patch runs in a helper
+  app, «Reparchear Discord (agent-chat-bridge)», that needs it too: the install shows it in the Finder and opens that
+  setting, where you drag it in and turn it on.
+
+After a Discord update, the patch is gone. A dialog then offers to patch it again: once the new Discord passes
+`agent-chat-bridge check-discord`, it asks, and on a yes it quits Discord, patches it and reopens it. It asks once per
+Discord version. It checks at login, when Discord changes and daily on macOS (a LaunchAgent), and at login and hourly
+on Windows (a scheduled task) and Linux (systemd user units), where Discord updates whenever it starts. By hand,
+`agent-chat-bridge inject` patches it, with Discord closed.
 
 ## Update
-With `pnpm repatch install`, a dialog offers each new release once, with what changed and which Discord it was tested
-with, checked with the patch above: on a yes it installs it and reloads Discord. It only does so in a clone at a
-release tag with no local changes. Without it, watch the repo on GitHub for releases only (Watch → Custom →
-Releases), and install a release from the clone:
-```sh
-git fetch --tags && git checkout v<x.y.z>   # the new release's tag
-pnpm install --frozen-lockfile              # that release's dependencies
-pnpm bootstrap                              # and its build
-```
-Then restart Discord: the patch loads the new build on every start, so it needs no `pnpm inject`.
+The same check offers each new release once, with what changed and which Discord it was tested with: on a yes it
+downloads your system's executable, installs it only if the release's signature is valid, and reloads Discord. By
+hand, download the new executable as in «Install» and run `agent-chat-bridge install` again.
+
+## Uninstall
+`agent-chat-bridge uninstall` removes the scheduled check, the patch, the skill and the files, Dictation's engine
+included; your settings stay in the app folder, and Dictation's model in the Hugging Face cache. Then delete the
+executable, as it says.
 
 ## Use
 - Each plugin adds a button to the chat box, left of the gift icon.
@@ -90,6 +104,19 @@ Then restart Discord: the patch loads the new build on every start, so it needs 
   is moved aside as `settings.json.unreadable-<ms>` and a dialog says so.
 
 ## Develop
+A clone runs agent-chat-bridge from its own files, built on your machine. It needs Node (version in `.node-version`),
+pnpm (version in `package.json`) and git; for the gate (`pnpm check`), `gitleaks` at the version in
+`scripts/secrets.mjs` (`brew install gitleaks` on a Mac) and, on an Apple Silicon Mac, [uv](https://docs.astral.sh/uv/)
+(version in `dictation/worker/pyproject.toml`), which also installs Dictation's engine. On Windows, run the commands
+in Git Bash. With Discord closed:
+```sh
+git clone https://github.com/alvaromr/agent-chat-bridge.git && cd agent-chat-bridge \
+  && pnpm install --frozen-lockfile && pnpm bootstrap && pnpm inject && pnpm repatch install && pnpm links
+dictation/worker/.venv/bin/hf download mlx-community/whisper-large-v3-turbo   # Dictation's model, ~1.6 GB
+```
+`pnpm bootstrap` sets the hooks, builds and installs Dictation's engine where it can run; `pnpm links` links the CLI
+into `~/.local/bin/` and its skill into `~/.claude/skills/`. A clone checked out at a release tag, with no local
+changes, is offered each new release's tag; a development clone is never updated.
 ```sh
 pnpm check      # the gate before each commit (AGENTS.md, «Commands»)
 pnpm build      # then restart Discord

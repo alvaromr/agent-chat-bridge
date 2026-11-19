@@ -212,10 +212,11 @@ review: do not patch, and ask the user.
 ## When Discord updates
 The update replaces Discord's app (on Windows, a new `app-<version>` folder) and the patch disappears; `pnpm inject`
 restores it. Then run `pnpm check-discord` and `pnpm live`.
-With `pnpm repatch install`, a scheduled check does the first part once per Discord version that lost the patch
-(`scripts/repatch.mjs`; when it runs on each system, README «Install»). It holds to the review of a re-patch without
-changes: with a clean tree and `pnpm check-discord` passing, it asks in a dialog, and only on a yes it quits Discord,
-rebuilds `mod/dist/`, patches and reopens it. On macOS a helper app, «Reparchear Discord (agent-chat-bridge)», does
+With `pnpm repatch install`, or the executable's `install`, a scheduled check does the first part once per Discord
+version that lost the patch (`scripts/repatch.mjs`; when it runs on each system, README «Install»). It holds to the
+review of a re-patch without changes: with a clean tree (in the executable, the signed release's files) and
+`check-discord` passing, it asks in a dialog, and only on a yes it quits Discord, rebuilds `mod/dist/` (in the
+executable, unpacks it), patches and reopens it. On macOS a helper app, «Reparchear Discord (agent-chat-bridge)», does
 the patching: macOS lets only an app with its App Management permission change another app, and the user grants it
 to the helper once; a new build of the helper loses it, so an install keeps the one there while its AppleScript is the
 same. Otherwise a notification says what failed, and the log's path is in it.

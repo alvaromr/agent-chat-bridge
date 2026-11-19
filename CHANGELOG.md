@@ -6,6 +6,11 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 ## [Unreleased]
 
 ### Added
+- Each release has one executable per system, which needs neither git, pnpm nor Node: download yours and run
+  `agent-chat-bridge install`, with `--dictation` on an Apple Silicon Mac for Dictation's engine and model, or ask
+  Claude Code to (README, «Install»). Updates install only with a valid signature by the release key;
+  `agent-chat-bridge uninstall` removes it all but your settings. An install from a clone keeps working, and is now
+  the way to develop (README, «Develop»).
 - The CLI's own commands: `inject`, `uninject`, `check-discord` and `repatch`, the same steps as the pnpm scripts,
   and `--version`. Its help lists them.
 
