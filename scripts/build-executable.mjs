@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 
 import { build } from "esbuild";
 
-import { MANIFEST } from "./bundle.mjs";
+import { executableName, MANIFEST } from "./bundle.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DIST = join(ROOT, "dist");
@@ -80,7 +80,9 @@ const assets = { [MANIFEST]: manifest, ...Object.fromEntries(CARRIED.map(file =>
 
 const builder = await nodeBinary(host);
 for (const target of targets) {
-    const output = join(DIST, `agent-chat-bridge-${target}${target.startsWith("win") ? ".exe" : ""}`);
+    const [os = "", arch = ""] = target.split("-");
+    // The name scripts/repatch.mjs looks for among a release's files.
+    const output = join(DIST, executableName(os === "win" ? "win32" : os, arch));
     const config = join(DIST, `sea-${target}.json`);
     writeFileSync(config, JSON.stringify({
         main: script, output, executable: await nodeBinary(target), assets,

@@ -2,7 +2,7 @@
 // (scripts/discord-app.mjs), with the machine faked: the commands it runs and what each answers, the clock, and a
 // temporary HOME. Run with `pnpm test`.
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,10 +26,24 @@ vi.mock("node:path", async original => (await import("../dictation/test/posix-pa
 const fresh = () => ({
     home: "", installed: true, patched: false, running: true, quits: true, version: "0.0.422", dirty: "", check: true,
     answer: true, build: true, inject: true, install: true, setup: true, at: "", remote: [], notes: "", loaded: false, bootout: true, bootstrap: true, missing: "", pgrepStatus: 1,
-    onSleep: () => { }, runs: [], piped: [], sleeps: [], cwds: new Set()
+    onSleep: () => { }, runs: [], piped: [], sleeps: [], cwds: new Set(), release: null, files: {}, downloads: []
 });
 
 vi.mock("node:os", async original => ({ ...(/** @type {any} */ (await original())), homedir: () => machine.home, userInfo: () => ({ uid: 501 }) }));
+/** GitHub's releases, for the executable: the latest one, and the files it downloads by URL. */
+vi.mock("../scripts/release-feed.mjs", () => ({
+    latestRelease: async () => machine.release,
+    download: async url => {
+        machine.downloads.push(url);
+        return machine.files[url];
+    }
+}));
+/** A release key of the test's own, whose private half signs the fake releases. */
+vi.mock("../scripts/release-key.mjs", async () => {
+    const { generateKeyPairSync } = await import("node:crypto");
+    machine.keys ??= generateKeyPairSync("ed25519");
+    return { RELEASE_KEY: machine.keys.publicKey };
+});
 /** The installed Discord: its folder, whether it is patched, and the version its build_info.json says. */
 vi.mock("node:fs", async original => {
     const fs = /** @type {any} */ (await original());
@@ -544,20 +558,33 @@ test("repatch: any other command prints the usage and fails", async () => {
     assert.deepEqual(machine.runs, []);
 });
 
-/** The release's executable: no clone, and the files it carries, as node:sea hands them. */
-const asExecutable = () => vi.doMock("node:sea", () => ({
-    isSea: () => true,
-    getAsset: (key, encoding) => key === "files.json" ? JSON.stringify(["mod/dist/main.js"]) : encoding ? "" : new TextEncoder().encode(`// ${key}`).buffer
-}));
-const EXE = process.execPath;
+/**
+ * The release's executable: no clone, the files it carries, as node:sea hands them, and the executable itself, a file
+ * in the temporary HOME, never the Node that runs the tests.
+ */
+const NODE = process.execPath;
+const asExecutable = () => {
+    vi.doMock("node:sea", () => ({
+        isSea: () => true,
+        getAsset: (key, encoding) => key === "files.json" ? JSON.stringify(["mod/dist/main.js"]) : encoding ? "" : new TextEncoder().encode(`// ${key}`).buffer
+    }));
+    const path = join(machine.home, "agent-chat-bridge");
+    writeFileSync(path, "old");
+    Object.defineProperty(process, "execPath", { value: path });
+    return path;
+};
+afterEach(() => {
+    vi.doUnmock("node:sea");
+    Object.defineProperty(process, "execPath", { value: NODE });
+});
+const EXE = () => join(machine.home, "agent-chat-bridge");
 const STATE_DIR = () => join(machine.home, "Library", "Application Support", "agent-chat-bridge");
 const exeQuestion = QUESTION.replaceAll("pnpm", "agent-chat-bridge");
-afterEach(() => void vi.doUnmock("node:sea"));
 
 test("repatch, executable: an update that lost the patch is checked by its own command, with no clone to look at, and asks", async () => {
     asExecutable();
     await main("run");
-    assert.deepEqual(machine.runs, [`${EXE} check-discord`, DIALOG.replace(JSON.stringify(QUESTION), JSON.stringify(exeQuestion)),
+    assert.deepEqual(machine.runs, [`${EXE()} check-discord`, DIALOG.replace(JSON.stringify(QUESTION), JSON.stringify(exeQuestion)),
         "pgrep", 'osascript -e quit app "Discord"', "pgrep", `open ${HELPER()}`]);
     assert.deepEqual([...machine.cwds], [undefined], "it runs from no clone");
 });
@@ -574,7 +601,7 @@ test("repatch, executable: a failed check says a new release will adapt the patc
 test("repatch, executable: apply unpacks the files it carries, patches with its own command and reopens Discord", async () => {
     asExecutable();
     await main("apply");
-    assert.deepEqual(machine.runs, [`${EXE} inject`, "open -a Discord", DONE]);
+    assert.deepEqual(machine.runs, [`${EXE()} inject`, "open -a Discord", DONE]);
     assert.equal(readFileSync(join(STATE_DIR(), "mod", "dist", "main.js"), "utf8"), "// mod/dist/main.js");
     machine.inject = false;
     machine.runs = [];
@@ -586,8 +613,109 @@ test("repatch, executable: apply unpacks the files it carries, patches with its 
 test("repatch, executable: the scripts run its repatch command, and the LaunchAgent has no clone to start in", async () => {
     asExecutable();
     await main("install");
-    assert.match(readFileSync(RUN(), "utf8"), new RegExp(`^PATH='[^']*' exec '${EXE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}' 'repatch' 'run' >> `));
+    assert.match(readFileSync(RUN(), "utf8"), new RegExp(`^PATH='[^']*' exec '${EXE().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}' 'repatch' 'run' >> `));
     assert.match(readFileSync(PLIST(), "utf8"), /repatch-run\.sh<\/string><\/array>\n {4}<key>WatchPaths<\/key>/);
     await main("nada");
     assert.deepEqual(errors.mock.calls.at(-1), ["Uso: agent-chat-bridge repatch install|uninstall|run|apply"]);
+});
+
+/** A release on GitHub with this system's executable, signed by the test's release key unless `signedBy` says otherwise. */
+async function publish(tag, bytes = "new", { platform: os = "darwin", signedBy = machine.keys } = {}) {
+    const { executableName } = await import("../scripts/bundle.mjs");
+    const { generateKeyPairSync, sign } = await import("node:crypto");
+    const name = executableName(os, process.arch);
+    const key = signedBy ?? generateKeyPairSync("ed25519");
+    machine.files = { [`https://gh/${name}`]: new TextEncoder().encode(bytes), [`https://gh/${name}.sig`]: sign(null, Buffer.from(bytes), key.privateKey) };
+    machine.release = { tag, notes: "### Added\n- `x`, nuevo.", files: { [name]: `https://gh/${name}`, [`${name}.sig`]: `https://gh/${name}.sig` } };
+    return name;
+}
+const CURRENT = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
+const UPDATE = tag => `Hay una versión nueva de agent-chat-bridge: ${tag.slice(1)} (tienes la ${CURRENT}).\n\nAdded:\n• x, nuevo.\n\n`
+    + "¿La instalo? Discord se cerrará y se volverá a abrir; si estás en una llamada, se cortará.";
+const updateDialog = tag => `osascript -e display dialog ${JSON.stringify(UPDATE(tag))} with title "agent-chat-bridge" buttons {"Ahora no", "Instalar"}`
+    + ' default button "Instalar" cancel button "Ahora no" with icon caution';
+
+test("update, executable: a newer release is offered once with its notes; on yes its signed executable replaces this one and Discord reloads", async () => {
+    const exe = asExecutable();
+    machine.patched = true;
+    // Before the patch's module loads its key, so the release can be signed with it.
+    await import("../scripts/release-key.mjs");
+    await publish("v99.0.0");
+    await main("run");
+    assert.deepEqual(machine.runs, [updateDialog("v99.0.0"), "pgrep", 'osascript -e quit app "Discord"', "pgrep", `open ${HELPER()}`]);
+    assert.equal(readFileSync(exe, "utf8"), "new");
+    assert.deepEqual([`${exe}.new`, `${exe}.old`].filter(existsSync), [], "outside Windows the rename replaces it, leaving nothing");
+    assert.equal(machine.downloads.length, 2);
+    assert.deepEqual(logged.mock.calls.at(-1), [`Updating v${CURRENT} to v99.0.0`]);
+    if (platform !== "win32") assert.equal(statSync(exe).mode & 0o777, 0o755, "the new executable can run");
+    machine.runs = [];
+    vi.resetModules();
+    await main("run");
+    assert.deepEqual(machine.runs, [], "each release is offered once");
+});
+
+test("update, executable: declined, nothing is downloaded; a release that isn't newer, isn't one, or lacks this system's executable asks nothing", async () => {
+    asExecutable();
+    machine.patched = true;
+    await import("../scripts/release-key.mjs");
+    machine.answer = false;
+    await publish("v99.0.0");
+    await main("run");
+    assert.deepEqual([machine.runs, machine.downloads], [[updateDialog("v99.0.0")], []]);
+    for (const tag of [`v${CURRENT}`, "v0.0.1", "nightly"]) {
+        await publish(tag);
+        machine.runs = [];
+        vi.resetModules();
+        await main("run");
+        assert.deepEqual(machine.runs, [], tag);
+    }
+    await publish("v99.1.0", "new", { platform: "linux" });
+    vi.resetModules();
+    await main("run");
+    assert.deepEqual(machine.runs, []);
+    assert.equal(logged.mock.calls.at(-1)?.[0], `v99.1.0 has no agent-chat-bridge-darwin-${process.arch} and its signature`);
+    machine.release = null;
+    vi.resetModules();
+    await main("run");
+    assert.deepEqual(machine.runs, [], "offline, as release-feed.mjs says in the log");
+});
+
+test("update, executable: an executable not signed by the release key is not installed, and the user is told", async () => {
+    const exe = asExecutable();
+    machine.patched = true;
+    await import("../scripts/release-key.mjs");
+    await publish("v99.0.0", "new", { signedBy: null });
+    await main("run");
+    assert.equal(readFileSync(exe, "utf8"), "old");
+    assert.deepEqual(machine.runs.at(-1), notification(`La versión 99.0.0 de agent-chat-bridge no lleva una firma válida, así que no la he instalado. Sigues con la ${CURRENT}.`));
+});
+
+test("update, executable: on Windows the running executable is renamed aside, and the next run removes it", async () => {
+    const exe = asExecutable();
+    machine.patched = true;
+    await import("../scripts/release-key.mjs");
+    await publish("v99.0.0", "new", { platform: "win32" });
+    Object.defineProperty(process, "platform", { value: "win32" });
+    try {
+        await main("run");
+    } finally {
+        Object.defineProperty(process, "platform", { value: "darwin" });
+    }
+    assert.deepEqual([readFileSync(exe, "utf8"), readFileSync(`${exe}.old`, "utf8")], ["new", "old"]);
+    machine.release = null;
+    vi.resetModules();
+    await main("run");
+    assert.equal(existsSync(`${exe}.old`), false);
+});
+
+test("repatch, executable: where apply runs at once, it runs the executable on disk, the new one after an update", async () => {
+    asExecutable();
+    vi.doMock("../scripts/os/index.mjs", async () => {
+        const darwin = await import("../scripts/os/darwin.mjs");
+        return { system: { ...darwin, runApply: agent => agent.apply() } };
+    });
+    machine.running = false;
+    await main("run");
+    assert.equal(machine.runs.at(-1), `${EXE()} repatch apply`);
+    vi.doUnmock("../scripts/os/index.mjs");
 });

@@ -6,11 +6,7 @@ import { cpSync, existsSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-import pkg from "../package.json" with { type: "json" };
-import { INSTALLED, STATE, unpack, UNPACKED } from "./bundle.mjs";
-
-/** The version this executable or clone is, from package.json. */
-export const VERSION = pkg.version;
+import { INSTALLED, STATE, unpack, UNPACKED, VERSION } from "./bundle.mjs";
 
 /** Where Claude Code finds the skill. */
 const SKILL = join(homedir(), ".claude", "skills", "agent-chat-bridge");

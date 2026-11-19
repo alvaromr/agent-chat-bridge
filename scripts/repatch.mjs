@@ -5,17 +5,22 @@
 // without changes, AGENTS.md «Review»), then asks. Only on the user's yes does it quit Discord and run `apply`, with
 // the rights patching needs on that system: it rebuilds mod/dist/ (in the release's executable, unpacks it), patches
 // Discord and reopens it. In a clone those steps are pnpm's scripts, and in the executable its own commands.
-// `run` also offers each new release once to a clone installed at a release tag (README, «Update»): on a yes it checks
-// the new tag out, sets it up and reloads Discord the same way. A development clone is never touched.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+// `run` also offers each new release once (README, «Update»). To the executable, from GitHub's releases: on a yes it
+// downloads the system's executable, installs it only with a valid signature by the release key, and reloads Discord
+// the same way. To a clone installed at a release tag, from its remote: on a yes it checks the new tag out and sets it
+// up. A development clone is never touched.
+import { verify } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
-import { INSTALLED, STATE, unpack } from "./bundle.mjs";
+import { executableName, INSTALLED, STATE, unpack, VERSION } from "./bundle.mjs";
 import { discordRunning, discordVersion, original, resources } from "./discord-app.mjs";
 import { exec, output } from "./os/exec.mjs";
 import { system } from "./os/index.mjs";
+import { download, latestRelease } from "./release-feed.mjs";
+import { RELEASE_KEY } from "./release-key.mjs";
 
 const LOG = system.logFile(STATE);
 /**
@@ -66,6 +71,8 @@ const TEXT = {
     install: "Instalar",
     updateFailed: (latest, current) => `No se ha podido instalar la versión ${latest.slice(1)}: ha fallado su instalación. `
         + `Sigues con la ${current.slice(1)}. Mira ${LOG}.`,
+    unsigned: (latest, current) => `La versión ${latest.slice(1)} de agent-chat-bridge no lleva una firma válida, así que `
+        + `no la he instalado. Sigues con la ${current.slice(1)}.`,
     crashed: `La comprobación del parche de Discord ha fallado. Mira ${LOG}.`
 };
 
@@ -99,14 +106,15 @@ async function waitUntilQuit() {
 
 /**
  * What the check and the scheduler need to know of this install: `command` runs this script's commands, as the
- * executable's `repatch` or as the clone's script on the Node of the PATH.
+ * executable's `repatch` or as the clone's script on the Node of the PATH. The executable's `apply` runs the one on
+ * disk, which after an update is the new one, with the files it carries.
  */
 const agent = () => ({
     state: STATE,
     command: INSTALLED ? [process.execPath, "repatch"] : ["node", "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", fileURLToPath(import.meta.url)],
     path: process.env.PATH ?? "",
     log: LOG,
-    apply
+    apply: INSTALLED ? () => void exec(process.execPath, ["repatch", "apply"]) : apply
 });
 
 async function repatch() {
@@ -157,7 +165,7 @@ function release(tag) {
 const newer = (a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 
 /** The newest release tag on the remote, or null when it can't be listed (offline, say), which only the log notes. */
-function latestRelease() {
+function latestTag() {
     const listed = exec("git", ["ls-remote", "--tags", "--refs", "origin", "v*"], true);
     if (!listed.ok) {
         console.log(`Releases not checked: ${listed.stderr.trim()}`);
@@ -170,20 +178,18 @@ function latestRelease() {
 
 /** Offers a release newer than the clean release tag the clone is at, once; on a yes, installs it and reloads Discord. */
 async function checkUpdate() {
-    // The executable is no clone: a new release reaches it as a new executable.
-    if (INSTALLED) return;
+    if (INSTALLED) return checkRelease();
     // Off a tag, git describe fails and prints nothing on stdout: no release.
     const current = exec("git", ["describe", "--tags", "--exact-match", "--match", "v*", "HEAD"], true).stdout.trim();
     // Only a clone installed at a release, as it was left: a development clone, or local changes, stay as they are.
     if (!release(current) || output("git", ["status", "--porcelain"])) return;
-    const latest = latestRelease();
+    const latest = latestTag();
     if (!latest || newer(/** @type {number[]} */ (release(latest)), /** @type {number[]} */ (release(current))) <= 0) return;
     if (!firstSeen(RELEASE_SEEN, latest)) return;
     // The tag's objects only: nothing of it runs before the user's yes.
     output("git", ["fetch", "--no-tags", "origin", `refs/tags/${latest}:refs/tags/${latest}`]);
-    const notes = plainNotes(output("git", ["tag", "--list", "--format=%(contents:body)", latest]));
-    const shown = notes.length > MAX_NOTES ? `${notes.slice(0, MAX_NOTES)}…` : notes;
-    if (!ask(TEXT.update(current, latest, shown), TEXT.install)) return;
+    const notes = output("git", ["tag", "--list", "--format=%(contents:body)", latest]);
+    if (!ask(TEXT.update(current, latest, shownNotes(notes)), TEXT.install)) return;
     console.log(`Updating ${current} to ${latest}`);
     output("git", ["checkout", "--quiet", latest]);
     if (setUp()) {
@@ -201,13 +207,51 @@ async function checkUpdate() {
  */
 const setUp = () => pnpm(["install", "--frozen-lockfile"]).ok && pnpm(["bootstrap"]).ok;
 
-/** A release's notes, from the changelog's Markdown to the plain text a dialog shows. */
-function plainNotes(markdown) {
-    return markdown
+/** A release's notes, from the changelog's Markdown to the plain text a dialog shows, cut to what it fits. */
+function shownNotes(markdown) {
+    const notes = markdown
         .replaceAll("\n  ", " ") // a list item wrapped onto the next line joins it
         .replace(/^### (.+)/gm, "$1:") // `.` stops at the line's end
         .replace(/^- /gm, "• ")
         .replaceAll("`", "");
+    return notes.length > MAX_NOTES ? `${notes.slice(0, MAX_NOTES)}…` : notes;
+}
+
+/**
+ * Offers a release newer than this executable, once, if it has this system's executable; on a yes, downloads it and
+ * its signature, swaps it in only if the release key signed it, and reloads Discord, which `apply` of the new one does.
+ */
+async function checkRelease() {
+    // Windows keeps the executable that ran the last update until it ends: it goes now.
+    rmSync(`${process.execPath}.old`, { force: true });
+    const current = `v${VERSION}`;
+    const latest = await latestRelease();
+    const tag = latest && release(latest.tag);
+    if (!latest || !tag || newer(tag, /** @type {number[]} */ (release(current))) <= 0) return;
+    const name = executableName(process.platform, process.arch);
+    const [url, signatureUrl] = [latest.files[name], latest.files[`${name}.sig`]];
+    if (!url || !signatureUrl) {
+        console.log(`${latest.tag} has no ${name} and its signature`);
+        return;
+    }
+    if (!firstSeen(RELEASE_SEEN, latest.tag)) return;
+    if (!ask(TEXT.update(current, latest.tag, shownNotes(latest.notes)), TEXT.install)) return;
+    console.log(`Updating ${current} to ${latest.tag}`);
+    const [executable, signature] = await Promise.all([download(url), download(signatureUrl)]);
+    if (!verify(null, executable, RELEASE_KEY, signature)) {
+        system.notify(TEXT.unsigned(latest.tag, current));
+        return;
+    }
+    replaceExecutable(executable);
+    await repatch();
+}
+
+/** Puts the new executable where this one is: elsewhere a rename replaces it at once; Windows lets a running one be renamed, not replaced. */
+function replaceExecutable(executable) {
+    const path = process.execPath;
+    writeFileSync(`${path}.new`, executable, { mode: 0o755 });
+    if (process.platform === "win32") renameSync(path, `${path}.old`);
+    renameSync(`${path}.new`, path);
 }
 
 /** What the scheduler runs: the patch after a Discord update, then a new release. */

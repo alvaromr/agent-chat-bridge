@@ -20,6 +20,8 @@ export default {
         "scripts/changelog.mjs",
         "scripts/discord-app.mjs",
         "scripts/install.mjs",
+        "scripts/release-feed.mjs",
+        "scripts/release-key.mjs",
         "scripts/os/*.mjs",
         "scripts/repatch.mjs",
         "scripts/setup-dictation.mjs"

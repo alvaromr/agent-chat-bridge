@@ -11,7 +11,8 @@ import {
     MAX_WATCHED_CHATS, MIN_SEND_INTERVAL_MS
 } from "../mod/src/limits.mts";
 import { appDataDir, socketPath } from "../mod/src/platform.mts";
-import { LOCAL_COMMANDS, VERSION } from "./install.mjs";
+import { VERSION } from "./bundle.mjs";
+import { LOCAL_COMMANDS } from "./install.mjs";
 
 const KINDS = ["dm", "grupo", "canal", "hilo"];
 

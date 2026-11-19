@@ -62,7 +62,9 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   executable application), and where the files are: the clone's, or the ones the executable carries, unpacked into
   the app's folder as laid out in the repo. `scripts/install.mjs` holds the CLI's own commands: `install` and
   `uninstall` in the executable, and `inject`, `uninject`, `check-discord` and `repatch`, the pnpm scripts' steps,
-  which the scheduled re-patch calls the executable for. `scripts/build-executable.mjs` builds the executables
+  which the scheduled re-patch calls the executable for. The executable updates from GitHub's releases
+  (`scripts/release-feed.mjs`), checking each new executable's ed25519 signature against `scripts/release-key.mjs`
+  (rule 2). `scripts/build-executable.mjs` builds the executables
   (`pnpm build-executable`) from `scripts/executable.mjs`, on Node's official binaries, pinned by their SHA-256.
 - `test/` and `dictation/test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test all of `mod/`, `plugins/`
   and `dictation/src/`, and the CLI, without Discord and without network (`test/setup.mjs` refuses every
@@ -130,8 +132,8 @@ Defined in `package.json`.
 - `pnpm inject` / `pnpm uninject`: patch (or re-patch) Discord with `mod/`, or remove the patch. Discord closed.
   After `pnpm build`, restarting Discord is enough: the loader reads `mod/dist/` on every start.
 - `pnpm repatch install` / `pnpm repatch uninstall`: add or remove the scheduled check that offers to re-patch Discord
-  after an update («When Discord updates») and, in a clean clone at a release tag, each new release (README,
-  «Update»). A development clone, off a release tag, is never updated.
+  after an update («When Discord updates») and each new release (README, «Update»): to the executable, its signed
+  executable; to a clean clone at a release tag, the tag. A development clone, off a release tag, is never updated.
 - `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation --force`,
   `pnpm check-discord` and a fresh clone installed and tested, the worker and `pnpm smoke-dictation` included, then
   the version in `package.json`, the dated `CHANGELOG.md` section opened by the Discord it was tested with (the app's
@@ -143,7 +145,10 @@ Defined in `package.json`.
 ## Rules
 1. **As close to Discord as possible**: `mod/` contains only what the own plugins use: no themes, custom CSS or
    features of its own.
-2. **No updaters**: `mod/` changes only through this repo.
+2. **No updaters but this repo's releases**: `mod/` changes only through this repo. In a clone, by its commits; in
+   the release's executable, by a release whose executable for that system the release key signed
+   (`scripts/release-key.mjs`), which the scheduled check installs only on the user's yes (`scripts/repatch.mjs`).
+   `scripts/release-feed.mjs` is its only request, to GitHub's releases.
 3. **Discord's terms**: modifying the client breaks them; the risk stays low by avoiding automation.
    - Every send or edit is triggered by an explicit user action, never automatically. The Corrector edits without a
      dialog on Enter in an empty box and with its button on an own message: the key or the click is the confirmation.
@@ -192,7 +197,8 @@ review: do not patch, and ask the user.
 - **Own code** (`mod/`, `plugins/`, `dictation/`, `scripts/`, `skills/`): the whole diff, against rules 3, 4 and 5.
 - **Dependencies**: each new or updated package in `pnpm-lock.yaml` or `dictation/worker/uv.lock`: publisher,
   provenance, install scripts and the changelog since the previous version. They run on this machine.
-- **Re-patch without changes**: that `mod/dist/` is rebuilt from the reviewed commit, with a clean tree.
+- **Re-patch without changes**: that `mod/dist/` is rebuilt from the reviewed commit, with a clean tree; in the
+  executable, that its files are the ones of the release it installed with a valid signature.
 
 **What to look for**:
 - Network exits: `fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `<img>`/`<iframe>`/CSS to external hosts, CSP

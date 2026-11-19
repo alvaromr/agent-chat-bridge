@@ -9,6 +9,13 @@ import { fileURLToPath } from "node:url";
 
 import { APP_NAME } from "../mod/src/name.mts";
 import { appDataDir } from "../mod/src/platform.mts";
+import pkg from "../package.json" with { type: "json" };
+
+/** The version this executable or clone is. */
+export const VERSION = pkg.version;
+/** The name of a system's executable among a release's files. */
+export const executableName = (/** @type {string} */ platform, /** @type {string} */ arch) =>
+    `${APP_NAME}-${platform === "win32" ? "win" : platform}-${arch}${platform === "win32" ? ".exe" : ""}`;
 
 /** Whether this runs as the release's executable, not from a clone. */
 export const INSTALLED = isSea();

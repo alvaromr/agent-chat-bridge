@@ -40,6 +40,15 @@ test("bundle: from a clone, the files are the clone's, the patch its mod/dist/ma
     assert.equal(bundle.modMain(), join(repo, "mod", "dist", "main.js"));
 });
 
+test("bundle: each system's executable has its name among a release's files, Windows' with .exe", async () => {
+    const { executableName, VERSION } = await import("../scripts/bundle.mjs");
+    /** @type {[string, string][]} */
+    const systems = [["darwin", "arm64"], ["linux", "x64"], ["win32", "x64"]];
+    assert.deepEqual(systems.map(([platform, arch]) => executableName(platform, arch)),
+        ["agent-chat-bridge-darwin-arm64", "agent-chat-bridge-linux-x64", "agent-chat-bridge-win-x64.exe"]);
+    assert.match(VERSION, /^\d+\.\d+\.\d+$/);
+});
+
 test("bundle: the executable has no clone; its files, the patch included, are in the app's folder", async () => {
     asExecutable({});
     const bundle = await import("../scripts/bundle.mjs");
