@@ -19,6 +19,7 @@ export default {
         "scripts/bundle.mjs",
         "scripts/changelog.mjs",
         "scripts/discord-app.mjs",
+        "scripts/install.mjs",
         "scripts/os/*.mjs",
         "scripts/repatch.mjs",
         "scripts/setup-dictation.mjs"

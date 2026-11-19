@@ -82,6 +82,8 @@ vi.mock("node:child_process", async () => {
             const line = args.join(" ");
             if (command === "git") return git(args, answer);
             if (command === "pnpm") return answer({ "check-discord": machine.check, build: machine.build, inject: machine.inject, "install --frozen-lockfile": machine.install, bootstrap: machine.setup }[line]);
+            // The release's executable, run for its own steps.
+            if (command === process.execPath) return answer({ "check-discord": machine.check, inject: machine.inject }[line]);
             if (command === "launchctl" && args[0] === "print") return answer(machine.loaded);
             if (command === "launchctl") return answer(args[0] === "bootout" ? machine.bootout : machine.bootstrap);
             if (line.includes("display dialog")) return answer(machine.answer, "button returned:yes\n", "execution error: User canceled. (-128)\n");
@@ -442,8 +444,8 @@ test("repatch: the helper's and the LaunchAgent's scripts run apply and run from
         /** @type {[string, string][]} */
         const scripts = [[APPLY(), "apply"], [RUN(), "run"]];
         for (const [file, command] of scripts) {
-            assert.equal(readFileSync(file, "utf8"), `cd '${REPO}' && PATH='/it'\\''s/bin:/usr/bin' exec node `
-                + `--disable-warning=MODULE_TYPELESS_PACKAGE_JSON '${fileURLToPath(new URL("../scripts/repatch.mjs", import.meta.url))}' ${command} >> '${LOG()}' 2>&1\n`);
+            assert.equal(readFileSync(file, "utf8"), `cd '${REPO}' && PATH='/it'\\''s/bin:/usr/bin' exec 'node' `
+                + `'--disable-warning=MODULE_TYPELESS_PACKAGE_JSON' '${fileURLToPath(new URL("../scripts/repatch.mjs", import.meta.url))}' '${command}' >> '${LOG()}' 2>&1\n`);
         }
         delete process.env.PATH;
         vi.resetModules();
@@ -540,4 +542,52 @@ test("repatch: any other command prints the usage and fails", async () => {
     }
     assert.deepEqual(errors.mock.calls, Array(2).fill(["Uso: node scripts/repatch.mjs install|uninstall|run|apply"]));
     assert.deepEqual(machine.runs, []);
+});
+
+/** The release's executable: no clone, and the files it carries, as node:sea hands them. */
+const asExecutable = () => vi.doMock("node:sea", () => ({
+    isSea: () => true,
+    getAsset: (key, encoding) => key === "files.json" ? JSON.stringify(["mod/dist/main.js"]) : encoding ? "" : new TextEncoder().encode(`// ${key}`).buffer
+}));
+const EXE = process.execPath;
+const STATE_DIR = () => join(machine.home, "Library", "Application Support", "agent-chat-bridge");
+const exeQuestion = QUESTION.replaceAll("pnpm", "agent-chat-bridge");
+afterEach(() => void vi.doUnmock("node:sea"));
+
+test("repatch, executable: an update that lost the patch is checked by its own command, with no clone to look at, and asks", async () => {
+    asExecutable();
+    await main("run");
+    assert.deepEqual(machine.runs, [`${EXE} check-discord`, DIALOG.replace(JSON.stringify(QUESTION), JSON.stringify(exeQuestion)),
+        "pgrep", 'osascript -e quit app "Discord"', "pgrep", `open ${HELPER()}`]);
+    assert.deepEqual([...machine.cwds], [undefined], "it runs from no clone");
+});
+
+test("repatch, executable: a failed check says a new release will adapt the patch", async () => {
+    asExecutable();
+    machine.check = false;
+    await main("run");
+    assert.deepEqual(machine.runs.at(-1), notification("Discord se ha actualizado a 0.0.422 y el parche ya no encaja con su código. "
+        + "Discord funciona sin los plugins hasta que una versión nueva de agent-chat-bridge lo adapte, que se te ofrecerá aquí. "
+        + `Mira ${LOG()}.`));
+});
+
+test("repatch, executable: apply unpacks the files it carries, patches with its own command and reopens Discord", async () => {
+    asExecutable();
+    await main("apply");
+    assert.deepEqual(machine.runs, [`${EXE} inject`, "open -a Discord", DONE]);
+    assert.equal(readFileSync(join(STATE_DIR(), "mod", "dist", "main.js"), "utf8"), "// mod/dist/main.js");
+    machine.inject = false;
+    machine.runs = [];
+    vi.resetModules();
+    await main("apply");
+    assert.match(machine.runs.at(-1), /ha fallado agent-chat-bridge inject\./);
+});
+
+test("repatch, executable: the scripts run its repatch command, and the LaunchAgent has no clone to start in", async () => {
+    asExecutable();
+    await main("install");
+    assert.match(readFileSync(RUN(), "utf8"), new RegExp(`^PATH='[^']*' exec '${EXE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}' 'repatch' 'run' >> `));
+    assert.match(readFileSync(PLIST(), "utf8"), /repatch-run\.sh<\/string><\/array>\n {4}<key>WatchPaths<\/key>/);
+    await main("nada");
+    assert.deepEqual(errors.mock.calls.at(-1), ["Uso: agent-chat-bridge repatch install|uninstall|run|apply"]);
 });

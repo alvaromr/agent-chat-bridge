@@ -6,7 +6,8 @@ import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
 
 import { APP_NAME } from "../../mod/src/name.mts";
-import { exec, output, REPO } from "./exec.mjs";
+import { REPO } from "../bundle.mjs";
+import { exec, output } from "./exec.mjs";
 import { running, shellScript, shellWord } from "./posix.mjs";
 
 export { running };
@@ -32,7 +33,6 @@ export const logFile = () => join(homedir(), "Library", "Logs", `${APP_NAME}-rep
 export const permissionHint = TEXT.permission;
 /** @type {(args: string[]) => [string, string[]]} */
 export const pnpm = args => ["pnpm", args];
-export const injectCommand = (/** @type {string} */ _resources) => pnpm(["inject"]);
 
 const quoted = text => JSON.stringify(text);
 
@@ -84,8 +84,8 @@ function launchAgent(state, log) {
 <dict>
     <key>Label</key>${string(LABEL)}
     <key>ProgramArguments</key>
-    <array>${string("/bin/sh")}${string(runPath(state))}</array>
-    <key>WorkingDirectory</key>${string(REPO)}
+    <array>${string("/bin/sh")}${string(runPath(state))}</array>${REPO ? `
+    <key>WorkingDirectory</key>${string(REPO)}` : ""}
     <key>WatchPaths</key>
     <array>${string("/Applications")}${string(RESOURCES)}</array>
     <key>RunAtLoad</key><true/>
@@ -106,7 +106,7 @@ function unload() {
 
 /**
  * Writes the scripts, the helper and the LaunchAgent, and loads it; returns what the user still has to do.
- * @param {{ state: string, script: string, path: string, log: string }} agent
+ * @param {{ state: string, command: string[], path: string, log: string }} agent
  */
 export function installAgent(agent) {
     unload();

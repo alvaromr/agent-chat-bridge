@@ -2,7 +2,7 @@
 // script their scheduler runs, with the tools on the PATH the install ran with.
 import { execFileSync } from "node:child_process";
 
-import { REPO } from "./exec.mjs";
+import { REPO } from "../bundle.mjs";
 
 /** Whether Discord's main process, named Discord on both, is running. */
 export function running() {
@@ -19,11 +19,12 @@ export function running() {
 export const shellWord = text => `'${text.replaceAll("'", "'\\''")}'`;
 
 /**
- * A shell script that runs a scripts/repatch.mjs command from the repo, into the log.
- * @param {{ script: string, path: string, log: string }} agent
+ * A shell script that runs a command of the re-patch (`agent.command` and `command`), from the clone if there is one,
+ * into the log.
+ * @param {{ command: string[], path: string, log: string }} agent
  * @param {string} command
  * @param {Record<string, string>} [env] more variables it exports, such as a desktop session's
  */
-export const shellScript = (agent, command, env = {}) => `cd ${shellWord(REPO)} && `
+export const shellScript = (agent, command, env = {}) => (REPO ? `cd ${shellWord(REPO)} && ` : "")
     + Object.entries({ PATH: agent.path, ...env }).map(([name, value]) => `${name}=${shellWord(value)} `).join("")
-    + `exec node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON ${shellWord(agent.script)} ${command} >> ${shellWord(agent.log)} 2>&1\n`;
+    + `exec ${[...agent.command, command].map(shellWord).join(" ")} >> ${shellWord(agent.log)} 2>&1\n`;

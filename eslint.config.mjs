@@ -6,7 +6,7 @@ import unusedImports from "eslint-plugin-unused-imports";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-    { ignores: ["mod/dist/", "node_modules/", "coverage/", "reports/", ".stryker-tmp/"] },
+    { ignores: ["mod/dist/", "dist/", "node_modules/", "coverage/", "reports/", ".stryker-tmp/"] },
     ...tseslint.configs.recommended,
     {
         files: ["**/*.{ts,tsx,mts,mjs}"],

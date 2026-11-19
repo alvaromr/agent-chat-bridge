@@ -150,5 +150,14 @@ Comandos:
   read    devuelve los últimos mensajes de un chat
 
 Ayuda de cada uno: agent-chat-bridge <comando> --help
-Responde en JSON; sale con 1 si "ok" es false y con 2 si los argumentos no son válidos."
+Responde en JSON; sale con 1 si "ok" es false y con 2 si los argumentos no son válidos.
+
+Instalación y parche:
+  install       instala el parche de Discord, la skill de Claude Code y la comprobación tras cada actualización (con Discord cerrado)
+  uninstall     quita todo eso; tus ajustes se quedan
+  inject        vuelve a parchear Discord (con Discord cerrado)
+  uninject      quita el parche de Discord
+  check-discord comprueba que el parche encaja con el código del Discord que se abrió por última vez
+  repatch       la comprobación programada: install, uninstall, run o apply
+  --version     muestra la versión"
 `;

@@ -58,6 +58,12 @@ No new code reaches Discord without a review first (see «Review»). When in dou
   `scripts/asar.mjs`. `scripts/discord-app.mjs` holds the patch's paths and Discord's version (its
   `build_info.json`), on every system, which it shares with `scripts/repatch.mjs`, the offer to re-patch after an
   update («When Discord updates»), and `pnpm check-discord`.
+- `scripts/bundle.mjs`: whether this runs from a clone or as the release's single executable (a Node single
+  executable application), and where the files are: the clone's, or the ones the executable carries, unpacked into
+  the app's folder as laid out in the repo. `scripts/install.mjs` holds the CLI's own commands: `install` and
+  `uninstall` in the executable, and `inject`, `uninject`, `check-discord` and `repatch`, the pnpm scripts' steps,
+  which the scheduled re-patch calls the executable for. `scripts/build-executable.mjs` builds the executables
+  (`pnpm build-executable`) from `scripts/executable.mjs`, on Node's official binaries, pinned by their SHA-256.
 - `test/` and `dictation/test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test all of `mod/`, `plugins/`
   and `dictation/src/`, and the CLI, without Discord and without network (`test/setup.mjs` refuses every
   connection). What touches Discord runs on a fake one: `test/fake-discord.mjs` for `mod/src/plugin-api/discord.ts`,
@@ -95,6 +101,10 @@ Defined in `package.json`.
   history and the tree) and `pnpm test`. `pnpm fix` applies the automatic fixes and runs the gate.
 - `pnpm build`: builds `mod/dist/` (`mod/tsconfig.json`). `pnpm typecheck`: types of the whole repo, the plain JS
   files through JSDoc (`tsconfig.json`), and the worker's with ty.
+- `pnpm build-executable [<target>...]`: `pnpm build`, then the release's executable for each system, or the ones
+  named (`darwin-arm64`, `darwin-x64`, `linux-x64`, `win-x64`), into `dist/`. Node's archives are downloaded once into
+  `node_modules/.cache/`. A local build keeps this machine's paths in its stack traces, so it is never published.
+  Try one in a throwaway HOME or container, never with `install`, which patches the Discord installed on the machine.
 - `pnpm test`: tests without Discord, with 100 % line, branch, function and statement coverage.
 - `pnpm mutation`: Stryker on the code the coverage counts, with a 100 % score, run by the `.githooks/` pre-push hook instead of
   the pre-commit one. Run it after changing one of them or their tests. It is incremental and re-tests only the
@@ -165,7 +175,8 @@ Defined in `package.json`.
    persistent files; the audio stays in memory. If a plugin needs to dump a chat (Claude session), only the minimum,
    outside the repo, deleted at the end.
 6. **Dependencies**: development tools only; nothing from `node_modules` reaches Discord except what esbuild bundles
-   from this repo. Exact versions, no install scripts (`allowBuilds` in `pnpm-workspace.yaml`), and a `trustPolicy`
+   from this repo. The one exception, outside Discord: the release's executable bundles `typescript`, which
+   `check-discord` parses Discord's cached code with, without running it. Exact versions, no install scripts (`allowBuilds` in `pnpm-workspace.yaml`), and a `trustPolicy`
    exception only for an exact, reviewed version, with its reason next to it. The dictation worker's Python packages
    (`dictation/worker/uv.lock`) run on this machine, outside Discord, the worker's without network and its `dev`
    group's (Ruff and ty, the gate's) as development tools: exact versions with their hashes, wheels only (no build

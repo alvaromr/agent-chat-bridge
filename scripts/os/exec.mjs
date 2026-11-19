@@ -1,9 +1,8 @@
-// How the scripts run a command, the same on every system: from the repo, with its output into the log unless they
-// read it, and a failure to start it as an error.
+// How the scripts run a command, the same on every system: from the clone, if they run from one, with its output into
+// the log unless they read it, and a failure to start it as an error.
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
 
-export const REPO = fileURLToPath(new URL("../..", import.meta.url));
+import { REPO } from "../bundle.mjs";
 
 /**
  * Runs a command; its output goes to the log, unless it is captured, and only then are stdout and stderr read.
@@ -14,7 +13,7 @@ export const REPO = fileURLToPath(new URL("../..", import.meta.url));
  */
 export function exec(command, args, capture = false, env = undefined) {
     const result = spawnSync(command, args, {
-        cwd: REPO, encoding: "utf8", stdio: capture ? "pipe" : "inherit", ...env ? { env: { ...process.env, ...env } } : {}
+        cwd: REPO ?? undefined, encoding: "utf8", stdio: capture ? "pipe" : "inherit", ...env ? { env: { ...process.env, ...env } } : {}
     });
     if (result.error) throw result.error;
     return { ok: result.status === 0, stdout: result.stdout, stderr: result.stderr };

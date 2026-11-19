@@ -25,7 +25,6 @@ export const logFile = (/** @type {string} */ state) => join(state, "repatch.log
 export const permissionHint = "";
 /** @type {(args: string[]) => [string, string[]]} */
 export const pnpm = args => ["pnpm", args];
-export const injectCommand = (/** @type {string} */ _resources) => pnpm(["inject"]);
 
 export const quit = () => void exec("pkill", ["-x", "Discord"]);
 // Detached, so the check doesn't wait for Discord to close.
@@ -61,7 +60,7 @@ const systemctl = args => {
 /**
  * Writes the script and the units: the check runs two minutes after login and hourly. Discord updates when it starts,
  * as on Windows, so an hour is the longest it stays unpatched.
- * @param {{ state: string, script: string, path: string, log: string }} agent
+ * @param {{ state: string, command: string[], path: string, log: string }} agent
  */
 export function installAgent(agent) {
     const session = Object.fromEntries(SESSION.flatMap(name => process.env[name] ? [[name, process.env[name]]] : []));

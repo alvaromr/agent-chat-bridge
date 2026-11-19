@@ -58,7 +58,7 @@ test("smoke: on CI's machine no Discord is found where the system's module looks
 
 test("smoke: on Windows the scheduled task is created and removed, and its script is valid PowerShell", { skip: !CI || process.platform !== "win32" }, () => {
     const state = mkdtempSync(join(tmpdir(), "smoke-os-"));
-    const agent = { state, script: join(state, "repatch.mjs"), path: process.env.PATH ?? "", log: join(state, "it's.log"), apply: () => { } };
+    const agent = { state, command: ["node", join(state, "repatch.mjs")], path: process.env.PATH ?? "", log: join(state, "it's.log"), apply: () => { } };
     try {
         system.installAgent(agent);
         assert.ok(exec("schtasks", ["/Query", "/TN", TASK], true).ok, "the task wasn't created");

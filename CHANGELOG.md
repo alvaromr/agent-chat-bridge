@@ -5,6 +5,10 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+### Added
+- The CLI's own commands: `inject`, `uninject`, `check-discord` and `repatch`, the same steps as the pnpm scripts,
+  and `--version`. Its help lists them.
+
 ### Changed
 - The Corrector no longer drops a correction that changes the message too much: it puts it in the chat box with a
   notice to review it, without sending it on Ctrl+Enter, and on a sent message it opens the edit box with the

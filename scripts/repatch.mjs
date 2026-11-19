@@ -1,9 +1,10 @@
 // Offers to re-patch Discord after an update replaces it (AGENTS.md, «When Discord updates»), and each new release.
 // `install` schedules `run` on this system (scripts/os/: at login, when Discord changes where the system can watch it,
 // and periodically); `uninstall` removes it. `run` patches nothing on its own: once per Discord version that lost the
-// patch, it checks the new Discord with `pnpm check-discord` and a clean tree (the review of a re-patch without
-// changes, AGENTS.md «Review»), then asks. Only on the user's yes does it quit Discord and run `apply`, with the rights
-// patching needs on that system: it rebuilds mod/dist/, patches Discord and reopens it.
+// patch, it checks the new Discord with `check-discord` and, in a clone, a clean tree (the review of a re-patch
+// without changes, AGENTS.md «Review»), then asks. Only on the user's yes does it quit Discord and run `apply`, with
+// the rights patching needs on that system: it rebuilds mod/dist/ (in the release's executable, unpacks it), patches
+// Discord and reopens it. In a clone those steps are pnpm's scripts, and in the executable its own commands.
 // `run` also offers each new release once to a clone installed at a release tag (README, «Update»): on a yes it checks
 // the new tag out, sets it up and reloads Discord the same way. A development clone is never touched.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -11,7 +12,7 @@ import { dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
-import { STATE } from "./bundle.mjs";
+import { INSTALLED, STATE, unpack } from "./bundle.mjs";
 import { discordRunning, discordVersion, original, resources } from "./discord-app.mjs";
 import { exec, output } from "./os/exec.mjs";
 import { system } from "./os/index.mjs";
@@ -33,24 +34,30 @@ const POLL_MS = 1_000;
 /** A release's notes in the dialog, cut to what a dialog shows. */
 const MAX_NOTES = 800;
 
+/** The command that runs a step by hand, as the user types it: the executable's, or the clone's pnpm script. */
+const CLI = INSTALLED ? "agent-chat-bridge" : "pnpm";
+
 /** What the user reads, in a dialog or a notification. */
 const TEXT = {
-    usage: "Uso: node scripts/repatch.mjs install|uninstall|run|apply",
+    usage: INSTALLED ? "Uso: agent-chat-bridge repatch install|uninstall|run|apply" : "Uso: node scripts/repatch.mjs install|uninstall|run|apply",
     installed: "Instalado: al actualizarse Discord, se te preguntará si volver a parchearlo, y al salir una versión nueva "
         + `de agent-chat-bridge, si instalarla. El registro está en ${LOG}.`,
     uninstalled: "Desinstalado: Discord ya no se vuelve a parchear tras actualizarse.",
     question: version => `Discord se ha actualizado a ${version} y ha perdido el parche de agent-chat-bridge. `
-        + "pnpm check-discord da por bueno el parche con el código nuevo. "
+        + `${CLI} check-discord da por bueno el parche con el código nuevo. `
         + "¿Lo vuelvo a parchear? Discord se cerrará y se volverá a abrir; si estás en una llamada, se cortará. "
-        + "Si no, ejecuta pnpm inject cuando quieras.",
+        + `Si no, ejecuta ${CLI} inject cuando quieras.`,
     later: "Ahora no",
     repatch: "Cerrar y parchear",
     dirty: version => `Discord se ha actualizado a ${version} y ha perdido el parche, pero el repo tiene cambios sin commit. `
         + "Revísalos y ejecuta pnpm inject.",
     checkFailed: version => `Discord se ha actualizado a ${version} y el parche ya no encaja con su código. `
-        + `Mira ${LOG} y adapta mod/ (AGENTS.md, «When Discord updates»).`,
-    stillRunning: "Discord no se ha cerrado, así que no lo he vuelto a parchear. Ciérralo y ejecuta pnpm inject.",
-    failed: step => [`No se ha podido volver a parchear Discord: ha fallado pnpm ${step}. Mira ${LOG}.`, system.permissionHint]
+        + (INSTALLED
+            ? "Discord funciona sin los plugins hasta que una versión nueva de agent-chat-bridge lo adapte, que se te "
+                + `ofrecerá aquí. Mira ${LOG}.`
+            : `Mira ${LOG} y adapta mod/ (AGENTS.md, «When Discord updates»).`),
+    stillRunning: `Discord no se ha cerrado, así que no lo he vuelto a parchear. Ciérralo y ejecuta ${CLI} inject.`,
+    failed: step => [`No se ha podido volver a parchear Discord: ha fallado ${CLI} ${step}. Mira ${LOG}.`, system.permissionHint]
         .filter(Boolean).join(" "),
     done: version => `Discord ${version} vuelve a estar parcheado.`,
     update: (current, latest, notes) => `Hay una versión nueva de agent-chat-bridge: ${latest.slice(1)} (tienes la `
@@ -64,6 +71,8 @@ const TEXT = {
 
 /** Runs pnpm the way this system runs it. */
 const pnpm = (/** @type {string[]} */ args) => exec(...system.pnpm(args));
+/** Runs a step that both have: the clone's pnpm script, or the executable's command of the same name. */
+const step = (/** @type {string} */ name) => INSTALLED ? exec(process.execPath, [name]) : pnpm([name]);
 
 /** Whether the user chose `yes`. «Ahora no», or a dialog that couldn't show, is a no, and the log says which. */
 function ask(question, yes) {
@@ -88,9 +97,16 @@ async function waitUntilQuit() {
     return true;
 }
 
-/** What the check and the scheduler need to know of this install. */
+/**
+ * What the check and the scheduler need to know of this install: `command` runs this script's commands, as the
+ * executable's `repatch` or as the clone's script on the Node of the PATH.
+ */
 const agent = () => ({
-    state: STATE, script: fileURLToPath(import.meta.url), path: process.env.PATH ?? "", log: LOG, apply
+    state: STATE,
+    command: INSTALLED ? [process.execPath, "repatch"] : ["node", "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", fileURLToPath(import.meta.url)],
+    path: process.env.PATH ?? "",
+    log: LOG,
+    apply
 });
 
 async function repatch() {
@@ -102,9 +118,16 @@ async function repatch() {
     system.runApply(agent());
 }
 
-/** Rebuild, patch, reopen Discord and say how it went; on macOS the helper app runs it, with its permission. */
+/** The files the patch loads, made anew: built in a clone, unpacked from the executable. */
+function refresh() {
+    if (!INSTALLED) return pnpm(["build"]).ok;
+    unpack();
+    return true;
+}
+
+/** Refresh, patch, reopen Discord and say how it went; on macOS the helper app runs it, with its permission. */
 function apply() {
-    const failed = !pnpm(["build"]).ok ? "build" : !exec(...system.injectCommand(resources())).ok ? "inject" : null;
+    const failed = !refresh() ? "build" : !step("inject").ok ? "inject" : null;
     system.open();
     system.notify(failed ? TEXT.failed(failed) : TEXT.done(discordVersion()));
 }
@@ -119,8 +142,9 @@ async function checkPatch() {
     const version = discordVersion();
     if (!firstSeen(SEEN, version) || existsSync(original())) return;
     console.log(`Discord ${version} lost the patch`);
-    if (output("git", ["status", "--porcelain"])) system.notify(TEXT.dirty(version));
-    else if (!pnpm(["check-discord"]).ok) system.notify(TEXT.checkFailed(version));
+    // The executable's files are the release's as it was signed: only a clone can have changes of its own.
+    if (!INSTALLED && output("git", ["status", "--porcelain"])) system.notify(TEXT.dirty(version));
+    else if (!step("check-discord").ok) system.notify(TEXT.checkFailed(version));
     else if (ask(TEXT.question(version), TEXT.repatch)) await repatch();
 }
 
@@ -146,6 +170,8 @@ function latestRelease() {
 
 /** Offers a release newer than the clean release tag the clone is at, once; on a yes, installs it and reloads Discord. */
 async function checkUpdate() {
+    // The executable is no clone: a new release reaches it as a new executable.
+    if (INSTALLED) return;
     // Off a tag, git describe fails and prints nothing on stdout: no release.
     const current = exec("git", ["describe", "--tags", "--exact-match", "--match", "v*", "HEAD"], true).stdout.trim();
     // Only a clone installed at a release, as it was left: a development clone, or local changes, stay as they are.
@@ -223,4 +249,6 @@ export async function main(command = process.argv[2]) {
 
 // Run as a command, not when test/ imports it.
 // Stryker disable next-line all: only a run of the command reaches it, never the tests (and, for that, not the coverage).
-/* v8 ignore next */ if (import.meta.main) await main();
+// Not awaited, so a bundler can take this module into the executable's script, which has no top-level await: a
+// failure still ends the run with its error and exit code 1, as an unhandled rejection does.
+/* v8 ignore next */ if (import.meta.main) main();

@@ -11,6 +11,7 @@ import {
     MAX_WATCHED_CHATS, MIN_SEND_INTERVAL_MS
 } from "../mod/src/limits.mts";
 import { appDataDir, socketPath } from "../mod/src/platform.mts";
+import { LOCAL_COMMANDS, VERSION } from "./install.mjs";
 
 const KINDS = ["dm", "grupo", "canal", "hilo"];
 
@@ -202,7 +203,11 @@ Comandos:
 ${Object.entries(COMMANDS).map(([name, c]) => `  ${name.padEnd(7)} ${c.summary}`).join("\n")}
 
 Ayuda de cada uno: agent-chat-bridge <comando> --help
-Responde en JSON; sale con 1 si "ok" es false y con 2 si los argumentos no son válidos.`;
+Responde en JSON; sale con 1 si "ok" es false y con 2 si los argumentos no son válidos.
+
+Instalación y parche:
+${Object.entries(LOCAL_COMMANDS).map(([name, c]) => `  ${name.padEnd(13)} ${c.summary}`).join("\n")}
+  --version     muestra la versión`;
 
 /** The CLI's own errors; each command's help and checks live in its entry of COMMANDS. */
 const TEXT = {
@@ -271,8 +276,14 @@ export function buildRequest(argv) {
 
 const SOCKET = socketPath(process.platform, appDataDir(process.platform, process.env, homedir()), userInfo().username);
 
-/** The CLI: the request to Discord's socket, and its answer, or each event of a `watch`, on stdout. Exported for its test. */
+/**
+ * The CLI: one of its own commands (scripts/install.mjs), or the request to Discord's socket, and its answer, or each
+ * event of a `watch`, on stdout. Exported for its test.
+ */
 export function main(argv = process.argv.slice(2)) {
+    const [name, ...rest] = argv;
+    if (name === "--version") return console.log(VERSION);
+    if (name && Object.hasOwn(LOCAL_COMMANDS, name)) return LOCAL_COMMANDS[/** @type {keyof LOCAL_COMMANDS} */ (name)].run(rest);
     let built;
     try {
         built = buildRequest(argv);

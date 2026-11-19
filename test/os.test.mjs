@@ -49,12 +49,15 @@ afterEach(() => {
     rmSync(home, { recursive: true, force: true });
 });
 
-/** What an install hands the system: its state folder, the check's script, the PATH and the log. */
-const agent = () => {
+/** What an install hands the system: its state folder, the check's command, the PATH and the log. */
+const agent = (command = ["node", "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "/repo/scripts/repatch.mjs"]) => {
     const state = join(home, "state");
     mkdirSync(state, { recursive: true });
-    return { state, script: "/repo/scripts/repatch.mjs", path: "/bin:/it's", log: join(state, "repatch.log"), apply: () => machine.runs.push("apply") };
+    return { state, command, path: "/bin:/it's", log: join(state, "repatch.log"), apply: () => machine.runs.push("apply") };
 };
+/** The release's executable, which has no clone: the check runs its `repatch`, from no folder in particular. */
+const asExecutable = () => vi.doMock("node:sea", () => ({ isSea: () => true, getAsset: () => "[]" }));
+afterEach(() => void vi.doUnmock("node:sea"));
 
 const win32 = () => import("../scripts/os/win32.mjs");
 const linux = () => import("../scripts/os/linux.mjs");
@@ -96,7 +99,6 @@ test("win32: without LOCALAPPDATA, Discord is looked for under the user's AppDat
 test("win32: pnpm runs through cmd.exe, Discord is ended and started through Update.exe, and tasklist says whether it runs", async () => {
     const system = await win32();
     assert.deepEqual(system.pnpm(["inject"]), ["cmd.exe", ["/d", "/c", "pnpm", "inject"]]);
-    assert.deepEqual(system.injectCommand("x"), ["cmd.exe", ["/d", "/c", "pnpm", "inject"]]);
     machine.stdout.tasklist = "Discord.exe   1234 Console   1   120.000 K\n";
     assert.equal(system.running(), true);
     machine.stdout.tasklist = "INFO: No tasks are running which match the specified criteria.\n";
@@ -130,7 +132,7 @@ test("win32: apply runs at once; install writes the script and an hourly hidden 
     assert.deepEqual(system.installAgent(a), []);
     const run = join(a.state, "repatch-run.ps1");
     assert.equal(readFileSync(run, "utf8"), `Set-Location '${REPO}'\n$env:PATH = '/bin:/it''s'\n`
-        + `& node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON '/repo/scripts/repatch.mjs' run *>> '${a.log}'\n`);
+        + `& 'node' '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON' '/repo/scripts/repatch.mjs' 'run' *>> '${a.log}'\n`);
     assert.deepEqual(system.uninstallAgent(a), []);
     assert.equal(existsSync(run), false);
     assert.deepEqual(machine.runs, ["apply",
@@ -138,6 +140,14 @@ test("win32: apply runs at once; install writes the script and an hourly hidden 
         "schtasks /Query /TN agent-chat-bridge-repatch", "schtasks /Delete /F /TN agent-chat-bridge-repatch"]);
     assert.deepEqual(machine.piped, ["schtasks"]);
     assert.deepEqual(system.uninstallAgent(a), [], "nothing left to remove is no error");
+});
+
+test("win32: from the executable, the task's script runs its repatch command, from no clone", async () => {
+    asExecutable();
+    const a = agent(["C:\\bin\\agent-chat-bridge.exe", "repatch"]);
+    (await win32()).installAgent(a);
+    assert.equal(readFileSync(join(a.state, "repatch-run.ps1"), "utf8"),
+        `$env:PATH = '/bin:/it''s'\n& 'C:\\bin\\agent-chat-bridge.exe' 'repatch' 'run' *>> '${a.log}'\n`);
 });
 
 test("win32: install and uninstall fail when schtasks can't create or delete the task; a missing one needs no delete", async () => {
@@ -158,7 +168,7 @@ test("linux: the units go under ~/.config without XDG_CONFIG_HOME, and a session
     const a = agent();
     (await linux()).installAgent(a);
     assert.equal(existsSync(join(home, ".config", "systemd", "user", "agent-chat-bridge-repatch.timer")), true);
-    assert.match(readFileSync(join(a.state, "repatch-run.sh"), "utf8"), / PATH='\/bin:\/it'\\''s' exec node /);
+    assert.match(readFileSync(join(a.state, "repatch-run.sh"), "utf8"), / PATH='\/bin:\/it'\\''s' exec 'node' /);
 });
 
 test("linux: Discord's resources are the newest app folder's in ~/.config/discord, where Discord installs itself", async () => {
@@ -185,9 +195,9 @@ test("linux: Discord is ended with pkill and started detached; notices and quest
     assert.equal(system.permissionHint, "");
 });
 
-test("linux: the user's own Discord folder is patched with pnpm, and apply runs at once", async () => {
+test("linux: the user can write their own Discord folder, so apply runs at once, and pnpm runs as it is", async () => {
     const system = await linux();
-    assert.deepEqual(system.injectCommand("x"), ["pnpm", ["inject"]]);
+    assert.deepEqual(system.pnpm(["inject"]), ["pnpm", ["inject"]]);
     system.runApply(agent());
     assert.deepEqual(machine.runs, ["apply"]);
 });
@@ -201,14 +211,22 @@ test("linux: install writes the script, with the desktop session dialogs need, a
     const a = agent();
     assert.deepEqual(system.installAgent(a), []);
     assert.equal(readFileSync(join(a.state, "repatch-run.sh"), "utf8"), `cd '${REPO}' && PATH='/bin:/it'\\''s' DISPLAY=':0' WAYLAND_DISPLAY='wayland-0' `
-        + "XDG_RUNTIME_DIR='/run/user/1000' DBUS_SESSION_BUS_ADDRESS='unix:path=/run/user/1000/bus' exec node "
-        + `--disable-warning=MODULE_TYPELESS_PACKAGE_JSON '/repo/scripts/repatch.mjs' run >> '${a.log}' 2>&1\n`);
+        + "XDG_RUNTIME_DIR='/run/user/1000' DBUS_SESSION_BUS_ADDRESS='unix:path=/run/user/1000/bus' exec 'node' "
+        + `'--disable-warning=MODULE_TYPELESS_PACKAGE_JSON' '/repo/scripts/repatch.mjs' 'run' >> '${a.log}' 2>&1\n`);
     const units = join(home, "config", "systemd", "user");
     assert.equal(readFileSync(join(units, "agent-chat-bridge-repatch.service"), "utf8"), "[Unit]\nDescription=agent-chat-bridge: re-patch "
         + `Discord and offer new releases\n\n[Service]\nType=oneshot\nExecStart=/bin/sh '${join(a.state, "repatch-run.sh")}'\n`);
     assert.equal(readFileSync(join(units, "agent-chat-bridge-repatch.timer"), "utf8"), "[Unit]\nDescription=agent-chat-bridge: hourly check\n\n"
         + "[Timer]\nOnStartupSec=2min\nOnUnitActiveSec=1h\n\n[Install]\nWantedBy=timers.target\n");
     assert.deepEqual(machine.runs, ["systemctl --user daemon-reload", "systemctl --user enable --now agent-chat-bridge-repatch.timer"]);
+});
+
+test("linux: from the executable, the script runs its repatch command, from no clone", async () => {
+    vi.stubEnv("DISPLAY", "");
+    asExecutable();
+    const a = agent(["/home/u/.local/bin/agent-chat-bridge", "repatch"]);
+    (await linux()).installAgent(a);
+    assert.match(readFileSync(join(a.state, "repatch-run.sh"), "utf8"), /^PATH='\/bin:\/it'\\''s' (\w+='[^']*' )*exec '\/home\/u\/.local\/bin\/agent-chat-bridge' 'repatch' 'run' >> /);
 });
 
 test("linux: install fails when systemctl does; uninstall disables and removes the units and the script", async () => {
