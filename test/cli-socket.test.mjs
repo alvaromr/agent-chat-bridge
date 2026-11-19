@@ -1,5 +1,5 @@
-// The CLI's socket side (main() of scripts/acb.mjs) on a faked socket: what it sends Discord, how it prints the answer
-// or each event of a `watch`, and its exit codes. Run with `pnpm test`.
+// The CLI's socket side (main() of scripts/agent-chat-bridge.mjs) on a faked socket: what it sends Discord, how it
+// prints the answer or each event of a `watch`, and its exit codes. Run with `pnpm test`.
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { homedir, userInfo } from "node:os";
@@ -19,7 +19,7 @@ vi.mock("net", () => ({
     }
 }));
 
-const { main } = await import("../scripts/acb.mjs");
+const { main } = await import("../scripts/agent-chat-bridge.mjs");
 
 let out, err, exit;
 beforeEach(() => {
@@ -71,13 +71,13 @@ test("cli: without Discord's socket it says so; another failure, by its message;
 
 test("cli: run as a command, it reads its arguments after node and the script", () => {
     const argv = process.argv;
-    process.argv = ["node", "/usr/local/bin/acb", "list", "--help"];
+    process.argv = ["node", "/usr/local/bin/agent-chat-bridge", "list", "--help"];
     try {
         main();
     } finally {
         process.argv = argv;
     }
-    assert.match(printed(out)[0] ?? "", /^acb list/);
+    assert.match(printed(out)[0] ?? "", /^agent-chat-bridge list/);
     assert.deepEqual(exit.mock.calls, [[0]]);
 });
 
@@ -86,7 +86,7 @@ test("cli: a wrong command line exits with 2 and its usage; --help prints the he
     assert.equal(exit.mock.calls[0]?.[0], 2);
     assert.equal(printed(err).length, 1);
     main(["list", "--help"]);
-    assert.match(printed(out)[0] ?? "", /^acb list/);
+    assert.match(printed(out)[0] ?? "", /^agent-chat-bridge list/);
     assert.deepEqual(exit.mock.calls[1], [0]);
     assert.equal(conns.length, 0);
 });

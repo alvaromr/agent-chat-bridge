@@ -1,10 +1,10 @@
-// Arguments and dates of the CLI (scripts/acb.mjs), without Discord. Run with `pnpm test`.
+// Arguments and dates of the CLI (scripts/agent-chat-bridge.mjs), without Discord. Run with `pnpm test`.
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
 
 import { expect, test, vi } from "vitest";
 
-import { buildRequest, dateSpan, UsageError } from "../scripts/acb.mjs";
+import { buildRequest, dateSpan, UsageError } from "../scripts/agent-chat-bridge.mjs";
 
 const request = argv => buildRequest(argv).request;
 const usage = (argv, message) => assert.throws(() => buildRequest(argv), message ? new UsageError(message) : UsageError, argv.join(" "));
@@ -25,11 +25,11 @@ test("help: general and per command", () => {
 });
 
 test("help: every usage line starts with the command as the user types it", () => {
-    assert.match(help([]), /^Ayuda de cada uno: acb <comando> --help$/m);
+    assert.match(help([]), /^Ayuda de cada uno: agent-chat-bridge <comando> --help$/m);
     for (const name of ["draft", "send", "edit", "delete", "react", "watch", "list", "unread", "read"]) {
         const [first = "", ...more] = help([name, "--help"]).split("\n\n")[0]?.split("\n") ?? [];
-        assert.ok(first.startsWith(`acb ${name} `), first);
-        for (const line of more) assert.ok(line.startsWith(`       acb ${name} `), line);
+        assert.ok(first.startsWith(`agent-chat-bridge ${name} `), first);
+        for (const line of more) assert.ok(line.startsWith(`       agent-chat-bridge ${name} `), line);
     }
 });
 

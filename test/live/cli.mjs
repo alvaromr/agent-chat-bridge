@@ -12,7 +12,7 @@ import { promisify } from "node:util";
 
 import { appDataDir, socketPath } from "../../mod/src/platform.mts";
 
-const CLI = fileURLToPath(new URL("../../scripts/acb.mjs", import.meta.url));
+const CLI = fileURLToPath(new URL("../../scripts/agent-chat-bridge.mjs", import.meta.url));
 const SOCKET = socketPath(process.platform, appDataDir(process.platform, process.env, homedir()), userInfo().username);
 const KINDS = ["dm", "grupo", "canal", "hilo"];
 // Over the 10 s that mod/src/compose.ts waits for the renderer, so a Discord that hangs fails the check, not blocks it.

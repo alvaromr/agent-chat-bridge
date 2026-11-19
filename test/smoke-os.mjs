@@ -18,7 +18,7 @@ import { appDataDir, isPipe, socketPath } from "../mod/src/platform.mts";
 import { exec } from "../scripts/os/exec.mjs";
 import { system } from "../scripts/os/index.mjs";
 
-const CLI = fileURLToPath(new URL("../scripts/acb.mjs", import.meta.url));
+const CLI = fileURLToPath(new URL("../scripts/agent-chat-bridge.mjs", import.meta.url));
 const TASK = `${APP_NAME}-repatch`;
 // What runs only on CI's machines: they have no Discord, and no install of the user's whose task it would replace.
 const CI = Boolean(process.env.CI);

@@ -1,5 +1,5 @@
-// Answers scripts/acb.mjs: each command of ipc.ts goes to its handler, in chats.ts (`list`, `unread`), read.ts
-// (`read`) or write.ts (drafts, and sends, edits, deletes and reactions).
+// Answers scripts/agent-chat-bridge.mjs: each command of ipc.ts goes to its handler, in chats.ts (`list`, `unread`),
+// read.ts (`read`) or write.ts (drafts, and sends, edits, deletes and reactions).
 import { type Command, commandOf, type ComposeRequest, type ComposeResult, type RequestFor } from "../ipc";
 import { listChats, unreadChats } from "./chats";
 import { readChat } from "./read";

@@ -33,7 +33,7 @@ export type RequestFor<C extends Command> = C extends keyof ComposeRequest ? Com
 export const commandOf = (req: { [C in typeof COMMANDS[number]]?: unknown }): Command => COMMANDS.find(c => req[c] !== undefined) ?? "draft";
 
 /**
- * What scripts/acb.mjs asks for: one of a draft (the default), `list`, `unread`, `read`, `send`,
+ * What scripts/agent-chat-bridge.mjs asks for: one of a draft (the default), `list`, `unread`, `read`, `send`,
  * `sendDirect`, `edit`, `delete`, `react` or `unreact`. Only the last six publish anything, and the CLI documents
  * that they need the user's confirmation (rule 3).
  */
@@ -55,7 +55,7 @@ export interface ComposeRequest {
     older?: number;
     /** With a draft or `sendDirect`: reply to this message of the chat, as Discord's Reply button does. */
     replyTo?: string;
-    /** With a draft: absolute paths of files to attach (scripts/acb.mjs → main process). */
+    /** With a draft: absolute paths of files to attach (scripts/agent-chat-bridge.mjs → main process). */
     attach?: string[];
     /** Set by the main process from `attach`: the files' contents for the renderer. */
     files?: { name: string; type: string; data: Uint8Array; }[];

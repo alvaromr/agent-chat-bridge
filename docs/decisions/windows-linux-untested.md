@@ -7,18 +7,18 @@
   - Linux, checked on 2026-11-16 in a throwaway Debian container (x64, under emulation) with the `.deb` of Discord
     1.0.169, not logged in: Discord installs itself into `~/.config/discord/app-<version>`, which the user can write;
     `pnpm inject` and `pnpm uninject` there; the patched Discord loading `mod/`; the CLI's socket in
-    `~/.config/agent-chat-bridge/`, user-only; `acb` reaching Discord through it; quitting Discord with the Linux
+    `~/.config/agent-chat-bridge/`, user-only; the CLI reaching Discord through it; quitting Discord with the Linux
     module; the cache that `pnpm check-discord` reads; the module's zenity question opening, with accents, in a
     session without a locale, which first failed and is why it sets `LC_ALL` (Debian 12, zenity 3.44). Not checked:
     opening Discord with the module (inconclusive in a container without Chromium's sandbox), the answers to the
     question and the notices (no window manager or notification daemon), the systemd units, and anything that needs a
     logged-in Discord, such as `pnpm live`.
   - Windows, checked on every push by CI on GitHub's `windows-latest` (`.github/workflows/ci.yml`), first green on
-    2026-11-16, without Discord: the unit suite; `acb` through the named pipe; `tasklist`; the lookup of Discord under
+    2026-11-16, without Discord: the unit suite; the CLI through the named pipe; `tasklist`; the lookup of Discord under
     `%LOCALAPPDATA%`; the scheduled task created and deleted with `schtasks`, and its PowerShell script parsed. Not
     checked: Discord itself (its paths, `Update.exe`, `taskkill`, the patch and `mod/` loading), the PowerShell
     dialogs, which need a desktop, and the task's hourly run. Those follow their documentation.
-  - Linux, also on CI's `ubuntu-latest`: the unit suite, `acb` through the socket file and `pgrep`.
+  - Linux, also on CI's `ubuntu-latest`: the unit suite, the CLI through the socket file and `pgrep`.
   The README calls both systems experimental and says what was checked, so no one takes the rest for verified.
 - **Why:** the owner has no Windows or Linux machine to run them on, and wanted the project usable there by the people
   it is shared with. What differs per system is kept in `scripts/os/`, `mod/src/platform.mts` and

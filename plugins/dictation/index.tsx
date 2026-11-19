@@ -36,7 +36,7 @@ const settings = definePluginSettings({
         type: OptionType.STRING,
         multiline: true,
         description: "Palabras que dices y Whisper debe reconocer, separadas por comas",
-        default: "git, commit, push, pre-push, rebase, pull request, merge, bug, fix, toast, lint, typecheck, coverage, Claude, Claude Code, skill, CLI, acb, pnpm, Vitest, Stryker, daily, Slack, Jira, endpoint, API, TypeScript, staging, Parakeet, sherpa-onnx, Whisper, Electron, hook, webpack, Discord, worktree, checkout, merge conflict, package.json, squash, build, smoke test, changelog, release, backend"
+        default: "git, commit, push, pre-push, rebase, pull request, merge, bug, fix, toast, lint, typecheck, coverage, Claude, Claude Code, skill, CLI, agent-chat-bridge, pnpm, Vitest, Stryker, daily, Slack, Jira, endpoint, API, TypeScript, staging, Parakeet, sherpa-onnx, Whisper, Electron, hook, webpack, Discord, worktree, checkout, merge conflict, package.json, squash, build, smoke test, changelog, release, backend"
     },
     replacements: {
         type: OptionType.STRING,

@@ -1,5 +1,5 @@
-// Local socket for scripts/acb.mjs. Only the user's account can connect: socket 0600 in a 0700 dir, or on Windows a
-// named pipe (mod/src/platform.mts).
+// Local socket for scripts/agent-chat-bridge.mjs. Only the user's account can connect: socket 0600 in a 0700 dir, or
+// on Windows a named pipe (mod/src/platform.mts).
 // Validates each request, reads files to attach, hands the request to the renderer and brings Discord to the front
 // after a draft.
 import { app, BrowserWindow, ipcMain } from "electron";

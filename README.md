@@ -3,7 +3,7 @@
 A bridge between an AI agent and your Discord, with you confirming everything it publishes. A minimal patch of the
 official Discord desktop app for macOS, and experimentally for Windows and Linux (Requirements), adds two plugins
 backed by a local `claude -p`: Corrector (spelling fixes) and Autorespuesta (reply drafts in the user's tone); Dictation, which writes what you say into the chat box with a local
-Whisper model; and the `acb` CLI to use Discord from Claude Code.
+Whisper model; and the `agent-chat-bridge` CLI to use Discord from Claude Code.
 
 ## Before you install
 - **Discord's terms:** modifying the client breaks Discord's Terms of Service, so your account is at risk.
@@ -48,7 +48,7 @@ git clone https://github.com/alvaromr/agent-chat-bridge.git && cd agent-chat-bri
 - `pnpm bootstrap`: hooks and build; Dictation's engine where it can run, or it says why not.
 - `pnpm inject`: patches Discord.
 - `pnpm repatch install`: optional; drop it to re-patch and update by hand.
-- `pnpm links`, optional and apart: the acb CLI and its Claude Code skill.
+- `pnpm links`, optional and apart: the `agent-chat-bridge` CLI and its Claude Code skill.
 
 For Dictation, download its model (~1.6 GB) into the Hugging Face cache with the CLI that `pnpm bootstrap` installed, then
 restart Discord: Dictation looks for its engine and models when Discord starts.
@@ -99,7 +99,7 @@ pnpm live       # the CLI against the running Discord, read-only (docs/debugging
 ## Read next
 - `AGENTS.md`: structure, commands, rules and the mandatory review.
 - `docs/debugging.md`: how to verify a failure in the running Discord.
-- `acb --help`: the CLI.
+- `agent-chat-bridge --help`: the CLI.
 - `CHANGELOG.md`: what changed in each release.
 - `SECURITY.md`: how to report a vulnerability.
 

@@ -45,9 +45,9 @@ No new code reaches Discord without a review first (see «Review»). When in dou
 - `dictation/`: the dictation engine (its README): audio in, text out phrase by phrase, with a local Whisper model run
   by a Python worker without network. Kept apart so it can leave this repo: it imports only its own files and Node's
   modules, a rule the lint enforces, and its imports carry their extensions so plain Node runs it.
-- `scripts/acb.mjs`: the `acb` CLI, to use Discord from the terminal: leave drafts (with a reply and
-  attachments), list and read chats, listen for changes (`watch`) and, with confirmation (rule 3), send, edit and
-  delete own messages and react. Its documentation is its `--help`. `mod/src/compose.ts` serves it over a local
+- `scripts/agent-chat-bridge.mjs`: the `agent-chat-bridge` CLI, to use Discord from the terminal: leave drafts (with a
+  reply and attachments), list and read chats, listen for changes (`watch`) and, with confirmation (rule 3), send,
+  edit and delete own messages and react. Its documentation is its `--help`. `mod/src/compose.ts` serves it over a local
   socket. A new command goes into `COMMANDS` of `mod/src/ipc.ts`: the compiler then asks for its check in
   `mod/src/validate.ts` and its handler in `HANDLERS` of `mod/src/renderer/compose.ts`, which answers from `chats.ts`,
   `read.ts` or `write.ts` beside it, and `test/validate.test.mjs` asks for its entry in the CLI. A limit that `mod/`
@@ -109,7 +109,7 @@ Defined in `package.json`.
   (`docs/decisions/accessibility-outside-gate.md`).
 - `pnpm smoke-dictation`: the real dictation worker on a phrase that `say` speaks; Discord need not be open. Run it
   after a change to `dictation/src/worker.ts`, `dictation/worker/` or its packages.
-- `pnpm smoke-os`: the system's side for real, without Discord: `acb` against a socket of its own (a named pipe on
+- `pnpm smoke-os`: the system's side for real, without Discord: the CLI against a socket of its own (a named pipe on
   Windows), the check of a running Discord and, on CI's Windows machine only, the scheduled task and its PowerShell
   script. CI runs it on Windows and Linux; run it after a change to `scripts/os/` or `mod/src/platform.mts`.
 - `pnpm check-discord`: patches, pieces and the contrast of what `mod/` colours, in every theme, against the last
@@ -145,18 +145,18 @@ Defined in `package.json`.
      one session, with the messages marked as Claude's and the rate limit that `send` enforces.
    - Read only messages the app already has loaded; never download histories through the API or make requests in a
      loop. Exceptions, always on an explicit request:
-     - `acb read --fetch`: 1 request, the one Discord makes when opening a chat (`fetchMessages` of its message
-       manager).
-     - `acb read --more`: older pages, as scrolling up does, up to `MAX_EXTRA_PAGES` (`mod/src/limits.mts`)
-       and only back to the first unread message.
-     - `acb read --older <n>`: for the context of a message the user asks to write, n older pages up to the same
-       limit, read or not, the same request as `--more`.
+     - `agent-chat-bridge read --fetch`: 1 request, the one Discord makes when opening a chat (`fetchMessages` of its
+       message manager).
+     - `agent-chat-bridge read --more`: older pages, as scrolling up does, up to `MAX_EXTRA_PAGES`
+       (`mod/src/limits.mts`) and only back to the first unread message.
+     - `agent-chat-bridge read --older <n>`: for the context of a message the user asks to write, n older pages up to
+       the same limit, read or not, the same request as `--more`.
      - Between pages, `mod/` waits like someone scrolling up (`PAGE_PAUSE_MS` in `mod/src/renderer/read.ts`).
 4. **Models**: the plugins only use the local `claude -p` (the user's subscription) and, for dictation, a Whisper model
    on disk, run by `dictation/`'s worker under a macOS sandbox profile that denies it the network and every write
-   outside the user's temporary folder (`dictation/src/worker.ts`). The `acb` CLI hands
-   chat content to the Claude Code session that runs it, at the user's request. No other network destination for chat
-   content or the user's voice. `mod/` makes no network requests of its own, except the Discord API calls rule 3
+   outside the user's temporary folder (`dictation/src/worker.ts`). The `agent-chat-bridge` CLI
+   hands chat content to the Claude Code session that runs it, at the user's request. No other network destination for
+   chat content or the user's voice. `mod/` makes no network requests of its own, except the Discord API calls rule 3
    allows.
 5. **Privacy in own plugins**: never record message content, the token or the dictation's audio or text in logs or
    persistent files; the audio stays in memory. If a plugin needs to dump a chat (Claude session), only the minimum,
