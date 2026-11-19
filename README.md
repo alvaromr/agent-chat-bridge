@@ -5,6 +5,17 @@ official Discord desktop app for macOS, and experimentally for Windows and Linux
 backed by a local `claude -p`: Corrector (spelling fixes) and Autorespuesta (reply drafts in the user's tone); Dictation, which writes what you say into the chat box with a local
 Whisper model; and the `agent-chat-bridge` CLI to use Discord from Claude Code.
 
+## Highlights
+- **Claude reads your chats and answers for you.** Ask Claude Code what's new on Discord, to sum up a chat or to
+  answer someone: it reads the chats Discord has loaded, leaves the reply ready in the chat box, and sends it only when
+  you confirm. In the chats you choose, for one session, it can reply on its own, its messages marked as Claude's
+  (`skills/agent-chat-bridge/SKILL.md`, «Auto-reply»). Autorespuesta drafts a reply in your tone from the chat box.
+- **Dictate holding Space.** Hold Space in the chat box and speak, as in Claude Code: the text appears phrase by
+  phrase and you send it yourself. The model runs on your Mac, and the audio never leaves it (Apple Silicon only).
+- **Fix typos with Claude.** The Corrector fixes spelling, accents, misplaced spaces and chat abbreviations in your
+  message, or in the last one you sent with Enter on an empty box; a correction that changes your words waits for you
+  to review it.
+
 ## Before you install
 - **Discord's terms:** modifying the client breaks Discord's Terms of Service, so your account is at risk.
   agent-chat-bridge keeps the risk low by never automating sends or edits (`AGENTS.md`, rule 3), but it can't remove it.
