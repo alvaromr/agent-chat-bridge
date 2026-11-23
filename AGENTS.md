@@ -117,8 +117,9 @@ Defined in `package.json`.
   can alter. Stryker sees a change in a mutant's own code or its killing test; `scripts/mutation-scope.mjs` adds,
   through the import graph, the mutants whose tests reach any other changed file (code, shared helpers, the setup
   file), a changed dependency or a changed part of the test or mutation config, and the compile errors whose
-  type-check reaches one. A change to the per-mutant timeout re-tests only the mutants it can flip: a longer one, those
-  that timed out; a shorter one, those that survived. Version numbers, tools the tests don't use and the config parts that change neither
+  type-check reaches one. The per-mutant timeout stays Stryker's default (on a loaded machine, raise `timeoutMS`, not
+  `timeoutFactor`), and a change to it re-tests only the mutants it can flip: a longer one, those that timed out; a
+  shorter one, those that survived. Version numbers, tools the tests don't use and the config parts that change neither
   which mutants exist nor how their tests run re-test nothing. It compares against the inputs of the last finished run
   (`node_modules/.cache/mutation-inputs.json`), or, without that record, against the files' dates, and prints
   what changed. A full run takes about 20 minutes, so it runs only when there is no result or when asked with

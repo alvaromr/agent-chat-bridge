@@ -28,9 +28,9 @@ export default {
         "scripts/setup-dictation.mjs"
     ],
     incremental: true,
-    // Safety limits: few processes at once, and a mutant that loops is cut close to the suite's real time.
+    // Safety limit: few processes at once. The per-mutant timeout stays Stryker's default; on a loaded machine, raise
+    // `timeoutMS`, not `timeoutFactor`.
     concurrency: 2,
-    timeoutMS: 2000,
     reporters: ["clear-text", "progress", "html"],
     // Zero survivors: how to treat one is in AGENTS.md (`pnpm mutation`).
     thresholds: { high: 100, low: 100, break: 100 }
