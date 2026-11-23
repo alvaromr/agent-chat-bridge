@@ -195,8 +195,8 @@ Defined in `package.json`.
    (`dictation/worker/uv.lock`) run on this machine, outside Discord, the worker's without network and its `dev`
    group's (Ruff and ty, the gate's) as development tools: exact versions with their hashes, wheels only (no build
    code runs on install), and at least 7 days old when locked (`exclude-newer`). uv and Python are pinned as well
-   (`required-version` and `dictation/worker/.python-version`; why they stay where they are:
-   `docs/decisions/uv-held-at-0.13.8.md` and `docs/decisions/worker-on-python-3.12.md`).
+   (`required-version` and `dictation/worker/.python-version`; why Python stays where it is:
+   `docs/decisions/worker-on-python-3.12.md`).
 
 ## Review
 Mandatory before each `pnpm inject`, and before committing any change in `plugins/`, `mod/`, `dictation/`, `scripts/`,

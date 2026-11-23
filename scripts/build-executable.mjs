@@ -32,11 +32,11 @@ const TARGETS = {
  * Dictation's uv for the one executable that carries Dictation, the macOS one for Apple Silicon: the version
  * dictation/worker/pyproject.toml requires, pinned by the SHA-256 of astral-sh/uv's release.
  */
-const UV_VERSION = "0.13.8";
+const UV_VERSION = "0.13.9";
 const UV = {
     target: "darwin-arm64",
     archive: "uv-aarch64-apple-darwin.tar.gz",
-    sha256: "6b71028a6b904f2ae3340ef52e595512de807d06c0a20eaef2f692581b246558",
+    sha256: "5aeca67f2283f75235de40d0bd9c0a5bbc5fce23b6d48b3bf9fa1b2db08382ca",
     binary: "uv-aarch64-apple-darwin/uv"
 };
 
