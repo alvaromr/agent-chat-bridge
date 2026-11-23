@@ -23,7 +23,7 @@ jobs:
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 26
+          node-version-file: .node-version
       - run: pnpm install --frozen-lockfile
       # Without the coverage threshold: the tests of POSIX permission bits don't run on Windows (test/files.test.mjs),
       # and the coverage is counted on macOS, by the gate.
