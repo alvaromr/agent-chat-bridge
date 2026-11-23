@@ -13,7 +13,7 @@ dev = ["ruff==0.17.3", "ty==0.0.92"]
 
 [tool.uv]
 # The uv that wrote uv.lock; .python-version pins the interpreter the same way.
-required-version = "==0.13.6"
+required-version = "==0.13.8"
 package = false
 # Wheels only: no package runs build code on this machine when installed.
 no-build = true
