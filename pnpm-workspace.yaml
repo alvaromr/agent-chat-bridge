@@ -1,4 +1,4 @@
-minimumReleaseAge: 10080
+minimumReleaseAge: 5760
 trustPolicy: no-downgrade
 verifyDepsBeforeRun: error
 # No install scripts. esbuild's only checks its platform binary, which pnpm already installs as an optional dependency.
