@@ -18,7 +18,7 @@
     "knip": "knip",
     "check": "pnpm lint && pnpm typecheck && pnpm knip && pnpm secrets && pnpm test",
     "test": "vitest run --coverage",
-    "mutation": "stryker run",
+    "mutation": "node scripts/mutation.mjs",
     "audit": "pnpm audit && uv audit --frozen --preview-features audit-command --project dictation/worker",
     "live": "node --test --test-concurrency=1 'test/live/*.mjs'",
     "smoke-dictation": "node --test dictation/test/worker.mjs",

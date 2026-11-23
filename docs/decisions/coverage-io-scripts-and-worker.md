@@ -5,6 +5,7 @@
   stores answer in the shape faked, and `pnpm check-discord` that its code still has what the fake stands for.
 - **Why:** what stays out is only I/O, checked by running it, where a unit test would fake all it does:
   `scripts/inject.mjs` (`pnpm inject`), `scripts/release.mjs` (`pnpm release`), `scripts/secrets.mjs` (`pnpm check`),
+  `scripts/mutation.mjs` (`pnpm mutation`),
   `scripts/cdp.mjs` (`docs/debugging.md`), `mod/build.mjs` (`pnpm build`), `scripts/build-executable.mjs`
   (`pnpm build-executable`), `scripts/sign-release.mjs` (the release workflow) and `scripts/executable.mjs`, the
   executable's one-line script; and the
