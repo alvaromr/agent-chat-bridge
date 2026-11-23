@@ -7,5 +7,4 @@
   as Discord does. On 2026-11-23 Discord's cached code reports React 19.2.3 (its `version` and `reconcilerVersion`),
   the version `package.json` pins, while React's latest is 19.3.1. Move `react`, `react-dom` and `@types/react-dom`
   when Discord moves.
-- **Decided by:** follows from the owner's rule that the fake runs on the React Discord ships (`AGENTS.md`,
-  «Structure»); recorded 2026-11-23.
+- **Decided by:** the owner, 2026-11-23.
