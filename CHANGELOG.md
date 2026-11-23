@@ -5,6 +5,10 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 
 ## [Unreleased]
 
+### Security
+- The executable runs on Node 26.13.1, a security release that fixes, among others, TLS and HTTP flaws in the
+  connection it updates through.
+
 ## [0.4.1] - 2026-11-19
 
 Tested with Discord 0.0.422 for macOS, stable web client build 676376.

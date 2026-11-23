@@ -17,14 +17,14 @@ import { executableName, MANIFEST } from "./bundle.mjs";
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DIST = join(ROOT, "dist");
 const CACHE = join(ROOT, "node_modules", ".cache", "agent-chat-bridge-node");
-const NODE_VERSION = "26.13.0";
+const NODE_VERSION = "26.13.1";
 
 /** Node's official archive for each target, its SHA-256, and where its binary is inside. */
 const TARGETS = {
-    "darwin-arm64": { archive: `node-v${NODE_VERSION}-darwin-arm64.tar.gz`, sha256: "d38bd5e5a2ddce6bbb5ce45e46e208337da4d51fffe611e567fd32073d6439f6", binary: "bin/node" },
-    "darwin-x64": { archive: `node-v${NODE_VERSION}-darwin-x64.tar.gz`, sha256: "525c9b29bb0263d687de60a4cec0e2a6db876a8eb032369e5795eca71e7c358e", binary: "bin/node" },
-    "linux-x64": { archive: `node-v${NODE_VERSION}-linux-x64.tar.xz`, sha256: "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997", binary: "bin/node" },
-    "win-x64": { archive: `node-v${NODE_VERSION}-win-x64.zip`, sha256: "dcc60d59a0746999f99064a01c020445d54d84228c691cdbf25b49ac3b59150a", binary: "node.exe" }
+    "darwin-arm64": { archive: `node-v${NODE_VERSION}-darwin-arm64.tar.gz`, sha256: "aec2514ea1ceb2ba52455e9ec65986f6749a06dd759e5db2a72e6889668c9735", binary: "bin/node" },
+    "darwin-x64": { archive: `node-v${NODE_VERSION}-darwin-x64.tar.gz`, sha256: "82bb96078a24ca50b9c9a38f2379e6be6d87171fcd400fc14c8934b3bce96e2f", binary: "bin/node" },
+    "linux-x64": { archive: `node-v${NODE_VERSION}-linux-x64.tar.xz`, sha256: "5c063e46bab0fbc1c17cc445d7ff129cbdcd0471be6ed83b6ab864f8143bc864", binary: "bin/node" },
+    "win-x64": { archive: `node-v${NODE_VERSION}-win-x64.zip`, sha256: "e2edda75bfb089654705cf65a13b58933bfd5f57148e8ebda916f58a2474f1f7", binary: "node.exe" }
 };
 /** @typedef {keyof typeof TARGETS} Target */
 
