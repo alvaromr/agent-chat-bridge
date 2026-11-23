@@ -69,11 +69,12 @@ No new code reaches Discord without a review first (see «Review»). When in dou
 - `test/` and `dictation/test/`: the `*.test.mjs` files (Vitest, `vitest.config.mjs`) test all of `mod/`, `plugins/`
   and `dictation/src/`, and the CLI, without Discord and without network (`test/setup.mjs` refuses every
   connection). What touches Discord runs on a fake one: `test/fake-discord.mjs` for `mod/src/plugin-api/discord.ts`,
-  with the React Discord ships, `test/fake-native.mjs` for what the preload exposes, `test/fake-webpack.mjs` for
-  Discord's webpack runtime, and happy-dom for the page (`@vitest-environment happy-dom`, `test/dom.mjs`); Electron,
-  the system and the worker's process on `vi.mock`s. New code gets its test in the same change; the coverage counts
-  the `mutate` list of `stryker.config.mjs`, and what stays out is in `docs/decisions/coverage-io-scripts-and-worker.md`. A fix
-  gets a regression test that fails without it. The suite passes on macOS, Windows and Linux: a test that fakes a Mac
+  with the React Discord ships (`docs/decisions/react-as-discord-ships.md`), `test/fake-native.mjs` for what the
+  preload exposes, `test/fake-webpack.mjs` for Discord's webpack runtime, and happy-dom for the page
+  (`@vitest-environment happy-dom`, `test/dom.mjs`); Electron, the system and the worker's process on `vi.mock`s.
+  New code gets its test in the same change; the coverage counts the `mutate` list of `stryker.config.mjs`, and what
+  stays out is in `docs/decisions/coverage-io-scripts-and-worker.md`. A fix gets a regression test that fails without
+  it. The suite passes on macOS, Windows and Linux: a test that fakes a Mac
   or a Linux fakes `process.platform` and, where its code splits no real path, Node's path module
   (`dictation/test/posix-path.mjs`). `test/live/`, `test/smoke-os.mjs` and `dictation/test/worker.mjs` run on
   `node --test` instead, so neither Vitest nor Stryker runs them: `test/live/` checks in the running Discord that its
