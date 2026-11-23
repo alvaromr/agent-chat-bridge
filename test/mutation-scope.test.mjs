@@ -5,7 +5,7 @@ import { test } from "vitest";
 
 import {
     assumedPrevious, changedInputs, configFingerprint, CONFIGS, importsOf, inputGraph, inputValue, packageFingerprint, resolveImport,
-    tsconfigChain, withoutStale
+    TIMEOUT_INPUT, timeoutFlips, tsconfigChain, withoutStale
 } from "../scripts/mutation-scope.mjs";
 
 // Split, so that vitest doesn't find it in this file and run it in that environment.
@@ -136,15 +136,18 @@ const REPORT = {
     },
     testFiles: { "test/a.test.mjs": { tests: [{ id: "t1" }] }, "test/b.test.mjs": { tests: [{ id: "t2" }] } }
 };
-/** The ids of the mutants left in each file, after a change in `changed`. @param {string[]} changed */
-const kept = changed => {
-    const { report, retested } = withoutStale(REPORT, graph(), new Set(changed));
+/**
+ * The ids of the mutants left in each file, after a change in `changed` and one of the timeout that flips `flipped`.
+ * @param {string[]} changed @param {string[]} [flipped]
+ */
+const kept = (changed, flipped = []) => {
+    const { report, retested } = withoutStale(REPORT, graph(), new Set(changed), new Set(flipped));
     return { retested, ...Object.fromEntries(Object.entries(report.files).map(([file, { mutants }]) => [file, mutants.map(({ id }) => id)])) };
 };
 const ALL_A = REPORT.files["src/a.ts"].mutants.map(({ id }) => id);
 
 test("nothing changed: every result is kept, and the rest of the report with them", () => {
-    const { report, retested } = withoutStale(REPORT, graph(), new Set());
+    const { report, retested } = withoutStale(REPORT, graph(), new Set(), new Set());
     assert.equal(retested, 0);
     assert.deepEqual(report, REPORT);
 });
@@ -185,14 +188,35 @@ test("what runs every test re-tests every mutant but the ignored ones", () => {
 });
 
 test("a report without its tests' files attributes no test, so any affected test re-tests every covered mutant", () => {
-    const { report, retested } = withoutStale({ files: REPORT.files }, graph(), new Set(["file:test/helper.mjs"]));
+    const { report, retested } = withoutStale({ files: REPORT.files }, graph(), new Set(["file:test/helper.mjs"]), new Set());
     assert.equal(retested, 11);
     assert.deepEqual(report.files["src/a.ts"]?.mutants.map(({ id }) => id), ["compile", "ignored"]);
 });
 
 test("a compile error in a file no longer mutated keeps its result, which Stryker drops itself", () => {
     const report = { files: { "src/gone.ts": { mutants: [{ id: "compile", status: "CompileError" }] } } };
-    assert.deepEqual(withoutStale(report, graph(), new Set(["package:typescript"])), { report, retested: 0 });
+    assert.deepEqual(withoutStale(report, graph(), new Set(["package:typescript"]), new Set()), { report, retested: 0 });
+});
+
+test("a change of the timeout re-tests only the mutants of the statuses it flips, whatever their tests reach", () => {
+    assert.deepEqual(kept([TIMEOUT_INPUT], ["Timeout"]), { retested: 1, "src/a.ts": ALL_A.filter(id => id !== "timeout-a"), "src/b.tsx": ["compile-b", "survived-b2"] });
+    assert.deepEqual(kept([], ["Survived"]), {
+        retested: 5,
+        "src/a.ts": ALL_A.filter(id => !id.startsWith("survived")),
+        "src/b.tsx": ["compile-b"]
+    });
+});
+
+test("a longer timeout flips the timed-out mutants, a shorter one the survivors, an unknown side either", () => {
+    const flips = (/** @type {object | undefined} */ before, /** @type {object} */ after) =>
+        [...timeoutFlips(before && JSON.stringify(before), JSON.stringify(after))].sort();
+    assert.deepEqual(flips({ timeoutMS: 2000 }, { timeoutMS: 2000 }), []);
+    assert.deepEqual(flips({ timeoutMS: 2000 }, { timeoutMS: 5000 }), ["Timeout"]);
+    assert.deepEqual(flips({ timeoutMS: 5000, timeoutFactor: 1.5 }, { timeoutMS: 5000, timeoutFactor: 1 }), ["Survived"]);
+    assert.deepEqual(flips({ timeoutMS: 2000, timeoutFactor: 2 }, { timeoutMS: 3000, timeoutFactor: 1 }), ["Survived", "Timeout"]);
+    assert.deepEqual(flips({ timeoutMS: 2000 }, {}), ["Survived", "Timeout"]);
+    assert.deepEqual(flips({}, { timeoutFactor: 2 }), ["Survived", "Timeout"]);
+    assert.deepEqual(flips(undefined, {}), ["Survived", "Timeout"]);
 });
 
 test("changed inputs: a different value, or one only either run has", () => {
@@ -201,21 +225,22 @@ test("changed inputs: a different value, or one only either run has", () => {
 });
 
 test("without a record of the last run, an input counts as changed when its file is newer than the result", () => {
-    const current = { "file:test/dom.mjs": "1", "file:src/a.ts": "2", "package:react": "3", "config:vitest": "4", "config:stryker": "5" };
+    const current = { "file:test/dom.mjs": "1", "file:src/a.ts": "2", "package:react": "3", "config:vitest": "4", "config:stryker": "5", [TIMEOUT_INPUT]: "6" };
     const newer = new Set(["test/dom.mjs", "stryker.config.mjs"]);
     assert.deepEqual(assumedPrevious(current, file => newer.has(file)), { "file:src/a.ts": "2", "package:react": "3", "config:vitest": "4" });
     assert.deepEqual(Object.keys(assumedPrevious(current, file => file === "vitest.config.mjs")),
-        ["file:test/dom.mjs", "file:src/a.ts", "package:react", "config:stryker"]);
+        ["file:test/dom.mjs", "file:src/a.ts", "package:react", "config:stryker", TIMEOUT_INPUT]);
     assert.deepEqual(Object.keys(assumedPrevious(current, file => file === "pnpm-lock.yaml")),
-        ["file:test/dom.mjs", "file:src/a.ts", "config:vitest", "config:stryker"]);
+        ["file:test/dom.mjs", "file:src/a.ts", "config:vitest", "config:stryker", TIMEOUT_INPUT]);
 });
 
 test("configs: a change in an inert part leaves the fingerprint, any other changes it, functions and patterns by their source", () => {
-    const base = { mutate: ["a"], concurrency: 2, timeoutMS: 2000, plugins: [{ load: () => 1, find: /^x/ }] };
+    const base = { mutate: ["a"], concurrency: 2, testRunner: "vitest", plugins: [{ load: () => 1, find: /^x/ }] };
     const fingerprint = (/** @type {object} */ config) => configFingerprint(config, CONFIGS.stryker.inert);
-    assert.equal(fingerprint(base), '{"timeoutMS":2000,"plugins":[{"load":"() => 1","find":"/^x/"}]}');
-    assert.equal(fingerprint({ ...base, mutate: ["a", "b"], concurrency: 4, reporters: [], thresholds: {}, incremental: false }), fingerprint(base));
-    for (const changed of [{ timeoutMS: 3000 }, { plugins: [{ load: () => 2, find: /^x/ }] }, { plugins: [{ load: () => 1, find: /^y/ }] }]) {
+    assert.equal(fingerprint(base), '{"testRunner":"vitest","plugins":[{"load":"() => 1","find":"/^x/"}]}');
+    const inert = { mutate: ["a", "b"], concurrency: 4, reporters: [], thresholds: {}, incremental: false, timeoutMS: 1, timeoutFactor: 1 };
+    assert.equal(fingerprint({ ...base, ...inert }), fingerprint(base));
+    for (const changed of [{ testRunner: "command" }, { plugins: [{ load: () => 2, find: /^x/ }] }, { plugins: [{ load: () => 1, find: /^y/ }] }]) {
         assert.notEqual(fingerprint({ ...base, ...changed }), fingerprint(base));
     }
     const vitest = { test: { include: ["a"], coverage: { thresholds: { lines: 100 } } } };
@@ -229,7 +254,7 @@ test("an input's value: a file's hash, without the version numbers of package.js
     const files = { "src/a.ts": "export const a = 1;", "package.json": JSON.stringify(pkg) };
     const project = (/** @type {Record<string, string>} */ changed) => ({
         read: (/** @type {string} */ file) => ({ ...files, ...changed })[file],
-        configs: { vitest: { test: { coverage: {} } }, stryker: { mutate: [], timeoutMS: 1 } },
+        configs: { vitest: { test: { coverage: {} } }, stryker: { mutate: [], testRunner: "vitest", timeoutMS: 1 } },
         nodeModules: { realpath: () => undefined, readdir: () => [] }
     });
     const value = (/** @type {string} */ input, changed = {}) => inputValue(input, project(changed));
@@ -240,7 +265,8 @@ test("an input's value: a file's hash, without the version numbers of package.js
     assert.notEqual(value("file:package.json", { "package.json": JSON.stringify({ ...pkg, type: "commonjs" }) }), value("file:package.json"));
     assert.equal(value("package:react"), "absent");
     assert.equal(value("config:vitest"), "{\"test\":{}}");
-    assert.equal(value("config:stryker"), "{\"timeoutMS\":1}");
+    assert.equal(value("config:stryker"), "{\"testRunner\":\"vitest\"}");
+    assert.equal(value(TIMEOUT_INPUT), "{\"timeoutMS\":1}");
 });
 
 test("a package's fingerprint: its installed version and every one it depends on, through scopes and cycles", () => {

@@ -1,7 +1,8 @@
 // `pnpm mutation [--full]`: Stryker (stryker.config.mjs) at lower scheduling priority, incremental, so it re-tests
 // only the mutants whose result a change since the last run can alter. Stryker sees changes in a mutant's own code and
 // in its killing test; before it runs, this drops from its result the mutants whose tests or type-check reach any
-// other change (scripts/mutation-scope.mjs): code and helpers they import, dependencies, configs. It runs the full set
+// other change (scripts/mutation-scope.mjs): code and helpers they import, dependencies, configs; and, for a change of
+// the per-mutant timeout, the mutants it can flip. It runs the full set
 // only when asked with `--full`, or when there is no previous result.
 import { spawnSync } from "child_process";
 import { existsSync, globSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "fs";
@@ -10,7 +11,7 @@ import { dirname, relative, sep } from "path";
 import { fileURLToPath } from "url";
 
 import stryker from "../stryker.config.mjs";
-import { assumedPrevious, changedInputs, inputGraph, inputValue, withoutStale } from "./mutation-scope.mjs";
+import { assumedPrevious, changedInputs, inputGraph, inputValue, TIMEOUT_INPUT, timeoutFlips, withoutStale } from "./mutation-scope.mjs";
 
 /**
  * The parts of vitest.config.mjs read here. Loaded by URL: a static import brings vitest's types into the type-check
@@ -56,7 +57,7 @@ const nodeModules = {
     readdir: path => readdirSync(path)
 };
 const project = { read, configs: { vitest, stryker }, nodeModules };
-const inputs = new Set([...graph.tests.values(), ...graph.compile.values()].flatMap(reached => [...reached]));
+const inputs = new Set([...graph.tests.values(), ...graph.compile.values()].flatMap(reached => [...reached]).concat(TIMEOUT_INPUT));
 const current = Object.fromEntries([...inputs].sort().map(input => [input, inputValue(input, project)]));
 
 /** Why this run must be a full one, or undefined when the incremental result holds once its stale mutants are dropped. */
@@ -73,7 +74,8 @@ else {
     const previous = existsSync(INPUTS) ? JSON.parse(readFileSync(INPUTS, "utf8"))
         : assumedPrevious(current, file => !existsSync(file) || statSync(file).mtimeMs > last);
     const changed = changedInputs(previous, current);
-    const { report, retested } = withoutStale(JSON.parse(readFileSync(RESULT, "utf8")), graph, changed);
+    const flipped = changed.has(TIMEOUT_INPUT) ? timeoutFlips(previous[TIMEOUT_INPUT], /** @type {string} */ (current[TIMEOUT_INPUT])) : new Set();
+    const { report, retested } = withoutStale(JSON.parse(readFileSync(RESULT, "utf8")), graph, changed, flipped);
     if (retested) writeFileSync(RESULT, JSON.stringify(report));
     console.log(changed.size
         ? `Mutation: incremental run; ${retested} mutants re-tested besides what Stryker sees, for changes in: ${[...changed].join(", ")}.`

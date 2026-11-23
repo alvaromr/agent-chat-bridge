@@ -1,7 +1,8 @@
 // Which mutants a change since the last `pnpm mutation` can alter, for scripts/mutation.mjs. Stryker's incremental
 // run re-tests the mutants in changed code and those whose killing test changed, but it can't see what else a mutant's
 // tests run: the code and test helpers they import, the dependencies, the configs. This finds, through the import
-// graph, the mutants whose tests or type-check reach such a change, so that only they are tested again. No I/O:
+// graph, the mutants whose tests or type-check reach such a change, so that only they are tested again, and the
+// mutants a change of the per-mutant timeout can flip. No I/O:
 // scripts/mutation.mjs hands it the files, and test/ loads it directly.
 import { createHash } from "node:crypto";
 import { isBuiltin } from "node:module";
@@ -11,7 +12,7 @@ import ts from "typescript";
 
 /**
  * An input of the mutants' results, as a key: `file:<repo path>`, `package:<name>` (with what it depends on) or
- * `config:<name>` (of CONFIGS). @typedef {string} Input
+ * `config:<name>` (of CONFIGS), or TIMEOUT_INPUT. @typedef {string} Input
  */
 /**
  * What each test file and each mutated file reach: a test file's results depend on everything it runs, a mutated
@@ -34,8 +35,14 @@ const CHECKERS = ["typescript", "@stryker-mutator/typescript-checker"];
  */
 export const CONFIGS = {
     vitest: { file: "vitest.config.mjs", inert: [["test", "coverage"]] },
-    stryker: { file: "stryker.config.mjs", inert: [["mutate"], ["concurrency"], ["reporters"], ["thresholds"], ["incremental"]] }
+    stryker: {
+        file: "stryker.config.mjs",
+        inert: [["mutate"], ["concurrency"], ["reporters"], ["thresholds"], ["incremental"], ["timeoutMS"], ["timeoutFactor"]]
+    }
 };
+/** The input of the per-mutant timeout: the parts of it stryker.config.mjs sets, which `timeoutFlips` compares. */
+export const TIMEOUT_INPUT = "timeout:stryker";
+const TIMEOUT = ["timeoutMS", "timeoutFactor"];
 /**
  * Files the code imports with fields that are version numbers, which re-test nothing: the dependencies' own are seen
  * through what is installed (`packageFingerprint`).
@@ -156,6 +163,7 @@ export function assumedPrevious(current, newer) {
     const fileOf = input => {
         const [kind, name] = input.split(/:(.*)/);
         if (kind === "package") return "pnpm-lock.yaml";
+        if (kind === "timeout") return CONFIGS.stryker.file;
         return kind === "config" ? CONFIGS[/** @type {keyof typeof CONFIGS} */ (name)].file : /** @type {string} */ (name);
     };
     return Object.fromEntries(Object.entries(current).filter(([input]) => !newer(fileOf(input))));
@@ -201,7 +209,8 @@ export function packageFingerprint(name, { realpath, readdir }) {
 }
 
 /**
- * An input's current value: a file's hash (without its version numbers), a package's fingerprint, a config's.
+ * An input's current value: a file's hash (without its version numbers), a package's fingerprint, a config's, or the
+ * timeout's parts that stryker.config.mjs sets.
  * @param {Input} input
  * @param {object} project
  * @param {(file: string) => string | undefined} project.read a repo file's text, undefined when there is none
@@ -211,6 +220,10 @@ export function packageFingerprint(name, { realpath, readdir }) {
 export function inputValue(input, { read, configs, nodeModules }) {
     const [kind, name] = /** @type {[string, string]} */ (input.split(/:(.*)/));
     if (kind === "package") return packageFingerprint(name, nodeModules);
+    if (kind === "timeout") {
+        const stryker = /** @type {Record<string, unknown>} */ (configs.stryker);
+        return JSON.stringify(Object.fromEntries(TIMEOUT.filter(part => part in stryker).map(part => [part, stryker[part]])));
+    }
     if (kind === "config") return configFingerprint(configs[/** @type {keyof typeof CONFIGS} */ (name)], CONFIGS[/** @type {keyof typeof CONFIGS} */ (name)].inert);
     const text = /** @type {string} */ (read(name));
     const versioned = VERSION_FIELDS[/** @type {keyof typeof VERSION_FIELDS} */ (name)];
@@ -218,15 +231,34 @@ export function inputValue(input, { read, configs, nodeModules }) {
 }
 
 /**
- * The report without the mutants whose result a change in `changed` can alter, so that Stryker tests them again.
+ * The statuses a change of the per-mutant timeout can flip: a longer one can let a timed-out mutant survive, a shorter
+ * one can time out a survivor. A part set on one side only stands for Stryker's default, unknown here, so it can flip
+ * either, as can a timeout with no record of the last one.
+ * @param {string | undefined} previous TIMEOUT_INPUT's value in the last run
+ * @param {string} current
+ * @returns {Set<string>}
+ */
+export function timeoutFlips(previous, current) {
+    if (previous === undefined) return new Set(["Timeout", "Survived"]);
+    const [before, after] = [JSON.parse(previous), JSON.parse(current)];
+    return new Set(TIMEOUT.filter(part => before[part] !== after[part]).flatMap(part => {
+        if (before[part] === undefined || after[part] === undefined) return ["Timeout", "Survived"];
+        return after[part] > before[part] ? ["Timeout"] : ["Survived"];
+    }));
+}
+
+/**
+ * The report without the mutants whose result a change in `changed` can alter, or whose status is in `flipped`
+ * (`timeoutFlips`), so that Stryker tests them again.
  * A test file's change reaches the mutants its tests cover, or killed, and a static mutant or one no test is known
  * for runs every test; a compile error is reached only by its type-check's inputs; an ignored mutant by none.
  * @param {Report} report
  * @param {InputGraph} graph
  * @param {Set<Input>} changed
+ * @param {Set<string>} flipped
  * @returns {{ report: Report, retested: number }}
  */
-export function withoutStale(report, graph, changed) {
+export function withoutStale(report, graph, changed, flipped) {
     /** @param {Set<Input>} inputs */
     const reaches = inputs => [...inputs].some(input => changed.has(input));
     const affected = new Set([...graph.tests].filter(([, inputs]) => reaches(inputs)).map(([file]) => file));
@@ -239,6 +271,7 @@ export function withoutStale(report, graph, changed) {
     /** @param {Mutant} mutant @param {string} file */
     const stale = (mutant, file) => {
         if (mutant.status === "Ignored") return false;
+        if (flipped.has(mutant.status)) return true;
         if (mutant.status === "CompileError") {
             const inputs = graph.compile.get(file);
             return inputs !== undefined && reaches(inputs);
