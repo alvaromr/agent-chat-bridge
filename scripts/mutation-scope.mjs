@@ -222,7 +222,8 @@ export function inputValue(input, { read, configs, nodeModules }) {
     if (kind === "package") return packageFingerprint(name, nodeModules);
     if (kind === "timeout") {
         const stryker = /** @type {Record<string, unknown>} */ (configs.stryker);
-        return JSON.stringify(Object.fromEntries(TIMEOUT.filter(part => part in stryker).map(part => [part, stryker[part]])));
+        // An unset part is undefined, which JSON.stringify leaves out.
+        return JSON.stringify(Object.fromEntries(TIMEOUT.map(part => [part, stryker[part]])));
     }
     if (kind === "config") return configFingerprint(configs[/** @type {keyof typeof CONFIGS} */ (name)], CONFIGS[/** @type {keyof typeof CONFIGS} */ (name)].inert);
     const text = /** @type {string} */ (read(name));
@@ -243,6 +244,7 @@ export function timeoutFlips(previous, current) {
     const [before, after] = [JSON.parse(previous), JSON.parse(current)];
     return new Set(TIMEOUT.filter(part => before[part] !== after[part]).flatMap(part => {
         if (before[part] === undefined || after[part] === undefined) return ["Timeout", "Survived"];
+        // Stryker disable next-line EqualityOperator: the parts compared here always differ, so `>=` is the same.
         return after[part] > before[part] ? ["Timeout"] : ["Survived"];
     }));
 }
