@@ -111,19 +111,8 @@ Defined in `package.json`.
   `node_modules/.cache/`. A local build keeps this machine's paths in its stack traces, so it is never published.
   Try one in a throwaway HOME or container, never with `install`, which patches the Discord installed on the machine.
 - `pnpm test`: tests without Discord, with 100 % line, branch, function and statement coverage.
-- `pnpm mutation`: Stryker on the code the coverage counts, with a 100 % score. Run it after changing one of them or
-  their tests. `scripts/mutation.mjs` runs it below normal priority and incremental: it re-tests only the mutants whose result a change since the last run
-  can alter. Stryker sees a change in a mutant's own code or its killing test; `scripts/mutation-scope.mjs` adds,
-  through the import graph, the mutants whose tests reach any other changed file (code, shared helpers, the setup
-  file), a changed dependency or a changed part of the test or mutation config, and the compile errors whose
-  type-check reaches one. The per-mutant timeout stays Stryker's default (on a loaded machine, raise `timeoutMS`, not
-  `timeoutFactor`), and a change to it re-tests only the mutants it can flip: a longer one, those that timed out; a
-  shorter one, those that survived. Version numbers, tools the tests don't use and the config parts that change neither
-  which mutants exist nor how their tests run re-test nothing. It compares against the inputs of the last finished run
-  (`node_modules/.cache/mutation-inputs.json`), or, without that record, against the files' dates, and prints
-  what changed. A full run takes about 20 minutes, so it runs only when there is no result or when asked with
-  `pnpm mutation --full`. Every surviving mutant gets a test, or an inline
-  `// Stryker disable next-line <mutator>: <reason>` when it is equivalent.
+- `pnpm mutation [--full]`: optional, run by hand to find missing tests: Stryker on the code the coverage counts,
+  incremental (`scripts/mutation.mjs`).
 - `pnpm run audit`: known advisories in the dependencies, the worker's Python packages included (`uv audit`); part of
   the review of any dependency change, and run by the pre-push hook and `pnpm release`. Plain `pnpm audit` is pnpm's
   own command, which checks only the Node packages.

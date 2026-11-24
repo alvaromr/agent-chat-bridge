@@ -3,7 +3,7 @@
   `pnpm check-discord` and a real patch for each supported system.
 - **Value not at stake:** correctness on macOS, which stays verified as before. On Windows and Linux the code is
   covered by unit tests on faked systems (`test/os.test.mjs`, `test/platform.test.mjs`, `test/socket-pipe.test.mjs`)
-  with 100 % coverage and mutation. What a real run checked, and what not:
+  with 100 % coverage. What a real run checked, and what not:
   - Linux, checked on 2026-11-16 in a throwaway Debian container (x64, under emulation) with the `.deb` of Discord
     1.0.169, not logged in: Discord installs itself into `~/.config/discord/app-<version>`, which the user can write;
     `pnpm inject` and `pnpm uninject` there; the patched Discord loading `mod/`; the CLI's socket in

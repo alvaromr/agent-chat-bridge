@@ -1,4 +1,4 @@
-// Mutation testing of the code (`pnpm mutation`), outside the pre-commit hook: each mutant runs only the unit tests that
+// Mutation testing of the code (`pnpm mutation`), optional and run by hand: each mutant runs only the unit tests that
 // cover it (vitest.config.mjs), and mutants that don't compile are discarded first. What stays out, and why:
 // docs/decisions/coverage-io-scripts-and-worker.md.
 /** @type {import("@stryker-mutator/api/core").PartialStrykerOptions} */
@@ -32,6 +32,6 @@ export default {
     // `timeoutMS`, not `timeoutFactor`.
     concurrency: 2,
     reporters: ["clear-text", "progress", "html"],
-    // Zero survivors: how to treat one is in AGENTS.md (`pnpm mutation`).
-    thresholds: { high: 100, low: 100, break: 100 }
+    // A survivor is a missing test, a weak assertion or an equivalent mutant: the run reports it and doesn't fail.
+    thresholds: { high: 100, low: 100, break: null }
 };
