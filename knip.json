@@ -9,5 +9,5 @@
         "scripts/check-discord/{code,css}.mjs"
     ],
     "ignoreDependencies": ["electron"],
-    "ignoreBinaries": ["pgrep", "brew", "uv", "say"]
+    "ignoreBinaries": ["brew","uv", "say"]
 }
