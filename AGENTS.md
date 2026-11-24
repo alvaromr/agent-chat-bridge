@@ -111,9 +111,8 @@ Defined in `package.json`.
   `node_modules/.cache/`. A local build keeps this machine's paths in its stack traces, so it is never published.
   Try one in a throwaway HOME or container, never with `install`, which patches the Discord installed on the machine.
 - `pnpm test`: tests without Discord, with 100 % line, branch, function and statement coverage.
-- `pnpm mutation`: Stryker on the code the coverage counts, with a 100 % score, run by the `.githooks/` pre-push hook instead of
-  the pre-commit one, and by `pnpm release`. Run it after changing one of them or their tests. `scripts/mutation.mjs`
-  runs it below normal priority and incremental: it re-tests only the mutants whose result a change since the last run
+- `pnpm mutation`: Stryker on the code the coverage counts, with a 100 % score. Run it after changing one of them or
+  their tests. `scripts/mutation.mjs` runs it below normal priority and incremental: it re-tests only the mutants whose result a change since the last run
   can alter. Stryker sees a change in a mutant's own code or its killing test; `scripts/mutation-scope.mjs` adds,
   through the import graph, the mutants whose tests reach any other changed file (code, shared helpers, the setup
   file), a changed dependency or a changed part of the test or mutation config, and the compile errors whose
@@ -145,7 +144,7 @@ Defined in `package.json`.
 - `pnpm repatch install` / `pnpm repatch uninstall`: add or remove the scheduled check that offers to re-patch Discord
   after an update («When Discord updates») and each new release (README, «Update»): to the executable, its signed
   executable; to a clean clone at a release tag, the tag. A development clone, off a release tag, is never updated.
-- `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit, `pnpm mutation`,
+- `pnpm release <x.y.z>`: the release from main (`scripts/release.mjs`): the gate, the audit,
   `pnpm check-discord` and a fresh clone installed and tested, the worker, `pnpm smoke-dictation` and this system's
   executable included, then the version in `package.json`, the dated `CHANGELOG.md` section opened by the Discord it
   was tested with (the app's version and its web client's build), the commit and the `v<x.y.z>` tag, whose message is

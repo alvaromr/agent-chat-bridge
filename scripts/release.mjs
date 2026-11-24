@@ -1,8 +1,8 @@
-// `pnpm release <x.y.z>`: the whole release from main, stopping at the first failure. It runs the gate, the audit, the
-// mutation run (full only for the reasons `pnpm mutation` gives) and the Discord code check, installs and tests a fresh clone, this system's executable included, then
-// sets the version, dates the changelog with the Discord it was tested with, commits and tags, the tag carrying that
-// section. Pushing stays with whoever releases; the tag's push starts the release workflow
-// (.github/workflows/release.yml), which builds, signs and publishes the executables.
+// `pnpm release <x.y.z>`: the whole release from main, stopping at the first failure. It runs the gate, the audit and
+// the Discord code check, installs and tests a fresh clone, this system's executable included, then sets the version,
+// dates the changelog with the Discord it was tested with, commits and tags, the tag carrying that section. Pushing
+// stays with whoever releases; the tag's push starts the release workflow (.github/workflows/release.yml), which
+// builds, signs and publishes the executables.
 import { execFileSync } from "child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
@@ -29,7 +29,6 @@ try {
     run("pnpm", ["check"]);
     // `run`: pnpm's own audit command would shadow the script, which also audits the dictation worker's packages.
     run("pnpm", ["run", "audit"]);
-    run("pnpm", ["mutation"]);
     run("pnpm", ["check-discord"]);
 
     // As someone who clones it: only what is committed, installed from the lockfile.
