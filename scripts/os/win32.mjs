@@ -17,6 +17,8 @@ export const resources = () => newestResources(DISCORD);
 
 export const logFile = (/** @type {string} */ state) => join(state, "repatch.log");
 export const permissionHint = "";
+/** Only macOS rejects an app patched before its first start (darwin.mjs): here Discord can be patched at once. */
+export const patchBlocked = () => null;
 // pnpm is a .cmd script there, which Node runs only through the command interpreter.
 /** @type {(args: string[]) => [string, string[]]} */
 export const pnpm = args => ["cmd.exe", ["/d", "/c", "pnpm", ...args]];

@@ -23,6 +23,8 @@ const SESSION = ["DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR", "DBUS_SESSION_
 export const resources = () => newestResources(join(CONFIG, "discord"));
 export const logFile = (/** @type {string} */ state) => join(state, "repatch.log");
 export const permissionHint = "";
+/** Only macOS rejects an app patched before its first start (darwin.mjs): here Discord can be patched at once. */
+export const patchBlocked = () => null;
 /** @type {(args: string[]) => [string, string[]]} */
 export const pnpm = args => ["pnpm", args];
 

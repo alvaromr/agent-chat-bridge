@@ -89,6 +89,11 @@ test("win32: Discord's resources are the newest app folder's, by version, or non
     assert.equal(resources(), null);
 });
 
+test("win32 and linux: Discord can be patched before it has run, without looking at what runs", async () => {
+    assert.deepEqual([(await win32()).patchBlocked(), (await linux()).patchBlocked()], [null, null]);
+    assert.deepEqual(machine.runs, []);
+});
+
 test("win32: without LOCALAPPDATA, Discord is looked for under the user's AppData\\Local", async () => {
     vi.stubEnv("LOCALAPPDATA", undefined);
     const discord = join(home, "AppData", "Local", "Discord");

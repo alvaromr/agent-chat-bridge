@@ -54,7 +54,8 @@ const fresh = () => ({
     release: null,
     files: {},
     downloads: [],
-    sync: 0
+    sync: 0,
+    processes: []
 });
 
 vi.mock("node:os", async original => ({ ...(/** @type {any} */ (await original())), homedir: () => machine.home, userInfo: () => ({ uid: 501 }) }));
@@ -137,6 +138,7 @@ vi.mock("node:child_process", async () => {
             if (command === "pnpm") return answer({ "check-discord": machine.check, build: machine.build, inject: machine.inject, "install --frozen-lockfile": machine.install, bootstrap: machine.setup }[line]);
             // The release's executable, run for its own steps.
             if (command === process.execPath) return answer({ "check-discord": machine.check, inject: machine.inject }[line]);
+            if (command === "ps") return answer(true, machine.processes.map(path => `${path}\n`).join(""));
             if (command === "launchctl" && args[0] === "print") return answer(machine.loaded);
             if (command === "launchctl") return answer(args[0] === "bootout" ? machine.bootout : machine.bootstrap);
             if (line.includes("display dialog")) return answer(machine.answer, "button returned:yes\n", "execution error: User canceled. (-128)\n");
@@ -239,12 +241,75 @@ test("discord-app: under the launcher, no app.toml or no folder for its version 
     }
 });
 
-test("repatch: under the launcher, the version it starts that lost the patch is checked and asked about", async () => {
+const RAN_UNPATCHED = () => join(machine.home, "Library", "Application Support", "agent-chat-bridge", "ran-unpatched");
+/** The executable of a version's app folder, as `ps` lists a Discord running from it. */
+const executable = version => join(DISCORD(), `app-${version}`, "Discord.app", "Contents", "MacOS", "Discord");
+const NOT_RUN = "Esta versión de Discord aún no ha arrancado sin parche, y si la parcheo ahora macOS la dará por dañada y no "
+    + "la dejará abrir. Abre Discord (si ya está abierto, ciérralo y vuelve a abrirlo), espera a que cargue y repite: te "
+    + "pedirá que lo cierres.";
+const PS = "ps -axo comm=";
+
+test("discord-app: the app in /Applications can be patched at once, without looking at what runs", async () => {
+    const app = await import("../scripts/discord-app.mjs");
+    assert.equal(app.patchBlocked(), null);
+    machine.installed = false;
+    assert.equal(app.patchBlocked(), null, "no Discord: the patch fails saying it isn't installed");
+    assert.deepEqual(machine.runs, []);
+});
+
+test("discord-app: under the launcher, a version is patched only once Discord has run from it unpatched, which it notes", async () => {
     launcher('next = "0.0.424"\n', "0.0.424");
+    const app = await import("../scripts/discord-app.mjs");
+    machine.processes = [executable("0.0.423"), "/usr/sbin/cfprefsd"];
+    assert.equal(app.patchBlocked(), NOT_RUN, "still running the previous version");
+    assert.equal(existsSync(RAN_UNPATCHED()), false);
+    machine.processes = [executable("0.0.424")];
+    assert.equal(app.patchBlocked(), null, "running from it");
+    machine.processes = [];
+    assert.equal(app.patchBlocked(), null, "closed after it ran");
+    assert.equal(readFileSync(RAN_UNPATCHED(), "utf8"), appResources("0.0.424"));
+    launcher('next = "0.0.425"\n', "0.0.425");
+    assert.equal(app.patchBlocked(), NOT_RUN, "the next version hasn't run");
+    assert.deepEqual(machine.runs, Array(4).fill(PS));
+});
+
+test("discord-app: under the launcher, a version patched already can be patched again: a new loader changes nothing for Gatekeeper", async () => {
+    launcher('next = "0.0.424"\n', "0.0.424");
+    writeFileSync(join(appResources("0.0.424"), "_app.asar"), "");
+    assert.equal((await import("../scripts/discord-app.mjs")).patchBlocked(), null);
+    assert.deepEqual(machine.runs, []);
+});
+
+test("inject: under the launcher, it refuses to patch a version that hasn't run unpatched, saying what to do, and restores any", async () => {
+    launcher('next = "0.0.424"\n', "0.0.424");
+    machine.running = false;
+    vi.spyOn(process, "exit").mockImplementation(code => {
+        throw new Error(`exit ${code}`);
+    });
+    const { patch } = await import("../scripts/inject.mjs");
+    assert.throws(() => patch("install"), { message: "exit 1" });
+    assert.deepEqual(errors.mock.calls, [[NOT_RUN]]);
+    assert.deepEqual(machine.runs, [PS], "nothing patched, and Discord not even looked for");
+    assert.throws(() => patch("uninstall"), { message: "exit 1" });
+    assert.deepEqual(errors.mock.calls.at(-1), ["Discord no está parcheado."], "not refused: it got to the restore");
+});
+
+test("repatch: under the launcher, a version that lost the patch waits, unseen, until Discord runs from it, then is checked and asked about", async () => {
+    launcher('next = "0.0.424"\n', "0.0.424");
+    machine.processes = [executable("0.0.423")];
+    await main("run");
+    assert.deepEqual(logged.mock.calls, [["Discord 0.0.424 lost the patch, and waits to start unpatched before it is patched"]]);
+    assert.deepEqual(machine.runs, [PS, DESCRIBE]);
+    assert.equal(existsSync(SEEN()), false);
+    // Discord restarts into it, and its updater rewrites app.toml, which runs the check again.
+    Object.assign(machine, { processes: [executable("0.0.424")], runs: [] });
+    logged.mockClear();
+    vi.resetModules();
     await main("run");
     assert.deepEqual(logged.mock.calls, [["Discord 0.0.424 lost the patch"]]);
-    assert.deepEqual(machine.runs.slice(0, 2), UP_TO_QUESTION.slice(0, 2));
+    assert.deepEqual(machine.runs.slice(0, 3), [PS, ...UP_TO_QUESTION.slice(0, 2)]);
     assert.equal(readFileSync(SEEN(), "utf8"), "0.0.424");
+    assert.equal(readFileSync(RAN_UNPATCHED(), "utf8"), appResources("0.0.424"), "so the patch after the quit is let through");
 });
 
 test("os: each system has its module, and any other fails saying which ones work", async () => {

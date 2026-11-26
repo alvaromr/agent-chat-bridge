@@ -1,5 +1,6 @@
 // macOS (tested): Discord in /Applications or, since Discord 0.0.424, in the app-<version> folder that the launcher it
-// leaves in /Applications starts; AppleScript dialogs, a LaunchAgent, and a helper app that patches Discord.
+// leaves in /Applications starts, patched only once it has run (`patchBlocked`); AppleScript dialogs, a LaunchAgent,
+// and a helper app that patches Discord.
 // macOS lets only an app with its App Management permission change another app, and grants it to one exact build: so
 // the helper stays the same build, and what it runs lives in a script beside it.
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -7,7 +8,7 @@ import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
 
 import { APP_NAME } from "../../mod/src/name.mts";
-import { REPO } from "../bundle.mjs";
+import { REPO, STATE } from "../bundle.mjs";
 import { exec, output } from "./exec.mjs";
 import { running, shellScript, shellWord } from "./posix.mjs";
 
@@ -23,6 +24,8 @@ const RESOURCES = "/Applications/Discord.app/Contents/Resources";
 const DISCORD = join(homedir(), "Library", "Application Support", "discord");
 const INSTALL_STATE = join(DISCORD, "install-state");
 const APP_STATE = join(INSTALL_STATE, "app.toml");
+/** The resources of the last app-<version> folder Discord was seen running from unpatched (`patchBlocked`). */
+const RAN_UNPATCHED = join(STATE, "ran-unpatched");
 const LABEL = `local.${APP_NAME}.repatch`;
 const PLIST = join(homedir(), "Library", "LaunchAgents", `${LABEL}.plist`);
 /** The helper's name says what it does, as the user sees it in macOS's App Management list. */
@@ -37,7 +40,10 @@ const TEXT = {
     revoke: `Quita «${HELPER_NAME}» de Gestión de las apps.`,
     permission: `Si dice EPERM, activa «${HELPER_NAME}» en Ajustes → Privacidad y seguridad → Gestión de las apps.`,
     noVersion: file => `No sé qué versión de Discord arranca su lanzador: ${file} no dice next = "x.y.z". `
-        + "Discord ha cambiado cómo se instala, y agent-chat-bridge tiene que adaptarse a ello."
+        + "Discord ha cambiado cómo se instala, y agent-chat-bridge tiene que adaptarse a ello.",
+    notRun: "Esta versión de Discord aún no ha arrancado sin parche, y si la parcheo ahora macOS la dará por dañada y no "
+        + "la dejará abrir. Abre Discord (si ya está abierto, ciérralo y vuelve a abrirlo), espera a que cargue y "
+        + "repite: te pedirá que lo cierres."
 };
 
 /** The resources of the app-<version> folder the launcher starts, or null before the launcher has set one up. */
@@ -55,6 +61,24 @@ function launcherResources() {
  * folder, which isn't the one running.
  */
 export const resources = () => ["app.asar", "_app.asar"].some(file => existsSync(join(RESOURCES, file))) ? RESOURCES : launcherResources();
+/**
+ * Why Discord can't be patched yet, or null. Gatekeeper scans an app the first time it starts and keeps the result for
+ * that bundle: patched before that start, the scan finds its seal broken, and macOS calls the app damaged and won't
+ * open it, even once restored; patched after, the pass it kept holds (seen with Discord 0.0.424 on 2026-11-26). So an
+ * app-<version> folder of the launcher is patched only once Discord has run from it unpatched, which this notes when
+ * it sees it, or when it is patched already, since a new loader changes nothing for Gatekeeper. The app in
+ * /Applications is patched as before the launcher, which Gatekeeper never rejected.
+ */
+export function patchBlocked() {
+    const dir = resources();
+    if (!dir || dir === RESOURCES || existsSync(join(dir, "_app.asar"))) return null;
+    const executable = join(dirname(dir), "MacOS", "Discord");
+    if (output("ps", ["-axo", "comm="]).split("\n").includes(executable)) {
+        mkdirSync(STATE, { recursive: true });
+        writeFileSync(RAN_UNPATCHED, dir);
+    }
+    return existsSync(RAN_UNPATCHED) && readFileSync(RAN_UNPATCHED, "utf8") === dir ? null : TEXT.notRun;
+}
 export const logFile = () => join(homedir(), "Library", "Logs", `${APP_NAME}-repatch.log`);
 export const permissionHint = TEXT.permission;
 /** @type {(args: string[]) => [string, string[]]} */
@@ -104,7 +128,9 @@ function buildHelper(state) {
 /**
  * The LaunchAgent: at login, when /Applications, its Discord's Resources or, under the launcher, the version it starts
  * change, and daily. That version is in app.toml: its folder changes when the updater creates it or renames a new one
- * into place, and the file itself when it is rewritten in place.
+ * into place, and the file itself when it is rewritten in place. Discord's updater also rewrites it a few seconds after
+ * each start (seen with 0.0.424), when Discord already runs from the version it names: so the check, which patches a
+ * new version only once Discord has run from it (`patchBlocked`), runs again when Discord restarts into it.
  */
 function launchAgent(state, log) {
     const string = value => `<string>${value.replaceAll("&", "&amp;").replaceAll("<", "&lt;")}</string>`;

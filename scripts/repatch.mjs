@@ -1,8 +1,9 @@
 // Offers to re-patch Discord after an update replaces it (AGENTS.md, «When Discord updates»), and each new release.
 // `install` schedules `run` on this system (scripts/os/: at login, when Discord changes where the system can watch it,
 // and periodically); `uninstall` removes it. `run` patches nothing on its own: once per Discord version that lost the
-// patch, it checks the new Discord with `check-discord` and, in a clone, a clean tree (the review of a re-patch
-// without changes, AGENTS.md «Review»), then asks. Only on the user's yes does it quit Discord and run `apply`, with
+// patch, once the system lets it be patched (on macOS, after Discord has run from it unpatched), it checks the new
+// Discord with `check-discord` and, in a clone, a clean tree (the review of a re-patch without changes, AGENTS.md
+// «Review»), then asks. Only on the user's yes does it quit Discord and run `apply`, with
 // the rights patching needs on that system: it rebuilds mod/dist/ (in the release's executable, unpacks it), patches
 // Discord and reopens it. In a clone those steps are pnpm's scripts, and in the executable its own commands.
 // `run` also offers each new release once (README, «Update»). To the executable, from GitHub's releases: on a yes it
@@ -16,7 +17,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 import { executableName, INSTALLED, STATE, unpack, UV, VERSION } from "./bundle.mjs";
-import { discordRunning, discordVersion, original, resources } from "./discord-app.mjs";
+import { discordRunning, discordVersion, original, patchBlocked, resources } from "./discord-app.mjs";
 import { exec, output } from "./os/exec.mjs";
 import { system } from "./os/index.mjs";
 import { download, latestRelease } from "./release-feed.mjs";
@@ -153,6 +154,11 @@ async function checkPatch() {
     }
     if (!existsSync(original())) await sleep(SETTLE_MS);
     const version = discordVersion();
+    // Not seen yet, so the check that runs once Discord has restarted into it asks.
+    if (patchBlocked()) {
+        console.log(`Discord ${version} lost the patch, and waits to start unpatched before it is patched`);
+        return;
+    }
     if (!firstSeen(SEEN, version) || existsSync(original())) return;
     console.log(`Discord ${version} lost the patch`);
     // The executable's files are the release's as it was signed: only a clone can have changes of its own.

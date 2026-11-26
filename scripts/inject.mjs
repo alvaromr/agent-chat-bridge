@@ -5,7 +5,7 @@ import { existsSync, renameSync, statSync, writeFileSync } from "fs";
 
 import { asar } from "./asar.mjs";
 import { INSTALLED, modMain } from "./bundle.mjs";
-import { asar as asarPath, discordRunning, original, resources } from "./discord-app.mjs";
+import { asar as asarPath, discordRunning, original, patchBlocked, resources } from "./discord-app.mjs";
 
 // A loader is a few hundred bytes; Discord's own app.asar is megabytes.
 const LOADER_MAX_BYTES = 4096;
@@ -55,6 +55,9 @@ function uninstall(app, kept) {
 /** Patches Discord (`install`) or restores it (`uninstall`); any other command prints the usage. */
 export function patch(command) {
     if (command !== "install" && command !== "uninstall") fail(TEXT.usage);
+    // Before the check of a running Discord: seeing it run from the app to patch is what lets the next try patch it.
+    const blocked = command === "install" && patchBlocked();
+    if (blocked) fail(blocked);
     if (discordRunning()) fail(TEXT.running);
     try {
         (command === "install" ? install : uninstall)(asarPath(), original());

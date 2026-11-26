@@ -30,7 +30,8 @@ Whisper model; and the `agent-chat-bridge` CLI to use Discord from Claude Code.
 ## Requirements
 - Discord (stable), installed where each system keeps it:
   - macOS, tested: in `/Applications`. Since Discord 0.0.424, what is there is a launcher, and the app it starts is
-    in `~/Library/Application Support/discord/app-<version>/`: the patch goes there.
+    in `~/Library/Application Support/discord/app-<version>/`: the patch goes there, once Discord has started from it
+    unpatched, since macOS won't open a copy patched before its first start.
   - Windows, experimental: Discord's own installer, under `%LOCALAPPDATA%\Discord`. Only checked on a machine without
     Discord: the CLI's connection and the scheduled check's task (`docs/decisions/windows-linux-untested.md`); the
     patch and the plugins were never run.
@@ -88,8 +89,10 @@ Invoke-WebRequest -OutFile "$HOME\.local\bin\agent-chat-bridge.exe" `
 After a Discord update, the patch is gone. A dialog then offers to patch it again: once the new Discord passes
 `agent-chat-bridge check-discord`, it asks, and on a yes it quits Discord, patches it and reopens it. It asks once per
 Discord version. It checks at login, when Discord changes and daily on macOS (a LaunchAgent), and at login and hourly
-on Windows (a scheduled task) and Linux (systemd user units), where Discord updates whenever it starts. By hand,
-`agent-chat-bridge inject` patches it, with Discord closed.
+on Windows (a scheduled task) and Linux (systemd user units), where Discord updates whenever it starts. On macOS,
+since Discord 0.0.424, it asks only after Discord has restarted into the new version, as macOS won't open a version
+patched before its first start. By hand, `agent-chat-bridge inject` patches it, with Discord closed; on macOS it
+refuses a version that hasn't started yet, and says so.
 
 ## Update
 The same check offers each new release once, with what changed and which Discord it was tested with: on a yes it

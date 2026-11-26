@@ -25,3 +25,5 @@ export const original = () => join(resources(), "_app.asar");
 /** The installed Discord's version, from the build_info.json it ships on every system. */
 export const discordVersion = () => JSON.parse(readFileSync(join(resources(), "build_info.json"), "utf8")).version;
 export const discordRunning = () => system.running();
+/** Why the installed Discord can't be patched yet, in the user's words, or null (scripts/os/darwin.mjs). */
+export const patchBlocked = () => system.patchBlocked();

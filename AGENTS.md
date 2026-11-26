@@ -8,12 +8,13 @@ Everything is managed from this repo: install, re-patch and plugins.
 What differs between macOS, Windows and Linux lives in one place per side, and everything else is shared:
 - `mod/src/platform.mts`: the app's folder and the CLI's socket (a named pipe on Windows), for `mod/` and the scripts.
 - `plugins/shared/run.ts` (`claudeProcess`): where `claude` is and the environment it runs with.
-- `scripts/os/`: one module per system with the same exports (where Discord is, running, quit and open it, dialogs and
-  notices, how pnpm and the patch run, and the scheduler of `pnpm repatch`), chosen by `scripts/os/index.mjs`;
+- `scripts/os/`: one module per system with the same exports (where Discord is, running, whether it can be patched
+  yet, quit and open it, dialogs and notices, how pnpm and the patch run, and the scheduler of `pnpm repatch`), chosen
+  by `scripts/os/index.mjs`;
   `posix.mjs` holds what macOS and Linux share, and `app-folders.mjs` what Windows and Linux share (Discord installs
   itself into the user's folder, one `app-<version>` per update, and starts the newest). On macOS, since Discord
-  0.0.424, `/Applications` holds a launcher that starts the `app-<version>` its install state names (`darwin.mjs`).
-  A new difference goes into each module, never into a caller.
+  0.0.424, `/Applications` holds a launcher that starts the `app-<version>` its install state names (`darwin.mjs`),
+  which is patched only once Discord has run from it unpatched («When Discord updates»). A new difference goes into each module, never into a caller.
 - Dictation runs only on Apple Silicon Macs (`dictation/src/platform.ts`).
 
 ## Guiding principle
@@ -221,6 +222,12 @@ executable, unpacks it), patches and reopens it. On macOS a helper app, «Reparc
 the patching: macOS lets only an app with its App Management permission change another app, and the user grants it
 to the helper once; a new build of the helper loses it, so an install keeps the one there while its AppleScript is the
 same. Otherwise a notification says what failed, and the log's path is in it.
+On macOS since Discord 0.0.424, Gatekeeper scans each `app-<version>` the first time it starts and keeps the result:
+patched before that start, macOS calls it damaged and won't open it, even once restored. So `pnpm inject` and the
+check patch a new version only after Discord has run from it unpatched, which they note when they see it
+(`patchBlocked` in `scripts/os/darwin.mjs`); `pnpm inject` otherwise refuses and says to restart Discord, and the check
+waits, without counting the version as seen, until Discord's updater rewrites its install state after Discord
+restarts into it. How to recover a rejected app: `docs/debugging.md`, «Discord's executable».
 `pnpm live` stays manual.
 If a patch or piece is no longer found (`pnpm check-discord`, or the settings modal with Discord open), find what
 changed in Discord's code (`docs/debugging.md`, method 3) and adapt `mod/`. `mod/` was first derived from Vencord

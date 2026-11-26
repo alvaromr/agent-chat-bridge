@@ -22,6 +22,16 @@ DISCORD="$(node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --input-type=modu
   -e 'console.log((await import("./scripts/discord-app.mjs")).resources())')/../MacOS/Discord"
 ```
 
+If macOS says «"Discord" está dañado y no se puede abrir», Gatekeeper rejected that `app-<version>`: it was patched
+before its first start (AGENTS.md, «When Discord updates»). Read-only, the cause shows in
+`codesign --verify --deep --strict` on the app («a sealed resource is missing or invalid») and in
+`/usr/bin/log show --last 30m --predicate 'process == "syspolicyd" AND subsystem == "com.apple.syspolicy.exec"'`
+(`GK performScan`, then `Prompt shown` and `Terminating process due to Gatekeeper rejection`). Restoring the app
+doesn't help: Gatekeeper keeps the rejection for that bundle. Never bypass it (`spctl --add`, removing extended
+attributes). With Discord closed, move that `app-<version>` folder out of `~/Library/Application Support/discord`
+(Discord's launcher deletes old folders there) and open Discord: the launcher downloads the version again, and
+Gatekeeper scans the new copy. Once it has run, `pnpm inject` patches it.
+
 ## 1. Console log
 Shows whether something runs, and in which order. The user has to reproduce the failure.
 1. Quit Discord: `osascript -e 'quit app "Discord"'`.

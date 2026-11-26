@@ -9,7 +9,9 @@ What changes for whoever installs agent-chat-bridge, per version. The format fol
 - On macOS with Discord 0.0.424 or later, where `/Applications` holds only a launcher, `install`, `inject`,
   `check-discord` and the scheduled re-patch find the app it starts, in `~/Library/Application Support/discord`,
   instead of failing with `ENOENT` on `app.asar` or `build_info.json`. The scheduled check also runs when Discord
-  updates there.
+  updates there. They patch a new version only after Discord has started from it unpatched, as macOS calls a copy
+  patched before its first start damaged and won't open it: until then `inject` says to restart Discord, and the
+  check asks once Discord has restarted into it.
 
 ## [0.4.2] - 2026-11-26
 
