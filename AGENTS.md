@@ -101,8 +101,8 @@ Defined in `package.json`.
   dependencies differ from the lockfile, a fresh one included, needs `pnpm install --frozen-lockfile`: pnpm checks
   them before every script (`verifyDepsBeforeRun`).
 - `pnpm check`: the gate before each commit, run by the `.githooks/` pre-commit hook on the staged files: `pnpm lint`
-  (`eslint.config.mjs`, formatting included; Prettier's format check on the JSON files, with `.editorconfig`'s
-  indent and width; and Ruff on the dictation worker, `dictation/worker/pyproject.toml`),
+  (`eslint.config.mjs`, formatting included; Prettier's format check on the JSON files, with the indent and
+  width `.editorconfig` sets for them; and Ruff on the dictation worker, `dictation/worker/pyproject.toml`),
   `pnpm typecheck`, `pnpm knip` (unused files, exports and dependencies, `knip.json`), `pnpm secrets` (gitleaks on the
   history and the tree) and `pnpm test`. `pnpm fix` applies the automatic fixes and runs the gate.
 - `pnpm build`: builds `mod/dist/` (`mod/tsconfig.json`). `pnpm typecheck`: types of the whole repo, the plain JS
