@@ -47,7 +47,8 @@ vi.mock("../scripts/check-discord/css.mjs", () => (fake.steps.push("check css"),
 /** The release's executable, carrying the patch and the skill, and Dictation's worker and uv when it has Dictation. */
 const asExecutable = (dictation = false) => vi.doMock("node:sea", () => {
     const files = {
-        "mod/dist/main.js": "main", "skills/agent-chat-bridge/SKILL.md": "skill",
+        "mod/dist/main.js": "main",
+        "skills/agent-chat-bridge/SKILL.md": "skill",
         ...dictation ? { "dictation/worker/worker.py": "worker", "tools/uv": "uv" } : {}
     };
     return {

@@ -17,7 +17,11 @@ vi.mock("../dictation/src/worker.ts", async original => ({
         /** Each transcription asked for: its samples' length and prompt; the test answers or fails it. @type {any[]} */
         const calls = [];
         const worker = {
-            dir, modelPath, language, closed: 0, calls,
+            dir,
+            modelPath,
+            language,
+            closed: 0,
+            calls,
             transcribe: (samples, prompt) => new Promise((resolve, reject) => calls.push({ length: samples.length, prompt, resolve, reject })),
             close: () => void worker.closed++
         };

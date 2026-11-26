@@ -22,7 +22,10 @@ vi.mock("child_process", async () => {
             /** @type {Buffer[]} */
             const written = [];
             const child = Object.assign(new EventEmitter(), {
-                stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), killed: 0,
+                stdin: new PassThrough(),
+                stdout: new PassThrough(),
+                stderr: new PassThrough(),
+                killed: 0,
                 kill() { child.killed++; },
                 /** What the launcher wrote to the worker's stdin. */
                 written: () => Buffer.concat(written)

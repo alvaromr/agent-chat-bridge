@@ -11,7 +11,10 @@ import { runInThisContext } from "node:vm";
  * @returns {any}
  */
 export function loadWebpack(modules, {
-    url = "https://discord.com/assets/web.0123abcd.js", path = "/assets/", chunkName = "function(e){return e+\".js\"}", cache = true,
+    url = "https://discord.com/assets/web.0123abcd.js",
+    path = "/assets/",
+    chunkName = "function(e){return e+\".js\"}",
+    cache = true,
     fromModule = false
 } = {}) {
     const source = `(function (modules, path, chunkName, cache) {

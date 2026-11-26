@@ -4,7 +4,15 @@
 import type { ComposeRequest, ComposeResult } from "../ipc";
 import { MAX_EXTRA_PAGES } from "../limits.mts";
 import {
-    ChannelStore, FluxDispatcher, GuildMemberStore, GuildRoleStore, MessageActions, MessageManager, MessageStore, ReadStateStore, UserStore
+    ChannelStore,
+    FluxDispatcher,
+    GuildMemberStore,
+    GuildRoleStore,
+    MessageActions,
+    MessageManager,
+    MessageStore,
+    ReadStateStore,
+    UserStore
 } from "../plugin-api/discord";
 import { CONFIRM_MS, waitFor } from "../plugin-api/wait";
 import { allCandidates, pick, TEXT as CHATS_TEXT, userName } from "./chats";
@@ -112,9 +120,15 @@ export async function readChat(req: ComposeRequest): Promise<ComposeResult> {
     const { _array: messages, hasMoreBefore } = store();
     const { selected, unreadLoaded, rangeComplete, moreUnreadNotLoaded } = selectMessages({ messages, hasMoreBefore, isUnread: unread }, req);
     return {
-        ok: true, chat: pick(chat), mensajes: selected.map(m => formatMessage(m, chat)),
-        cargados: messages.length, sinLeerCargados: unreadLoaded, paginasExtra: extraPages,
-        hayMasAntiguos: hasMoreBefore, rangoCompleto: rangeComplete, masSinLeerSinCargar: moreUnreadNotLoaded
+        ok: true,
+        chat: pick(chat),
+        mensajes: selected.map(m => formatMessage(m, chat)),
+        cargados: messages.length,
+        sinLeerCargados: unreadLoaded,
+        paginasExtra: extraPages,
+        hayMasAntiguos: hasMoreBefore,
+        rangoCompleto: rangeComplete,
+        masSinLeerSinCargar: moreUnreadNotLoaded
     };
 }
 

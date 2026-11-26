@@ -34,7 +34,9 @@ export default tseslint.config(
             "@stylistic/space-in-parens": ["error", "never"],
             "@stylistic/block-spacing": ["error", "always"],
             "@stylistic/comma-spacing": "error",
-            "@stylistic/object-curly-spacing": ["error", "always"],
+            // Spaces inside one-line braces, and a multi-line list of them one item per line; the other brackets are
+            // left as they are.
+            "@stylistic/list-style": ["error", { overrides: { "()": "off", "[]": "off", "<>": "off" } }],
             "@stylistic/spaced-comment": ["error", "always", { markers: ["!"] }],
             "@stylistic/no-extra-semi": "error",
             "@stylistic/function-call-spacing": ["error", "never"],

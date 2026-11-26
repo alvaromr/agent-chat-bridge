@@ -90,8 +90,10 @@ test("dictation: the button opens the microphone with the settings, and shows ea
     assert.equal(label(), "Abriendo el micrófono…");
     await flush();
     assert.deepEqual(native.dictation.start.mock.calls[0][0], {
-        model: "mlx-community/whisper-large-v3-turbo", language: "es",
-        vocabulary: /** @type {any} */ (dictation.settings.def).vocabulary.default, replacements: "Griscord => Discord\nWorldtree => worktree"
+        model: "mlx-community/whisper-large-v3-turbo",
+        language: "es",
+        vocabulary: /** @type {any} */ (dictation.settings.def).vocabulary.default,
+        replacements: "Griscord => Discord\nWorldtree => worktree"
     });
     mic0().onSamples(Float32Array.of(1));
     assert.deepEqual(native.dictation.audio.mock.calls, [[Float32Array.of(1)]]);

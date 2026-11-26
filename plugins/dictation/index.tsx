@@ -174,7 +174,13 @@ function onEvent(event: DictationEvent) {
 async function begin(channelId: string, from: "button" | "space") {
     if (active) return;
     const a: Active = {
-        channelId, before: null, phrases: [], partial: "", capture: null, heard: false, stopping: false,
+        channelId,
+        before: null,
+        phrases: [],
+        partial: "",
+        capture: null,
+        heard: false,
+        stopping: false,
         // Stryker disable next-line StringLiteral: nothing reads it before confirm() sets it.
         written: ""
     };

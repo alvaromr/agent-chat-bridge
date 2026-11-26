@@ -16,8 +16,13 @@ export function claudeProcess(platform: string, env: NodeJS.ProcessEnv, home: st
         return {
             bin: win32.join(home, ".local", "bin", "claude.exe"),
             env: {
-                USERPROFILE: home, APPDATA: env.APPDATA, LOCALAPPDATA: env.LOCALAPPDATA, SystemRoot: env.SystemRoot,
-                PATH: `${env.SystemRoot}\\System32`, TEMP: tmp, TMP: tmp
+                USERPROFILE: home,
+                APPDATA: env.APPDATA,
+                LOCALAPPDATA: env.LOCALAPPDATA,
+                SystemRoot: env.SystemRoot,
+                PATH: `${env.SystemRoot}\\System32`,
+                TEMP: tmp,
+                TMP: tmp
             }
         };
     }

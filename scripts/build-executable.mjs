@@ -92,8 +92,13 @@ rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST);
 const script = join(DIST, "agent-chat-bridge.cjs");
 await build({
-    entryPoints: [join(ROOT, "scripts", "executable.mjs")], outfile: script, bundle: true, platform: "node", format: "cjs",
-    target: `node${NODE_VERSION}`, logLevel: "warning",
+    entryPoints: [join(ROOT, "scripts", "executable.mjs")],
+    outfile: script,
+    bundle: true,
+    platform: "node",
+    format: "cjs",
+    target: `node${NODE_VERSION}`,
+    logLevel: "warning",
     // Only the executable runs this script: scripts/bundle.mjs reads no import.meta in it, and nothing runs as a module.
     logOverride: { "empty-import-meta": "silent" }
 });
@@ -109,8 +114,13 @@ for (const target of targets) {
     writeFileSync(manifest, JSON.stringify(Object.keys(files)));
     const config = join(DIST, `sea-${target}.json`);
     writeFileSync(config, JSON.stringify({
-        main: script, output, executable: await nodeBinary(target), assets: { [MANIFEST]: manifest, ...files },
-        disableExperimentalSEAWarning: true, useSnapshot: false, useCodeCache: false
+        main: script,
+        output,
+        executable: await nodeBinary(target),
+        assets: { [MANIFEST]: manifest, ...files },
+        disableExperimentalSEAWarning: true,
+        useSnapshot: false,
+        useCodeCache: false
     }));
     execFileSync(builder, ["--build-sea", config], { stdio: "inherit" });
     if (target.startsWith("darwin")) execFileSync("codesign", ["--force", "--sign", "-", output], { stdio: "inherit" });

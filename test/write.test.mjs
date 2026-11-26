@@ -9,8 +9,19 @@ import assert from "node:assert/strict";
 import { beforeEach, test, vi } from "vitest";
 
 import {
-    addReaction, channel, ChannelRouter, chatBox, ComponentDispatch, DraftActions, FluxDispatcher, loaded, MessageActions, removeReaction, reset,
-    state, UploadHandler
+    addReaction,
+    channel,
+    ChannelRouter,
+    chatBox,
+    ComponentDispatch,
+    DraftActions,
+    FluxDispatcher,
+    loaded,
+    MessageActions,
+    removeReaction,
+    reset,
+    state,
+    UploadHandler
 } from "./fake-discord.mjs";
 
 vi.mock("../mod/src/plugin-api/discord.ts", () => import("./fake-discord.mjs"));
@@ -55,7 +66,8 @@ beforeEach(() => {
 
 test("draft: a chat no name picks gets the candidates, none matching gets what was searched", async () => {
     assert.deepEqual(await settle({ query: "an", text: "x" }), {
-        ok: false, error: "No hay un chat claro: elige uno de los candidatos y repite con --id",
+        ok: false,
+        error: "No hay un chat claro: elige uno de los candidatos y repite con --id",
         candidatos: [DM, { id: "dm2", kind: "dm", label: "anabel" }]
     });
     const searched = { dm: 2, grupo: 0, canal: 1, hilo: 0 };

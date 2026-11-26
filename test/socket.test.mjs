@@ -70,7 +70,9 @@ function mainWindow(url = "https://discord.com/channels/@me") {
     /** @type {any} */
     const window = {
         sent: [],
-        minimized: false, shown: 0, restored: 0,
+        minimized: false,
+        shown: 0,
+        restored: 0,
         isMinimized: () => window.minimized,
         restore: () => void window.restored++,
         show: () => void window.shown++

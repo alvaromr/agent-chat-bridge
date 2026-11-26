@@ -60,7 +60,13 @@ export function loaded(channelId, messages, more = {}) {
 /** A channel with Discord's methods. */
 export function channel(fields) {
     return {
-        type: 0, name: "", guild_id: null, parent_id: null, lastMessageId: "0", recipients: [], ...fields,
+        type: 0,
+        name: "",
+        guild_id: null,
+        parent_id: null,
+        lastMessageId: "0",
+        recipients: [],
+        ...fields,
         isDM() { return this.type === 1; },
         isGroupDM() { return this.type === 3; },
         getRecipientId() { return this.recipients[0]; }

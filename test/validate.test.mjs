@@ -161,7 +161,9 @@ test("every CLI command but watch builds a request the socket accepts, of that c
         edit: [[["edit", "1", "2", "hola"], "edit"]],
         delete: [[["delete", "1", "2"], "delete"]],
         react: [[["react", "1", "2", "👍"], "react"], [["react", "1", "2", "👍", "--remove"], "unreact"]],
-        list: [[["list"], "list"]], unread: [[["unread"], "unread"]], read: [[["read", "1"], "read"]]
+        list: [[["list"], "list"]],
+        unread: [[["unread"], "unread"]],
+        read: [[["read", "1"], "read"]]
     };
     assert.deepEqual(Object.keys(argv).sort(), Object.keys(COMMANDS).filter(name => name !== "watch").sort());
     for (const [args, command] of Object.values(argv).flat()) {

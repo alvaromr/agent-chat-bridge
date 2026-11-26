@@ -43,8 +43,10 @@ function world() {
     state.hidden.add("oculto");
     state.threads.set("s1", {
         c1: { h1: { channel: channel({ id: "h1", type: 11, name: "Hilo", parent_id: "c1", lastMessageId: at(NOW - 4 * DAY) }) } },
-        x: { h2: { channel: channel({ id: "h2", type: 11, name: "Huérfano", parent_id: "borrado", lastMessageId: null }) },
-            h3: { channel: channel({ id: "h3", type: 11, name: "Suelto", parent_id: null }) } }
+        x: {
+            h2: { channel: channel({ id: "h2", type: 11, name: "Huérfano", parent_id: "borrado", lastMessageId: null }) },
+            h3: { channel: channel({ id: "h3", type: 11, name: "Suelto", parent_id: null }) }
+        }
     });
 }
 

@@ -56,7 +56,9 @@ test("run: claude from the user's bin, isolated, in a throwaway folder, with the
     ]);
     const folder = join(tmpdir(), "discord-claude-");
     assert.deepEqual(options, {
-        cwd: `${folder}abc`, timeout: 120_000, maxBuffer: 1 << 20,
+        cwd: `${folder}abc`,
+        timeout: 120_000,
+        maxBuffer: 1 << 20,
         env: { ...claude.env, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" }
     });
     assert.equal(input, "entrada");

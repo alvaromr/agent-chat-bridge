@@ -24,9 +24,37 @@ const { machine, platform } = vi.hoisted(() => {
 afterAll(() => void Object.defineProperty(process, "platform", { value: platform }));
 vi.mock("node:path", async original => (await import("../dictation/test/posix-path.mjs")).posixPath(original));
 const fresh = () => ({
-    home: "", installed: true, patched: false, running: true, quits: true, version: "0.0.422", dirty: "", check: true,
-    answer: true, build: true, inject: true, install: true, setup: true, at: "", remote: [], notes: "", loaded: false, bootout: true, bootstrap: true, missing: "", pgrepStatus: 1, pgrepMissing: "",
-    onSleep: () => { }, runs: [], piped: [], sleeps: [], cwds: new Set(), release: null, files: {}, downloads: [], sync: 0
+    home: "",
+    installed: true,
+    patched: false,
+    running: true,
+    quits: true,
+    version: "0.0.422",
+    dirty: "",
+    check: true,
+    answer: true,
+    build: true,
+    inject: true,
+    install: true,
+    setup: true,
+    at: "",
+    remote: [],
+    notes: "",
+    loaded: false,
+    bootout: true,
+    bootstrap: true,
+    missing: "",
+    pgrepStatus: 1,
+    pgrepMissing: "",
+    onSleep: () => { },
+    runs: [],
+    piped: [],
+    sleeps: [],
+    cwds: new Set(),
+    release: null,
+    files: {},
+    downloads: [],
+    sync: 0
 });
 
 vi.mock("node:os", async original => ({ ...(/** @type {any} */ (await original())), homedir: () => machine.home, userInfo: () => ({ uid: 501 }) }));

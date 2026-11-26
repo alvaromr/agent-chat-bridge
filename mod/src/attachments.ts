@@ -6,8 +6,15 @@ import type { ComposeRequest } from "./ipc";
 import { MAX_ATTACHMENT_MB } from "./limits.mts";
 
 const MIME_TYPES: Record<string, string> = {
-    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp",
-    ".mp4": "video/mp4", ".mov": "video/quicktime", ".pdf": "application/pdf", ".txt": "text/plain"
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".mp4": "video/mp4",
+    ".mov": "video/quicktime",
+    ".pdf": "application/pdf",
+    ".txt": "text/plain"
 };
 
 /** Why a file can't be attached, as the CLI shows it to the user. */

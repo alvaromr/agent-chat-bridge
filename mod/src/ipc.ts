@@ -106,7 +106,13 @@ export interface ComposeCandidate {
 }
 
 export interface ComposeMessage {
-    id: string; autor: string; yo: boolean; fecha: string; texto: string; sinLeer: boolean; meMencionan: boolean;
+    id: string;
+    autor: string;
+    yo: boolean;
+    fecha: string;
+    texto: string;
+    sinLeer: boolean;
+    meMencionan: boolean;
     /** When the message was last edited. */
     editado?: string;
     /** The message it replies to; author and excerpt only if Discord has that message. */

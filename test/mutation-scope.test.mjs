@@ -4,8 +4,19 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import {
-    assumedPrevious, changedInputs, configFingerprint, CONFIGS, importsOf, inputGraph, inputValue, packageFingerprint, resolveImport,
-    TIMEOUT_INPUT, timeoutFlips, tsconfigChain, withoutStale
+    assumedPrevious,
+    changedInputs,
+    configFingerprint,
+    CONFIGS,
+    importsOf,
+    inputGraph,
+    inputValue,
+    packageFingerprint,
+    resolveImport,
+    TIMEOUT_INPUT,
+    timeoutFlips,
+    tsconfigChain,
+    withoutStale
 } from "../scripts/mutation-scope.mjs";
 
 // Split, so that vitest doesn't find it in this file and run it in that environment.
@@ -100,8 +111,16 @@ test("a test file reaches itself, what it imports through every hop, the JSX inj
 test("each file's imports are read once, however many test files reach it", () => {
     /** @type {string[]} */
     const reads = [];
-    inputGraph({ tests: ["test/a.test.mjs", "test/b.test.mjs"], mutated: ["src/a.ts"], setupFiles: ["test/setup.mjs"], aliases: ALIASES,
-        jsxInject: "", tsconfig: "base/tsconfig.json", typePackages: [], read: file => (reads.push(file), read(file)) });
+    inputGraph({
+        tests: ["test/a.test.mjs", "test/b.test.mjs"],
+        mutated: ["src/a.ts"],
+        setupFiles: ["test/setup.mjs"],
+        aliases: ALIASES,
+        jsxInject: "",
+        tsconfig: "base/tsconfig.json",
+        typePackages: [],
+        read: file => (reads.push(file), read(file))
+    });
     assert.deepEqual(reads.filter(file => file === "test/setup.mjs"), ["test/setup.mjs"]);
 });
 

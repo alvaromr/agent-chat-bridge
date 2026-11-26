@@ -11,8 +11,18 @@ const { startCapture } = await import("../plugins/dictation/capture.ts");
 let audio;
 beforeEach(() => {
     audio = {
-        constraints: null, rate: null, connected: null, channelCount: null, stopped: 0, closed: 0, cancelled: 0,
-        frames: [], waiting: null, readError: null, closeError: null, cancelError: null
+        constraints: null,
+        rate: null,
+        connected: null,
+        channelCount: null,
+        stopped: 0,
+        closed: 0,
+        cancelled: 0,
+        frames: [],
+        waiting: null,
+        readError: null,
+        closeError: null,
+        cancelError: null
     };
     const track = { stop: () => void audio.stopped++ };
     const destination = { channelCount: 2, stream: { getAudioTracks: () => [track] } };

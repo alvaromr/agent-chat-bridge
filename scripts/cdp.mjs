@@ -42,7 +42,9 @@ if (arg === "--reload") {
     console.log("reloaded");
 } else {
     const { result, exceptionDetails } = await discord.send("Runtime.evaluate", {
-        expression: readFileSync(arg, "utf8"), awaitPromise: true, returnByValue: true
+        expression: readFileSync(arg, "utf8"),
+        awaitPromise: true,
+        returnByValue: true
     });
     console.log(JSON.stringify(exceptionDetails ?? result.value, null, 2));
 }

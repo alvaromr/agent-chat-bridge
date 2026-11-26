@@ -3,8 +3,21 @@
 import type { ComposeRequest, ComposeResult, Reaction, RequestFor } from "../ipc";
 import { chatEditor, getDraft, pressEnter, replaceChatInput } from "../plugin-api/chatInput";
 import {
-    addReaction, ChannelRouter, ChannelStore, ComponentDispatch, DraftActions, DraftType, FluxDispatcher, MessageActions, MessageStore,
-    PendingReplyStore, removeReaction, SelectedChannelStore, UploadAttachmentStore, UploadHandler, UserStore
+    addReaction,
+    ChannelRouter,
+    ChannelStore,
+    ComponentDispatch,
+    DraftActions,
+    DraftType,
+    FluxDispatcher,
+    MessageActions,
+    MessageStore,
+    PendingReplyStore,
+    removeReaction,
+    SelectedChannelStore,
+    UploadAttachmentStore,
+    UploadHandler,
+    UserStore
 } from "../plugin-api/discord";
 import { CONFIRM_MS, waitFor } from "../plugin-api/wait";
 import { allCandidates, pick, resolve, TEXT as CHATS_TEXT } from "./chats";

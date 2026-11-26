@@ -3,7 +3,14 @@
 import type { ComposeCandidate, ComposeRequest } from "../ipc";
 import { APP_NAME } from "../name.mts";
 import {
-    ActiveJoinedThreadsStore, ChannelStore, GuildStore, PermissionStore, ReadStateStore, RelationshipStore, UserGuildSettingsStore, UserStore
+    ActiveJoinedThreadsStore,
+    ChannelStore,
+    GuildStore,
+    PermissionStore,
+    ReadStateStore,
+    RelationshipStore,
+    UserGuildSettingsStore,
+    UserStore
 } from "../plugin-api/discord";
 import { byRecency, type Candidate, fold, inRange, match, snowflakeTime } from "./match";
 

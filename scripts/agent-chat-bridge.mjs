@@ -7,8 +7,14 @@ import { resolve } from "path";
 import { parseArgs } from "util";
 
 import {
-    DEFAULT_READ_LIMIT, MAX_ATTACHMENT_MB, MAX_ATTACHMENTS, MAX_EXTRA_PAGES, MAX_READ_LIMIT, MAX_SENDS_PER_HOUR,
-    MAX_WATCHED_CHATS, MIN_SEND_INTERVAL_MS
+    DEFAULT_READ_LIMIT,
+    MAX_ATTACHMENT_MB,
+    MAX_ATTACHMENTS,
+    MAX_EXTRA_PAGES,
+    MAX_READ_LIMIT,
+    MAX_SENDS_PER_HOUR,
+    MAX_WATCHED_CHATS,
+    MIN_SEND_INTERVAL_MS
 } from "../mod/src/limits.mts";
 import { appDataDir, socketPath } from "../mod/src/platform.mts";
 import { VERSION } from "./bundle.mjs";
@@ -43,8 +49,12 @@ Solo abre un chat si el nombre encaja claramente; si no, devuelve en "candidatos
   --clear          vacía el texto de la caja de ese chat, sin abrirlo ni tocar adjuntos o respuesta.
                    Borra el borrador del usuario: pídele permiso antes. "vaciado": true si quedó vacía.`,
         options: {
-            id: { type: "boolean" }, reply: { type: "string" }, attach: { type: "string", multiple: true },
-            replace: { type: "boolean" }, background: { type: "boolean" }, "dry-run": { type: "boolean" },
+            id: { type: "boolean" },
+            reply: { type: "string" },
+            attach: { type: "string", multiple: true },
+            replace: { type: "boolean" },
+            background: { type: "boolean" },
+            "dry-run": { type: "boolean" },
             clear: { type: "boolean" }
         },
         positionals: [1, 2],
@@ -52,8 +62,13 @@ Solo abre un chat si el nombre encaja claramente; si no, devuelve en "candidatos
             ? text === undefined && !o.attach && !o.reply && !o.replace && !o.background ? null : "--clear no lleva texto ni otras opciones"
             : text !== undefined || o.attach?.length ? null : "Falta el texto (o un --attach)",
         request: ([chat, text], o) => ({
-            text, ...(o.id ? { channelId: chat } : { query: chat }), replyTo: o.reply,
-            attach: o.attach?.map(p => resolve(p)), replace: o.replace, background: o.background, dryRun: o["dry-run"],
+            text,
+            ...(o.id ? { channelId: chat } : { query: chat }),
+            replyTo: o.reply,
+            attach: o.attach?.map(p => resolve(p)),
+            replace: o.replace,
+            background: o.background,
+            dryRun: o["dry-run"],
             clear: o.clear
         })
     },
@@ -181,8 +196,13 @@ Sin --more ni --older solo hay la página que carga Discord al abrir el chat (un
 
 ${DATE_HELP}`,
         options: {
-            unread: { type: "boolean" }, limit: { type: "string" }, fetch: { type: "boolean" }, more: { type: "boolean" },
-            older: { type: "string" }, since: { type: "string" }, until: { type: "string" }
+            unread: { type: "boolean" },
+            limit: { type: "string" },
+            fetch: { type: "boolean" },
+            more: { type: "boolean" },
+            older: { type: "string" },
+            since: { type: "string" },
+            until: { type: "string" }
         },
         positionals: 1,
         validate: (_, o) => {
@@ -191,8 +211,13 @@ ${DATE_HELP}`,
             return /^[1-3]$/.test(o.older) ? null : "--older debe ser 1, 2 o 3";
         },
         request: ([id], o) => ({
-            read: id, unreadOnly: o.unread, ...(o.limit ? { limit: Number(o.limit) } : {}), fetch: o.fetch, more: o.more,
-            ...(o.older ? { older: Number(o.older) } : {}), ...range(o)
+            read: id,
+            unreadOnly: o.unread,
+            ...(o.limit ? { limit: Number(o.limit) } : {}),
+            fetch: o.fetch,
+            more: o.more,
+            ...(o.older ? { older: Number(o.older) } : {}),
+            ...range(o)
         })
     }
 };
@@ -257,7 +282,9 @@ export function buildRequest(argv) {
     if (!command) throw new UsageError(TEXT.unknownCommand(name));
 
     const parsed = parseArgs({
-        args: rest, allowPositionals: true, options: { ...command.options, help: { type: "boolean", short: "h" } }
+        args: rest,
+        allowPositionals: true,
+        options: { ...command.options, help: { type: "boolean", short: "h" } }
     });
     const { positionals } = parsed;
     // parseArgs can't infer the value types from options picked at run time; these are the types its options allow.

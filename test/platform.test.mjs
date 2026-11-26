@@ -30,14 +30,20 @@ test("platform: the socket is a file in the app's folder, or on Windows a named 
 test("run: claude is where its native installer puts it, with the least environment each system needs", () => {
     const env = { USER: "ana", APPDATA: "C:\\R", LOCALAPPDATA: "C:\\L", SystemRoot: "C:\\Windows", SECRET: "no" };
     assert.deepEqual(claudeProcess("darwin", env, "/Users/ana", "/tmp"), {
-        bin: "/Users/ana/.local/bin/claude", env: { HOME: "/Users/ana", USER: "ana", PATH: "/usr/bin:/bin", TMPDIR: "/tmp" }
+        bin: "/Users/ana/.local/bin/claude",
+        env: { HOME: "/Users/ana", USER: "ana", PATH: "/usr/bin:/bin", TMPDIR: "/tmp" }
     });
     assert.deepEqual(claudeProcess("linux", env, "/home/ana", "/tmp").bin, "/home/ana/.local/bin/claude");
     assert.deepEqual(claudeProcess("win32", env, "C:\\Users\\ana", "C:\\T"), {
         bin: "C:\\Users\\ana\\.local\\bin\\claude.exe",
         env: {
-            USERPROFILE: "C:\\Users\\ana", APPDATA: "C:\\R", LOCALAPPDATA: "C:\\L", SystemRoot: "C:\\Windows",
-            PATH: "C:\\Windows\\System32", TEMP: "C:\\T", TMP: "C:\\T"
+            USERPROFILE: "C:\\Users\\ana",
+            APPDATA: "C:\\R",
+            LOCALAPPDATA: "C:\\L",
+            SystemRoot: "C:\\Windows",
+            PATH: "C:\\Windows\\System32",
+            TEMP: "C:\\T",
+            TMP: "C:\\T"
         }
     });
 });

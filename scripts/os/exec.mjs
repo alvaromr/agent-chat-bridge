@@ -13,7 +13,10 @@ import { REPO } from "../bundle.mjs";
  */
 export function exec(command, args, capture = false, env = undefined) {
     const result = spawnSync(command, args, {
-        cwd: REPO ?? undefined, encoding: "utf8", stdio: capture ? "pipe" : "inherit", ...env ? { env: { ...process.env, ...env } } : {}
+        cwd: REPO ?? undefined,
+        encoding: "utf8",
+        stdio: capture ? "pipe" : "inherit",
+        ...env ? { env: { ...process.env, ...env } } : {}
     });
     if (result.error) throw result.error;
     return { ok: result.status === 0, stdout: result.stdout, stderr: result.stderr };

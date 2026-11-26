@@ -21,12 +21,32 @@ const ana = { id: "111", username: "ana99", globalName: "Ana" };
 
 /** A message as Discord's MessageStore keeps it, by Ana unless said otherwise. */
 const message = (id, fields = {}) => ({
-    id, channel_id: "dm1", content: "", author: ana, timestamp: new Date(T + Number(id) * 60_000), editedTimestamp: null, attachments: [],
-    embeds: [], reactions: [], mentions: [], mentionRoles: [], mentionEveryone: false, state: "SENT", ...fields
+    id,
+    channel_id: "dm1",
+    content: "",
+    author: ana,
+    timestamp: new Date(T + Number(id) * 60_000),
+    editedTimestamp: null,
+    attachments: [],
+    embeds: [],
+    reactions: [],
+    mentions: [],
+    mentionRoles: [],
+    mentionEveryone: false,
+    state: "SENT",
+    ...fields
 });
 /** One message as the CLI gets it, with what every message says. */
 const shown = (id, fields = {}) => ({
-    id, autor: "Ana", yo: false, fecha: new Date(T + Number(id) * 60_000).toISOString(), texto: "", adjuntos: [], sinLeer: true, meMencionan: false, ...fields
+    id,
+    autor: "Ana",
+    yo: false,
+    fecha: new Date(T + Number(id) * 60_000).toISOString(),
+    texto: "",
+    adjuntos: [],
+    sinLeer: true,
+    meMencionan: false,
+    ...fields
 });
 
 beforeEach(() => {
@@ -75,9 +95,15 @@ test("read: each message in the CLI's shape, with the chat, the counts and wheth
     state.readStates.set("dm1", { ack: "1" });
     loaded("dm1", [message("1", { content: "hola" }), message("2", { author: { id: "me", username: "yo", global_name: "Yo" }, content: "qué tal" })], { hasMoreBefore: true });
     assert.deepEqual(await read({}), {
-        ok: true, chat: { id: "dm1", kind: "dm", label: "Ana" },
+        ok: true,
+        chat: { id: "dm1", kind: "dm", label: "Ana" },
         mensajes: [shown("1", { texto: "hola", sinLeer: false }), shown("2", { autor: "Yo", yo: true, texto: "qué tal" })],
-        cargados: 2, sinLeerCargados: 1, paginasExtra: 0, hayMasAntiguos: true, rangoCompleto: true, masSinLeerSinCargar: false
+        cargados: 2,
+        sinLeerCargados: 1,
+        paginasExtra: 0,
+        hayMasAntiguos: true,
+        rangoCompleto: true,
+        masSinLeerSinCargar: false
     });
 });
 
@@ -90,7 +116,8 @@ test("read: authors by display name or user name, edits, attachments, embeds and
         reactions: [{ emoji: { id: null, name: "👍" }, count: 2, me: true }]
     })]);
     assert.deepEqual((await read({})).mensajes, [shown("1", {
-        autor: "solo", editado: new Date(T).toISOString(),
+        autor: "solo",
+        editado: new Date(T).toISOString(),
         adjuntos: [{ nombre: "a.png", tipo: "image/png", url: "u1" }, { nombre: "b", tipo: "text/plain", url: "u2" }],
         embeds: [{ titulo: "Título", campos: [] }],
         reacciones: [{ emoji: "👍", total: 2, mia: true }]
