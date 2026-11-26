@@ -45,7 +45,7 @@
     "eslint-plugin-simple-import-sort": "14.0.0",
     "eslint-plugin-unused-imports": "4.4.1",
     "happy-dom": "21.0.4",
-    "knip": "6.46.1",
+    "knip": "6.47.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "typescript": "6.0.3",
