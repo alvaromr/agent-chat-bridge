@@ -1,6 +1,6 @@
 {
   "name": "agent-chat-bridge",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "license": "GPL-3.0-or-later",
   "packageManager": "pnpm@12.22.0",
