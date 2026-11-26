@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterAll, afterEach, beforeEach, test, vi } from "vitest";
@@ -79,13 +79,16 @@ vi.mock("../scripts/release-key.mjs", async () => {
     machine.keys ??= generateKeyPairSync("ed25519");
     return { RELEASE_KEY: machine.keys.publicKey };
 });
-/** The installed Discord: its folder, whether it is patched, and the version its build_info.json says. */
+/**
+ * The Discord installed in /Applications: whether it has its app.asar, whether it is patched, and the version its
+ * build_info.json says. The launcher's layout, under the temporary HOME, is made of real files (`launcher` below).
+ */
 vi.mock("node:fs", async original => {
     const fs = /** @type {any} */ (await original());
     const resources = "/Applications/Discord.app/Contents/Resources";
     return {
         ...fs,
-        existsSync: path => path === resources ? machine.installed : path === `${resources}/_app.asar` ? machine.patched : fs.existsSync(path),
+        existsSync: path => path === `${resources}/app.asar` ? machine.installed : path === `${resources}/_app.asar` ? machine.patched : fs.existsSync(path),
         readFileSync: (path, encoding) => path === `${resources}/build_info.json`
             ? machine.version ? JSON.stringify({ releaseChannel: "stable", version: machine.version }) : fs.readFileSync(`${machine.home}/none`, encoding)
             : fs.readFileSync(path, encoding)
@@ -187,8 +190,61 @@ test("discord-app: the patch's files sit in Discord's resources folder, whose bu
         "/Applications/Discord.app/Contents/Resources/_app.asar", "0.0.422"
     ]);
     machine.installed = false;
-    assert.throws(app.resources, { message: "No encuentro Discord instalado. Si acabas de instalarlo, ábrelo una vez: en Windows y "
-        + "Linux se instala al arrancar. En Linux, Flatpak y Snap no son compatibles: instala el .deb o el .tar.gz." });
+    assert.throws(app.resources, { message: NOT_FOUND });
+});
+
+const NOT_FOUND = "No encuentro Discord instalado. Si acabas de instalarlo, ábrelo una vez: en Windows y "
+    + "Linux se instala al arrancar. En Linux, Flatpak y Snap no son compatibles: instala el .deb o el .tar.gz.";
+const DISCORD = () => join(machine.home, "Library", "Application Support", "discord");
+const APP_STATE = () => join(DISCORD(), "install-state", "app.toml");
+const appResources = version => join(DISCORD(), `app-${version}`, "Discord.app", "Contents", "Resources");
+/** Discord since 0.0.424: a launcher in /Applications, the version it starts in app.toml, and each version's app folder. */
+function launcher(state, ...versions) {
+    machine.installed = false;
+    mkdirSync(dirname(APP_STATE()), { recursive: true });
+    writeFileSync(APP_STATE(), state);
+    for (const version of versions) {
+        mkdirSync(appResources(version), { recursive: true });
+        writeFileSync(join(appResources(version), "build_info.json"), JSON.stringify({ releaseChannel: "stable", version }));
+    }
+}
+
+test("discord-app: under the launcher, the patch's files sit in the app folder of the version app.toml names, not the newest", async () => {
+    launcher('next = "0.0.424"\n', "0.0.423", "0.0.424", "0.0.425");
+    const app = await import("../scripts/discord-app.mjs");
+    const resources = appResources("0.0.424");
+    assert.deepEqual([app.resources(), app.asar(), app.original(), app.discordVersion()],
+        [resources, join(resources, "app.asar"), join(resources, "_app.asar"), "0.0.424"]);
+});
+
+test("discord-app: the app in /Applications wins while it has its app.asar, patched or not, though the next version is already copied", async () => {
+    launcher('next = "0.0.424"\n', "0.0.424");
+    machine.installed = true;
+    const app = await import("../scripts/discord-app.mjs");
+    assert.equal(app.resources(), "/Applications/Discord.app/Contents/Resources");
+    Object.assign(machine, { installed: false, patched: true });
+    assert.equal(app.resources(), "/Applications/Discord.app/Contents/Resources", "between the patch's rename and its loader");
+});
+
+test("discord-app: under the launcher, no app.toml or no folder for its version is no Discord, and an app.toml without a version fails saying so", async () => {
+    machine.installed = false;
+    const app = await import("../scripts/discord-app.mjs");
+    assert.throws(app.resources, { message: NOT_FOUND }, "before the launcher's first start");
+    launcher('next = "0.0.424"\n');
+    assert.throws(app.resources, { message: NOT_FOUND }, "a version not copied yet");
+    for (const state of ['current = "0.0.424"\n', 'next = "../../../../Applications"\n', 'next = "0.0.424-beta"\n']) {
+        writeFileSync(APP_STATE(), state);
+        assert.throws(app.resources, { message: `No sé qué versión de Discord arranca su lanzador: ${APP_STATE()} no dice next = "x.y.z". `
+            + "Discord ha cambiado cómo se instala, y agent-chat-bridge tiene que adaptarse a ello." }, state);
+    }
+});
+
+test("repatch: under the launcher, the version it starts that lost the patch is checked and asked about", async () => {
+    launcher('next = "0.0.424"\n', "0.0.424");
+    await main("run");
+    assert.deepEqual(logged.mock.calls, [["Discord 0.0.424 lost the patch"]]);
+    assert.deepEqual(machine.runs.slice(0, 2), UP_TO_QUESTION.slice(0, 2));
+    assert.equal(readFileSync(SEEN(), "utf8"), "0.0.424");
 });
 
 test("os: each system has its module, and any other fails saying which ones work", async () => {
@@ -529,7 +585,7 @@ test("repatch: install writes the LaunchAgent that runs the check at login, when
     <array><string>/bin/sh</string><string>${RUN()}</string></array>
     <key>WorkingDirectory</key><string>${REPO}</string>
     <key>WatchPaths</key>
-    <array><string>/Applications</string><string>/Applications/Discord.app/Contents/Resources</string></array>
+    <array><string>/Applications</string><string>/Applications/Discord.app/Contents/Resources</string><string>${dirname(APP_STATE())}</string><string>${APP_STATE()}</string></array>
     <key>RunAtLoad</key><true/>
     <key>StartInterval</key><integer>86400</integer>
     <key>StandardOutPath</key><string>${LOG()}</string>

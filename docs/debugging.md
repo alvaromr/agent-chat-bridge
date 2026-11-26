@@ -14,13 +14,21 @@ An unverified hypothesis is presented as a hypothesis, and the first step is to 
 - Never send or edit messages during a test without the user's explicit confirmation of chat and text. Leave the box
   as it was.
 
+## Discord's executable
+Methods 1 and 2 start the app itself, in `/Applications` or, since Discord 0.0.424, the `app-<version>` that the
+launcher there starts (README «Requirements»). From the repo, `scripts/discord-app.mjs` says which:
+```sh
+DISCORD="$(node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --input-type=module \
+  -e 'console.log((await import("./scripts/discord-app.mjs")).resources())')/../MacOS/Discord"
+```
+
 ## 1. Console log
 Shows whether something runs, and in which order. The user has to reproduce the failure.
 1. Quit Discord: `osascript -e 'quit app "Discord"'`.
 2. Start it in the background with the filtered log (errors also come out as `CONSOLE` lines), writing to a
    temporary file outside the repo:
    ```sh
-   /Applications/Discord.app/Contents/MacOS/Discord --enable-logging=stderr 2>&1 \
+   "$DISCORD" --enable-logging=stderr 2>&1 \
      | grep --line-buffered CONSOLE | grep --line-buffered -E "agent-chat-bridge|AgentChatBridge|Uncaught" > "$TMPDIR/discord.log"
    ```
 3. If temporary marks are needed, they log only lengths or states, with the `[agent-chat-bridge] DEBUG` prefix.
@@ -30,7 +38,7 @@ Shows whether something runs, and in which order. The user has to reproduce the 
 Runs code in the page and checks the result without depending on the user.
 Ask for permission first: while the port is open, any program on the machine can read all of Discord.
 1. Quit Discord and start it in the background with
-   `/Applications/Discord.app/Contents/MacOS/Discord --remote-debugging-port=9229 --remote-debugging-address=127.0.0.1`.
+   `"$DISCORD" --remote-debugging-port=9229 --remote-debugging-address=127.0.0.1`.
 2. To reach the patch's functions, expose them temporarily in `mod/src/renderer/index.ts`, inside the
    `window[Symbol.for("agent-chat-bridge")]` object. Discord's main webpack is not reachable from outside.
 3. Write the test script in a temporary folder outside the repo. Run it with `node scripts/cdp.mjs <script.js>`.

@@ -29,7 +29,8 @@ Whisper model; and the `agent-chat-bridge` CLI to use Discord from Claude Code.
 
 ## Requirements
 - Discord (stable), installed where each system keeps it:
-  - macOS, tested: in `/Applications`.
+  - macOS, tested: in `/Applications`. Since Discord 0.0.424, what is there is a launcher, and the app it starts is
+    in `~/Library/Application Support/discord/app-<version>/`: the patch goes there.
   - Windows, experimental: Discord's own installer, under `%LOCALAPPDATA%\Discord`. Only checked on a machine without
     Discord: the CLI's connection and the scheduled check's task (`docs/decisions/windows-linux-untested.md`); the
     patch and the plugins were never run.

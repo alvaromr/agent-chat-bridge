@@ -11,8 +11,9 @@ What differs between macOS, Windows and Linux lives in one place per side, and e
 - `scripts/os/`: one module per system with the same exports (where Discord is, running, quit and open it, dialogs and
   notices, how pnpm and the patch run, and the scheduler of `pnpm repatch`), chosen by `scripts/os/index.mjs`;
   `posix.mjs` holds what macOS and Linux share, and `app-folders.mjs` what Windows and Linux share (Discord installs
-  itself into the user's folder, one `app-<version>` per update). A new difference goes into each module, never into
-  a caller.
+  itself into the user's folder, one `app-<version>` per update, and starts the newest). On macOS, since Discord
+  0.0.424, `/Applications` holds a launcher that starts the `app-<version>` its install state names (`darwin.mjs`).
+  A new difference goes into each module, never into a caller.
 - Dictation runs only on Apple Silicon Macs (`dictation/src/platform.ts`).
 
 ## Guiding principle
@@ -209,7 +210,8 @@ review: do not patch, and ask the user.
 - `eval`, `new Function`, obfuscated, minified or base64-encoded code.
 
 ## When Discord updates
-The update replaces Discord's app (on Windows, a new `app-<version>` folder) and the patch disappears; `pnpm inject`
+The update replaces Discord's app (on Windows, Linux and, since Discord 0.0.424, macOS, a new `app-<version>` folder)
+and the patch disappears; `pnpm inject`
 restores it. Then run `pnpm check-discord` and `pnpm live`.
 With `pnpm repatch install`, or the executable's `install`, a scheduled check does the first part once per Discord
 version that lost the patch (`scripts/repatch.mjs`; when it runs on each system, README «Install»). It holds to the

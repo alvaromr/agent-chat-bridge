@@ -1,7 +1,8 @@
-// macOS (tested): Discord in /Applications, AppleScript dialogs, a LaunchAgent, and a helper app that patches Discord.
+// macOS (tested): Discord in /Applications or, since Discord 0.0.424, in the app-<version> folder that the launcher it
+// leaves in /Applications starts; AppleScript dialogs, a LaunchAgent, and a helper app that patches Discord.
 // macOS lets only an app with its App Management permission change another app, and grants it to one exact build: so
 // the helper stays the same build, and what it runs lives in a script beside it.
-import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -12,7 +13,16 @@ import { running, shellScript, shellWord } from "./posix.mjs";
 
 export { running };
 
+/** The whole app before Discord 0.0.424; since then, a launcher without app.asar. */
 const RESOURCES = "/Applications/Discord.app/Contents/Resources";
+/**
+ * Where Discord's updater keeps a copy of each version, one app-<version> folder per update (since 0.0.422), and,
+ * in `install-state/app.toml`, the version the launcher starts: `next = "0.0.424"`, as seen with Discord 0.0.424. Only
+ * a whole x.y.z version is read, so the folder can't point outside Discord's.
+ */
+const DISCORD = join(homedir(), "Library", "Application Support", "discord");
+const INSTALL_STATE = join(DISCORD, "install-state");
+const APP_STATE = join(INSTALL_STATE, "app.toml");
 const LABEL = `local.${APP_NAME}.repatch`;
 const PLIST = join(homedir(), "Library", "LaunchAgents", `${LABEL}.plist`);
 /** The helper's name says what it does, as the user sees it in macOS's App Management list. */
@@ -25,10 +35,26 @@ const TEXT = {
     grant: `Falta un paso: arrastra «${HELPER_NAME}», que te he mostrado en el Finder, a Ajustes → Privacidad y `
         + "seguridad → Gestión de las apps, que te he abierto, y actívala. Sin ese permiso, macOS no la deja parchear Discord.",
     revoke: `Quita «${HELPER_NAME}» de Gestión de las apps.`,
-    permission: `Si dice EPERM, activa «${HELPER_NAME}» en Ajustes → Privacidad y seguridad → Gestión de las apps.`
+    permission: `Si dice EPERM, activa «${HELPER_NAME}» en Ajustes → Privacidad y seguridad → Gestión de las apps.`,
+    noVersion: file => `No sé qué versión de Discord arranca su lanzador: ${file} no dice next = "x.y.z". `
+        + "Discord ha cambiado cómo se instala, y agent-chat-bridge tiene que adaptarse a ello."
 };
 
-export const resources = () => existsSync(RESOURCES) ? RESOURCES : null;
+/** The resources of the app-<version> folder the launcher starts, or null before the launcher has set one up. */
+function launcherResources() {
+    if (!existsSync(APP_STATE)) return null;
+    const version = readFileSync(APP_STATE, "utf8").match(/^next\s*=\s*"(\d+\.\d+\.\d+)"\s*$/m)?.[1];
+    if (!version) throw new Error(TEXT.noVersion(APP_STATE));
+    const app = join(DISCORD, `app-${version}`, "Discord.app", "Contents", "Resources");
+    return existsSync(app) ? app : null;
+}
+
+/**
+ * The app in /Applications while it has its app.asar, patched or not, and otherwise the one the launcher starts. The
+ * order matters: before the launcher arrives, the updater has already copied the next version into its app-<version>
+ * folder, which isn't the one running.
+ */
+export const resources = () => ["app.asar", "_app.asar"].some(file => existsSync(join(RESOURCES, file))) ? RESOURCES : launcherResources();
 export const logFile = () => join(homedir(), "Library", "Logs", `${APP_NAME}-repatch.log`);
 export const permissionHint = TEXT.permission;
 /** @type {(args: string[]) => [string, string[]]} */
@@ -75,7 +101,11 @@ function buildHelper(state) {
     return true;
 }
 
-/** The LaunchAgent: at login, when /Applications or Discord's Resources change, and daily. */
+/**
+ * The LaunchAgent: at login, when /Applications, its Discord's Resources or, under the launcher, the version it starts
+ * change, and daily. That version is in app.toml: its folder changes when the updater creates it or renames a new one
+ * into place, and the file itself when it is rewritten in place.
+ */
 function launchAgent(state, log) {
     const string = value => `<string>${value.replaceAll("&", "&amp;").replaceAll("<", "&lt;")}</string>`;
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -87,7 +117,7 @@ function launchAgent(state, log) {
     <array>${string("/bin/sh")}${string(runPath(state))}</array>${REPO ? `
     <key>WorkingDirectory</key>${string(REPO)}` : ""}
     <key>WatchPaths</key>
-    <array>${string("/Applications")}${string(RESOURCES)}</array>
+    <array>${string("/Applications")}${string(RESOURCES)}${string(INSTALL_STATE)}${string(APP_STATE)}</array>
     <key>RunAtLoad</key><true/>
     <key>StartInterval</key><integer>${CHECK_INTERVAL_S}</integer>
     <key>StandardOutPath</key>${string(log)}
